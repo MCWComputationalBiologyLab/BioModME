@@ -1,17 +1,17 @@
-# BioSysMod
+# BioModMe
 
-BioSysMod is an application that is meant to streamline building biological computational models. It is an all-in-one tool that allows the user to build a model, solve for its mathematical equations, and plot all relevant features. 
+BioModMe is an application that is meant to streamline building biological computational models. It is an all-in-one tool that allows the user to build a model, solve for its mathematical equations, and plot all relevant features. 
 
-The application can be accessed online at  https://jwomack7512.shinyapps.io/Model_Builder/. 
+The application can be accessed online at  https://biomodme.ctsi.mcw.edu. 
 
-## Launch BioSysMod directly from R 
+## Launch BioModMe directly from R 
 **Step 1: Install R and RStudio**
 
 Before running the app you will need to have R and RStudio installed (tested with R 4.1.1 and RStudio 1.4.1717).  
 Please check CRAN (<a href="https://cran.r-project.org/" target="_blank">https://cran.r-project.org/</a>) for the installation of R.  
 Please check <a href="https://www.rstudio.com/" target="_blank">https://www.rstudio.com/</a> for the installation of RStudio.  
 
-**Step 2: Install the R Shiny package and other packages required by shinyCircos**
+**Step 2: Install the R Shiny package and other packages**
 
 Start an R session using RStudio and run these lines:  
 ```
