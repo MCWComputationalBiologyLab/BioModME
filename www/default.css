@@ -1,0 +1,112 @@
+/*Active color in main
+[class*='sidebar-light-'] .nav-sidebar>.nav-item>.nav-link.active{color: #007bff;}
+[class*='sidebar-light'] .nav-legacy.nav-sidebar>.nav-item>.nav-link.active{color: #007bff;}
+
+
+[class*='sidebar-light-'] .user-panel .status{background:rgba(0,0,0,0.1);color:#4e5c68}[
+[class*='sidebar-light-'] .nav-sidebar>.nav-item>.nav-link:focus{color:#4e5c68}
+
+[class*="sidebar-light-"] .nav-sidebar > .nav-item.menu-open > .nav-link, [class*="sidebar-light-"] .nav-sidebar > .nav-item:hover > .nav-link {background-color: grey;}
+*/
+
+/* Main side bar______________________________________________________________________________ */
+.main-sidebar {color: black;
+               background-color: #ffffff;}
+
+[class*="sidebar-light-"] .sidebar a {color: black;}
+
+/*top active nav link*/
+/* This controls the top level of the nav sidebar */
+
+
+.sidebar-light-primary .nav-sidebar > .nav-item > .nav-link:hover {background-color: #e5e5e5;
+                                                                  color: black;} 
+
+
+.sidebar-light-primary .nav-sidebar > .nav-item > .nav-link.active {background-color: #007bff;
+                                                                    color: #FFFFFF;
+                                                                    border-left: 5px solid #007bff;} 
+
+
+/* second level of sidebar */
+[class*="sidebar-light-"] .nav-treeview > .nav-item > .nav-link.active, [class*="sidebar-light-"] 
+.nav-treeview > .nav-item > .nav-link.active:hover {background-color: #e5e5e5;
+                                                    color: #007bff;}
+/* Color of submenu item that is selected*/
+[class*="sidebar-light-"] .nav-treeview > .nav-item > .nav-link.active, [class*="sidebar-light-"] .nav-treeview > .nav-item > .nav-link.active:hover {color:  black}
+
+/* Top Nav Bar ______________________________________________________________________________ */               
+.main-header {background-color:white;}
+
+/* Logo Image */ 
+.brand-link .brand-image {background-color:white;}
+
+/* Title box in top left corner */ 
+.brand-link {background-color: white;}
+
+/*Title text*/
+.brand-text {color: black; 
+             }
+
+/* Boxes_____________________________________________________________________________________ */
+.card card-primary {background: white;}
+.card-header {background: white;
+              color: black;}
+
+.card-body {background:white}
+
+
+/* Buttons__________________________________________________________________________________ */
+.btn {background-color:#f8f9fa;
+      color: black;
+}
+
+.btn-dropdownbutton {background-color: #f8f9fa !important;
+                     color: #a0adab;
+                     /*border-width:0px !important;*/}
+
+.btn-group {
+      border-color: white;
+}
+
+
+.btn.radiobtn.btn-default.active {background-color: #e5e5e5;}
+
+
+/* PickerInputs ___________________________________________________________________________ */
+.btn.dropdown-toggle.btn-light {background-color:  #FFFFFF;
+                                border-color: #ced4da;
+                                color: black;}
+
+.filter-option {background-color: white;}
+
+/* Tabbox _________________________________________________________________________________ */
+/*tab box tabs*/
+.nav-pills .nav-link {color: #6c757e;}
+
+/*Selected tabs of tab box*/
+.nav-pills .nav-link.active, .nav-pills .show > .nav-link {background-color: #007bff;
+                                                           color:  white}
+/*Hovered tabs of tab box  THIS TAKES PRECEDENT AND COLORS BACKGROUND OF HIGHLIGHTED TAB REGARDLESS OF HOVER*/
+.nav-pills .nav-link.active, .nav-pills .show > .nav-link:hover{color: white;}
+
+
+/* background of applicaiton */
+.content-wrapper {background-color: #f4f6f9;}
+
+/* Dropdowns for plotting _________________________________________________________________________________ */
+#lineplot_dropdown_1 {border:0px solid black;}
+
+#lineplot_dropdown_2 {border:0px solid black;}
+
+#lineplot_dropdown_3 {border:0px solid black;}
+
+#lineplot_dropdown_4 {border:0px solid black;}
+
+
+#myVariables_DT tr {background-color: #fff0;
+                    border: 0px solid black;}
+
+#myVariables_DT th {background-color:#fff0;
+                    color: black;
+                    border: 0px solid black;}

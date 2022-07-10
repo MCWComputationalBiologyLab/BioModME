@@ -1,0 +1,42 @@
+/* Main side bar */
+.main-sidebar { font-size: 18px;
+                color: white;
+                font-weight: bold;
+                width:250px;
+                background-color: #cccccc;}
+/* Top nav bar */                
+.main-header {background-color:#cccccc;}
+/* Logo Image */ 
+.brand-image {background-color:white;}
+
+/* Boxes */
+.card card-primary {background: #CCCCCC}
+.card-header {background: #CCCCCC}
+.card-body {background:#FFFFFF}
+
+/* Button CSS */
+.btn {background-color:#CCCCCC;
+      color:#000000;
+      border-color:black;
+      border-style:solid;
+      border-width:1px;;
+      font-size:18px;}
+
+/* DT table */
+table.dataTable {background-color:#CCCCCC;}
+
+/* Picker Inputs */
+.btn.dropdown-toggle.btn-light {background-color:  #FFFFFF;
+                                border-width: 2px;
+                                border-color: grey;}
+
+.filter-option {background-color: white;}
+
+/*Selected tabs of tab box*/
+.nav-pills .nav-link.active, .nav-pills .show > .nav-link {background-color: #B7B7B7;
+                                                           color:  black}
+
+.nav-pills .nav-link.active, .nav-pills .show > .nav-link:hover{color:  black}
+/*top active nav link*/
+.sidebar-light-primary .nav-sidebar > .nav-item > .nav-link.active {background-color: #B7B7B7;} 
+

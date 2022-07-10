@@ -1,0 +1,47 @@
+/* Main side bar */
+.main-sidebar { font-size: 18px;
+                color: white;
+                font-weight: bold;
+                width:250px;
+                background-color: #f8f8f8;}
+/* Top nav bar */                
+.main-header {background-color:#f8f8f8;}
+/* Logo Image */ 
+.brand-image {background-color:white;}
+
+/* Boxes */
+.card card-primary {background: #f8f8f8}
+.card-header {background: #f8f8f8}
+.card-body {background:white}
+
+/* Button CSS */
+.btn {background-color:#337ab7;
+      color:#000000;
+      border-color:black;
+      border-style:solid;
+      border-width:1px;;
+      font-size:18px;}
+
+/* DT table */
+table.dataTable {background-color:#f8f8f8;}
+
+/* Picker Inputs */
+.btn.dropdown-toggle.btn-light {background-color:  #FFFFFF;
+                                border-width: 2px;
+                                border-color: grey;}
+
+.filter-option {background-color: white;}
+
+/*Selected tabs of tab box*/
+.nav-pills .nav-link.active, .nav-pills .show > .nav-link {background-color: #f8f8f8;
+                                                           color:  black}
+
+.nav-pills .nav-link.active, .nav-pills .show > .nav-link:hover{color:  black}
+/*top active nav link*/
+.sidebar-light-primary .nav-sidebar > .nav-item > .nav-link.active {background-color: #f8f8f8;} 
+
+/* background of applicaiton */
+.content-wrapper {background-color: white;}
+
+/* Removes outline from small buttons on box pabels */
+.btn.btn-tool.btn-sm {border-style: none;}
