@@ -15,10 +15,10 @@ Please check <a href="https://www.rstudio.com/" target="_blank">https://www.rstu
 
 Start an R session using RStudio and run these lines:  
 ```
-load.lib<-c("shinydashboard", "shinydashboardPlus", "shiny","ggplot2","gridExtra","shinythemes",
+lload.lib<-c("shinydashboard", "bs4Dash", "shiny","ggplot2","gridExtra","shinythemes",
             "shinyWidgets","shinyjs","DT","tidyverse","dplyr","rhandsontable","data.table","ggpmisc",
-            "plotly","colourpicker","shinyBS","shinyjqui", "bsplus", "deSolve", "shinyFiles", "ggplot2"
-            ,"gridExtra", "shinythemes", "huxtable", "Deriv")
+            "colourpicker","shinyBS","shinyjqui", "bsplus", "plotly", "deSolve", "waiter", "ggpubr",
+            "viridis", "Deriv", "shinycssloaders")
         
 install.lib <- load.lib[!load.lib %in% installed.packages()]
 for (lib in install.lib) install.packages(lib, dependencies = TRUE)
