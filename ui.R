@@ -188,7 +188,8 @@ ui <- dashboardPage(
                                )
                     ) #end dashboardBody
 
-                    ,controlbar = dashboardControlbar(fileInput("load_model"
+                    ,controlbar = dashboardControlbar("version 1.0",
+                                                      fileInput("load_model"
                                                                 ,"Load Model"
                                                                 ,placeholder = "Choose .rds File"
                                                                 ,multiple = FALSE
