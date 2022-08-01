@@ -9,14 +9,14 @@
 TAB_Equation_Create <- 
   tabItem(
     tabName = "TAB_Equation_Create",
-    box(
-      id = "create_eqn_info_box",
-      title = "Info",
-      collapsible = TRUE,
-      width = 12,
-      h3("How To Use")
-      
-    ),
+    # box(
+    #   id = "create_eqn_info_box",
+    #   title = "Info",
+    #   collapsible = TRUE,
+    #   width = 12,
+    #   h3("How To Use")
+    #   
+    # ),
     fluidRow(
       column(
         width = 3,
@@ -169,17 +169,39 @@ TAB_Equation_Create <-
           ),
           conditionalPanel(
             condition = "input.eqn_action == 'Edit'",
-            pickerInput(
-              inputId = "eqnCreate_edit_select_equation",
-              label = "Select Equation Number to Edit",
-              choices = ""
+            prettyRadioButtons(
+              inputId = "eqnCreate_edit_reg_or_custom",
+              label = "Select Type",
+              choices = c("Equations", "Custom"),
+              inline = TRUE
+            ),
+            hr(),
+            conditionalPanel(
+              condition = "input.eqnCreate_edit_reg_or_custom == 'Equations'",
+              pickerInput(
+                inputId = "eqnCreate_edit_select_equation",
+                label = "Select Equation Number to Edit",
+                choices = ""
+              )
+            ),
+            conditionalPanel(
+              condition = "input.eqnCreate_edit_reg_or_custom == 'Custom'",
+              pickerInput(
+                inputId = "eqnCreate_edit_select_equation_custom",
+                label = "Select Custom Equation to Edit",
+                choices = ""
+              )
             ),
             hr(),
             uiOutput("eqnCreate_renderingUIcomponents")
           ),
           conditionalPanel(
             condition = "input.eqn_action == 'Delete'",
-            
+            prettyRadioButtons(
+              inputId = "eqnCreate_delete_eqn_type",
+              label = "Type",
+              choices = c("Equation", "Custom")
+            )
           )
         )
       ),
@@ -317,43 +339,71 @@ TAB_Equation_Create <-
               fluidRow(
                 column(
                   width = 6,
-                  selectInput(
-                    inputId = "eqnCreate_delete_equation",
-                    label = "Select Equation Number to delete",
-                    choices = ""
+                  conditionalPanel(
+                    condition = "input.eqnCreate_delete_eqn_type == 'Equation'",
+                    pickerInput(
+                      inputId = "eqnCreate_delete_equation",
+                      label = "Select Equation Number to Delete",
+                      choices = ""
+                    )
+                  ),
+                  conditionalPanel(
+                    condition = "input.eqnCreate_delete_eqn_type == 'Custom'",
+                    pickerInput(
+                      inputId = "eqnCreate_delete_equation_custom",
+                      label = "Select Custom Equation Number to Delete",
+                      choices = ""
+                    )
                   )
                 ),
                 column(
                   width = 2,
+                  conditionalPanel(
+                    condition = "input.eqnCreate_delete_eqn_type == 'Equation'",
                   div
                   (style = "display: inline-block;
                             vertical-align:top;
-                            padding-top:25px;
+                            padding-top:28px;
                             padding-left:-35px",
                     actionButton(
                       inputId = "createEqn_delete_equation_button",
-                      label = "Delete"))
+                      label = "Delete")
+                    )
+                  ), 
+                  conditionalPanel(
+                    condition = "input.eqnCreate_delete_eqn_type == 'Custom'",
+                    div
+                    (style = "display: inline-block;
+                            vertical-align:top;
+                            padding-top:28px;
+                            padding-left:-35px",
+                      actionButton(
+                        inputId = "createEqn_delete_custom_equation_button",
+                        label = "Delete")
+                    )
+                  )
                 )
               )
             )
           ),
           tabPanel(
             "Info",
-            conditionalPanel(
-              condition = "input.eqnCreate_type_of_equation == 'chem_rxn'",
-              conditionalPanel(
-                condition = "input.eqn_chem_law == 'MA'",
-                uiOutput("mathjax_MA")
-              ),
-              conditionalPanel(
-                condition = "input.eqn_chem_law == 'MAwR'",
-                uiOutput("mathjax_MA_with_regulators")
-              ),
-            ),
-            conditionalPanel(
-              condition = "input.eqnCreate_type_of_equation =='enzyme_rxn'",
-              uiOutput("enzyme_MM")
-              )
+            # conditionalPanel(
+            #   condition = "input.eqnCreate_type_of_equation == 'chem_rxn'",
+            #   conditionalPanel(
+            #     condition = "input.eqn_chem_law == 'MA'",
+            #     uiOutput("mathjax_MA")
+            #   ),
+            #   conditionalPanel(
+            #     condition = "input.eqn_chem_law == 'MAwR'",
+            #     uiOutput("mathjax_MA_with_regulators")
+            #   ),
+            # ),
+            # conditionalPanel(
+            #   condition = "input.eqnCreate_type_of_equation =='enzyme_rxn'",
+            #   uiOutput("enzyme_MM")
+            #   )
+            "Coming Soon..."
           )
         )
       )
@@ -368,11 +418,12 @@ TAB_Equation_Create <-
     column(
       width = 12,
       tabBox(
+        id = "eqns_tabbox",
         width = 12,
         tabPanel("Equations",
                  htmlOutput(outputId = "eqnCreate_showEquations")),
         tabPanel(
-          "Additional Equations",
+          "Custom",
           htmlOutput(outputId = "eqnCreate_showAdditionalEquations")
         ),
         tabPanel(

@@ -1,0 +1,122 @@
+/* Main side bar______________________________________________________________________________ */
+.main-sidebar { font-size: 18px;
+                /*font-weight: bold;*/
+                width:250px;
+            }
+
+/*top active nav link*/
+/* This controls the top level of the nav sidebar */
+.sidebar-light-primary .nav-sidebar > .nav-item > .nav-link.active {font-size: 1.15rem;
+                                                                    border-left: 5px solid #3c8dbc;
+                                                                } 
+            
+/* Logo Image */ 
+.brand-link .brand-image {background-color:white;
+              max-height: 40px;}
+/* Title word in top left corner */ 
+.brand-link {line-height: 1.25;}
+.brand-text {font-weight: bold !important; 
+             font-size: 1.5rem;
+             padding-left: 15px;}
+
+/* Boxes_____________________________________________________________________________________ */
+.card card-primary {min-height: 300px}
+.card-title {font-weight: bold;
+             font-size: 1.15rem;}
+
+
+/* Tabbox _________________________________________________________________________________ */
+/*Selected tabs of tab box*/
+.nav-pills {font-size: 1.15rem;
+            font-weight: bold;}
+
+
+/* Removes outline from small buttons on box pabels */
+.btn.btn-tool.btn-sm {border-style: none}
+
+
+#sw-content-customize_dropdown_button {min-width: 50rem;
+                                          min-height: 25rem;}
+
+/*Change size and position of arrow on DROPDOWN to match dropdownbutton*/
+#customize_dropdown_button > .glyphicon-triangle-bottom {font-size: 9px;
+                                                         top: -2px;
+                                                         left: 3px;}
+
+#lineplot_dropdown_1 > .glyphicon-triangle-bottom {font-size: 9px;
+                                                         top: -2px;
+                                                         left: 3px;}                                                      
+#lineplot_dropdown_2 > .glyphicon-triangle-bottom {font-size: 9px;
+                                                         top: -2px;
+                                                         left: 3px;}
+#lineplot_dropdown_3 > .glyphicon-triangle-bottom {font-size: 9px;
+                                                         top: -2px;
+                                                         left: 3px;}
+#lineplot_dropdown_4 > .glyphicon-triangle-bottom {font-size: 9px;
+                                                         top: -2px;
+                                                         left: 3px;}
+
+
+/*These three tags make it so the fancy buttons on the homepage are highlighted on hover*/
+#HOME_build_model:hover{
+        filter: brightness(50%);
+}
+
+#HOME_to_load_database:hover{
+        filter: brightness(50%);
+}
+
+#Home_to_load_datatable:hover{
+        filter: brightness(50%);
+}
+
+#tabbox_build_equations {
+  overflow: visible;
+}
+
+.btn.dropdown-toggle.btn-light {
+  height:38px;
+}
+
+#diffeq_box {
+  min-height: 300px;
+}
+
+#myVariables_DT tr {background-color: #fff0;
+                    border: 0px solid black;}
+
+#myVariables_DT th {font-weight:bold;
+                    background-color:#fff0;
+                    color: black;
+                    border: 0px solid black;}
+
+#sw-content-plot_option_dropdown {min-width: 50rem;
+                                 min-height: 25rem;}
+
+
+#lineplot_dropdown_1 {display:block; 
+                      width:100%; 
+                      border:0px solid black;}
+
+#lineplot_dropdown_2 {display:block; 
+                      width:100%; 
+                      border:0px solid black;}
+
+#lineplot_dropdown_3 {display:block; 
+                      width:100%; 
+                      border:0px solid black;}
+
+#lineplot_dropdown_4 {display:block; 
+                      width:100%; 
+                      border:0px solid black;}
+
+#eqnCreate_showEquationBuilding {font-size: 1.5em;}
+
+#build_equation_edit {font-size: 1.5em;}
+ 
+ /*                                }
+ #eqnCreate_showEquationBuilding > div.MathJax_Display {text-align: left !important;
+                                                        padding-left: 50px;}  */
+
+
+.glyphicon-arrow-right {font-size:  0.8em;}                             

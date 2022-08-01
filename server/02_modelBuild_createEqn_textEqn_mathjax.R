@@ -333,8 +333,8 @@ equationBuilder_MathJax <- reactive({
   # }
   else if (input$eqnCreate_type_of_equation == "rate_eqn")
   {
-    rate_left <- input$eqnCreate_rate_firstvar
-    rate_right <- input$eqnCreate_rate_equation
+    rate_left <- input$eqnCreate_custom_eqn_lhs
+    rate_right <- input$eqnCreate_custom_eqn_rhs
     textOut <- paste0(rate_left, " = ", rate_right)
   }
   else if (input$eqnCreate_type_of_equation == "time_dependent")
