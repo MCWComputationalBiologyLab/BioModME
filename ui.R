@@ -59,50 +59,7 @@ source("./ui/21_export_ui.R")
 
 source("./ui/31_documentationUI.R")
 source("./ui/41_SummaryUI.R")
-
-mytheme <- create_theme(
-  bs4dash_vars(
-    navbar_light_color = "#37a7e7",
-    navbar_light_active_color = "#178acc",
-    navbar_light_hover_color = "#178acc"
-  ),
-  # bs4dash_yiq(
-  #   contrasted_threshold = 10,
-  #   text_dark = "#FFF",
-  #   text_light = "#272c30"
-  # ),
-  bs4dash_layout(
-    main_bg = "#ecf0f5"
-  ),
-  bs4dash_sidebar_light(
-    bg = "#222d32",  #background color
-    color = "grey",  #text color
-    hover_color = "white",
-    submenu_bg = "#272c30",
-    submenu_color = "grey",
-    submenu_hover_color = "white"
-  ),
-  bs4dash_status(
-    primary = "#37a7e7", danger = "#BF616A", light = "#272c30"
-  ),
-  bs4dash_color(
-    gray_900 = "#FFF", white = "white"
-  )
-)
-
-js1 <- paste0(c(
-  "Selectize.prototype.selectall = function(){",
-  "  var self = this;",
-  "  self.setValue(Object.keys(self.options));",
-  "}"), 
-  collapse = "\n")
-
-js2 <- paste0(c(
-  "var selectinput = document.getElementById('lineplot_yvar');",
-  "selectinput.selectize.setValue(-1, false);",
-  "selectinput.selectize.selectall();",
-  "$('#select + .selectize-control .item').removeClass('active');"),
-  collapse = "\n")
+source("./ui/contributionsUI.R")
 
 loading_screen <- tagList(
   spin_pong(), 
@@ -132,47 +89,42 @@ ui <- dashboardPage(
                   ,menuItem("Execute Model", tabName = "TAB_RUN_EXECUTE", icon = icon("laptop-code"))
                   ,menuItem("Visualization", tabName = "TAB_RUN_LINEPLOT", icon = icon("images"))
                             #,menuSubItem("Plot Model", tabName = "TAB_RUN_LINEPLOT"))
-                   ,menuItem("Export", tabName = "TAB_export", icon = icon("file-export"))
+                  ,menuItem("Export", tabName = "TAB_export", icon = icon("file-export"))
                   ,menuItem("Summary", tabName = "TAB_SUMMARY", icon = icon("list-alt"))
-                   ,menuItem("Documentation", tabName = "TAB_DOCUMENTATION", icon = icon("book"))
-
-
+                  ,menuItem("Documentation", tabName = "TAB_DOCUMENTATION", icon = icon("book"))
+                  ,menuItem("Contributions", tabName = "TAB_Contributions")
+                  ,absolutePanel("Version 1.0.0", bottom = 0, left = 5, fixed = TRUE)
                       )#end SideBarMenu
                     ), #end dashboardSidebar
                     body = dashboardBody(
-                      #use_theme(mytheme),
                       autoWaiter("eqnCreate_equationBuilder_chem",
                                  color = "white",
                                  html = spin_refresh()
                                  ),
-                      #tags$style(js),
-                      tags$link(rel = "stylesheet", type = "text/css", href = "nonColorStyling.css"),
-                      #tags$link(rel = "stylesheet", type = "text/css", href = "royalBlue.css"),
-                      tags$head(tags$script(js1)),
-                      tags$head(tags$script(js2)),
-                      tags$head(tags$style("
-                       .jhr{
-                       display: inline;
-                       vertical-align: middle;
-                       padding-left: 10px;
-                       }")),
-                      tags$head(tags$style("
-                       .main-sidebar { font-size: 20px;}")),
-                      tags$head(tags$style("
-                       .brand-text {font-weight: bold !important; 
-                                    font-size: 1.5rem;
-                                    padding-left: 15px;};")),
-                      tags$head(tags$style("
-                       .brand-link {line-height: 1.25};")),
-
-                      #activates shiny javascript so that I can play with vanishing and appearing div files
+                      #apply css
+                      tags$link(rel = "stylesheet", type = "text/css", href = "css/nonColorStyling.css"),
+                      # tags$head(tags$style("
+                      #  .jhr{
+                      #  display: inline;
+                      #  vertical-align: middle;
+                      #  padding-left: 10px;
+                      # #  }")),
+                      
+                      # Apply outside functionalities
                        useShinyjs()
                       ,withMathJax()
                       ,useWaiter()
-                      ,tags$script(src = "popup.js")
-                      ,tags$script(src = "press_enter.js")
+                      
+                      # Apply js functionalites from scripts
+                      ,tags$script(src = "js/popup.js")
+                      ,tags$script(src = "js/press_enter.js")
+                      ,tags$script(src = "js/select_all.js")
+                      ,tags$script(src = "js/remove_all.js")
+                      
+                      # Functionality for changing page themes
                       ,uiOutput("css_themes")
                       
+                      # Apply tabs
                       ,tabItems(Tab_home
                                ,TAB_VAR_CREATE
                                ,TAB_Equation_Create
@@ -185,11 +137,12 @@ ui <- dashboardPage(
                                ,TAB_RUN_LINEPLOT
                                ,TAB_SUMMARY
                                ,TAB_DOCUMENTATION
+                               ,TAB_Contributions
                                )
                     ) #end dashboardBody
 
-                    ,controlbar = dashboardControlbar("version 1.0",
-                                                      fileInput("load_model"
+                    # Sidebar of main page
+                    ,controlbar = dashboardControlbar(fileInput("load_model"
                                                                 ,"Load Model"
                                                                 ,placeholder = "Choose .rds File"
                                                                 ,multiple = FALSE
@@ -243,15 +196,18 @@ ui <- dashboardPage(
                                                                       ,style = "color: #fff; background-color: red; border-color: #2e6da4")
                                                         ,pickerInput(inputId = "css_selector",
                                                                      label = "Select Skin",
-                                                                     choices = c("default",
-                                                                                 "royalBlue")
-                                                                     ,select = "default"
+                                                                     choices = c("Default",
+                                                                                 "Night",
+                                                                                 "RoyalBlue"
+                                                                                 )
+                                                                     ,select = "Default"
                                                         )
                                                         ,div(skinSelector())
                                                       ),
                                                       "$$\\require{mhchem}$$",
                                                       )
                     #,footer = NULL
-                    #,dark = NULL
+                    # Needed to remove light/dark switch
+                    ,dark = NULL
 ) #end dashboardPage
 

@@ -1153,6 +1153,7 @@ observeEvent(input$eqnCreate_addEqnToVector, {
   updateNumericInput(session, "eqnCreate_num_of_eqn_RHS", value = 1)
   
   updatePickerInput(session,'eqnCreate_edit_select_equation',choices = seq(length(eqns$main)))
+  updatePickerInput(session,'eqnCreate_edit_select_equation_custom',choices = seq(length(eqns$additional.eqns)))
   updateCheckboxInput(session,"eqn_options_chem_modifier_forward",value = FALSE)
   updateNumericInput(session, "eqn_options_chem_num_forward_regulators", value = 1)
   updateCheckboxInput(session,"eqn_options_chem_modifier_reverse",value = FALSE)
@@ -1259,11 +1260,71 @@ observeEvent(input$createEqn_removeFirstRate, {
 
 #-------------------------------------------------------------------------------
 observeEvent(eqns$main, {
-  updateSelectInput(session
+  # Activates and deactivates button depending how many equations there are
+  # Updates pickerInput with number of equations
+  if (eqns$n.eqns > 0) {
+    out <- seq(eqns$n.eqns)
+    shinyjs::enable("createEqn_delete_equation_button")
+  } else {
+    out <- NULL
+    shinyjs::disable("createEqn_delete_equation_button")
+  }
+
+  updatePickerInput(session
                     ,"eqnCreate_delete_equation"
-                    ,choices = as.character(seq(eqns$n.eqns)))
+                    ,choices = out )#as.character(seq(eqns$n.eqns)))
 })
 
+observeEvent(eqns$additional.eqns, {
+  # Activates and deactivates button depending how many custom equations there are
+  # Updates pickerInput with number of custom equations
+
+  if (length(eqns$additional.eqns) > 0) {
+    out <- seq(length(eqns$additional.eqns))
+    shinyjs::enable("createEqn_delete_custom_equation_button")
+    updatePickerInput(session
+                      ,"eqnCreate_delete_equation_custom"
+                      ,choices = out
+    )
+  } else {
+    shinyjs::disable("createEqn_delete_custom_equation_button")
+    updatePickerInput(session
+                      ,"eqnCreate_delete_equation_custom"
+                      ,choices = "No Custom Equations Built"
+    )
+  }
+  
+  # updatePickerInput(session
+  #                   ,"eqnCreate_delete_equation_custom"
+  #                   ,choices = out
+  #                   )
+})
+
+observeEvent(input$eqnCreate_delete_eqn_type, {
+  # When radio button options change to delete eqns or custom change viewing tab
+  
+  out <- "Equations" #catch if more tabs are added to avoid error
+  if (input$eqnCreate_delete_eqn_type == "Equations") {
+    out <- "Equation"
+  } else if (input$eqnCreate_delete_eqn_type == "Custom") {
+    out <- "Custom"
+  }
+  updateTabsetPanel(session,
+                    "eqns_tabbox",
+                    selected = out)
+})
+
+observeEvent(input$createEqn_delete_custom_equation_button, {
+  # Delete custom equation from data was stated by user
+  jPrint("Deleting Custom Eqn")
+  jPrint(eqns$additional.eqns)
+  # Get eqn row
+  eqn_to_delete <- as.numeric(input$eqnCreate_delete_equation_custom)
+  jPrint(eqn_to_delete)
+  # Remove from custom equation vector
+  eqns$additional.eqns <- eqns$additional.eqns[-eqn_to_delete]
+  jPrint(eqn_to_delete)
+})
 
 observeEvent(input$createEqn_delete_equation_button, {
   # Delete associated parameters used in this equation if they aren't used elsewhere
@@ -1416,6 +1477,7 @@ observeEvent(input$view_eqns_debug, {
   jPrint(eqns$eqn.syn)
   jPrint(eqns$eqn.deg)
   jPrint(eqns$eqn.main.latex)
+  jPrint(eqns$additional.eqns)
 })
 
 observeEvent(input$refresh_text_eqns, {
