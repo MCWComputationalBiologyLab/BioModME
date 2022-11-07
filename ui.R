@@ -59,6 +59,7 @@ source("./ui/21_export_ui.R")
 
 source("./ui/31_documentationUI.R")
 source("./ui/41_SummaryUI.R")
+source("./ui/51_parameter_estimination_UI.R")
 
 mytheme <- create_theme(
   bs4dash_vars(
@@ -131,10 +132,12 @@ ui <- dashboardPage(
                           )
                   ,menuItem("Execute Model", tabName = "TAB_RUN_EXECUTE", icon = icon("laptop-code"))
                   ,menuItem("Visualization", tabName = "TAB_RUN_LINEPLOT", icon = icon("images"))
+                  ,menuItem("Modeler's Toolbox", tabName = "TAB_Toolbox",
+                            menuSubItem("Parameter Estimation", tabName = "Tab_Parameter_Estimation"))
                             #,menuSubItem("Plot Model", tabName = "TAB_RUN_LINEPLOT"))
-                   ,menuItem("Export", tabName = "TAB_export", icon = icon("file-export"))
+                  ,menuItem("Export", tabName = "TAB_export", icon = icon("file-export"))
                   ,menuItem("Summary", tabName = "TAB_SUMMARY", icon = icon("list-alt"))
-                   ,menuItem("Documentation", tabName = "TAB_DOCUMENTATION", icon = icon("book"))
+                  ,menuItem("Documentation", tabName = "TAB_DOCUMENTATION", icon = icon("book"))
 
 
                       )#end SideBarMenu
@@ -184,6 +187,7 @@ ui <- dashboardPage(
                                ,TAB_RUN_EXECUTE
                                ,TAB_RUN_LINEPLOT
                                ,TAB_SUMMARY
+                               ,Tab_Parameter_Estimation
                                ,TAB_DOCUMENTATION
                                )
                     ) #end dashboardBody
