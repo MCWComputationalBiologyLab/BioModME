@@ -491,9 +491,16 @@ fluidRow(
               width = 12,
               #DTOutput("compare_models_DT")
               rHandsontableOutput(outputId = "compare_models_DT")
+              
             )
           )
+        ),
+        box(
+          width = 12,
+          htmlOutput(outputId = "diffeq_display_diffEqs_compare_mode")
         )
+        # Differential Equation table
+        
       )
     )
    ),
