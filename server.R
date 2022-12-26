@@ -60,32 +60,34 @@ server <- shinyServer(function(input, output, session) {
   
   output$css_themes <- renderUI({
     tags$head(
-      if (input$css_selector == "default") {
-        tags$link(rel = 'stylesheet', type = 'text/css', href = 'default.css')
-      }  else if (input$css_selector == "royalBlue") {
-        tags$link(rel = "stylesheet", type = "text/css", href = "royalBlue.css")
+      if (input$css_selector == "Default") {
+        tags$link(rel = 'stylesheet', type = 'text/css', href = 'css/default.css')
+      }  else if (input$css_selector == "RoyalBlue") {
+        tags$link(rel = "stylesheet", type = "text/css", href = "css/royalBlue.css")
+      } else if (input$css_selector == "Night") {
+        tags$link(rel = "stylesheet", type = "text/css", href = "css/night.css")
       }
     )
   })
   
   # This changes the colors of the generated DT table UI
-  observeEvent(input$css_selector, {
-    if (input$css_selector == "default") {
-      table.header$bg <- "grey"
-      table.header$color <- "black"
-      #fresh::use_theme("ocean.css")
-    } else if (input$css_selector == "night") {
-      #fresh::use_theme("night.css")
-    } else if (input$css_selector == "test1") {
-      #fresh::use_theme("test1.css")
-    } else if (input$css_selector == "test2") {
-      # fresh::use_theme("test2.css")
-    } else if (input$css_selector == "ocean") {
-    } else if (input$css_selector == "royalBlue") {
-      table.header$bg <- "#3c8dbc"
-      table.header$color <- "white"
-    }
-  })
+  # observeEvent(input$css_selector, {
+  #   if (input$css_selector == "default") {
+  #     table.header$bg <- "grey"
+  #     table.header$color <- "black"
+  #     #fresh::use_theme("ocean.css")
+  #   } else if (input$css_selector == "night") {
+  #     #fresh::use_theme("night.css")
+  #   } else if (input$css_selector == "test1") {
+  #     #fresh::use_theme("test1.css")
+  #   } else if (input$css_selector == "test2") {
+  #     # fresh::use_theme("test2.css")
+  #   } else if (input$css_selector == "ocean") {
+  #   } else if (input$css_selector == "royalBlue") {
+  #     table.header$bg <- "#3c8dbc"
+  #     table.header$color <- "white"
+  #   }
+  # })
   
   # close info boxes
   #start with box removed on load

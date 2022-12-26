@@ -229,6 +229,11 @@ observeEvent(input$modal_create_param_button, {
     params$param.table[nrow(params$param.table)+1,] <- row.to.add
     updatePickerInput(session, "parameters_filter_type", selected = "Eqns")
     updatePickerInput(session, "parameters_filter_type", selected = "All")
+    
+    params$vars.all <- c(params$vars.all, input$modal_param_param_name) 
+    params$vals.all <- c(params$vals.all, input$modal_param_value)
+    params$comments.all <- c(params$comments.all, input$modal_param_description)
+    
     toggleModal(session, "modal_create_parameter", toggle =  "close")
   } else {
     session$sendCustomMessage(type = 'testmessage',
