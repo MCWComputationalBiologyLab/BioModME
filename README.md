@@ -15,7 +15,7 @@ Please check <a href="https://www.rstudio.com/" target="_blank">https://www.rstu
 
 Start an R session using RStudio and run these lines:  
 ```
-lload.lib<-c("shinydashboard", "bs4Dash", "shiny","ggplot2","gridExtra","shinythemes",
+load.lib<-c("shinydashboard", "bs4Dash", "shiny","ggplot2","gridExtra","shinythemes",
             "shinyWidgets","shinyjs","DT","tidyverse","dplyr","rhandsontable","data.table","ggpmisc",
             "colourpicker","shinyBS","shinyjqui", "bsplus", "plotly", "deSolve", "waiter", "ggpubr",
             "viridis", "Deriv", "shinycssloaders")
