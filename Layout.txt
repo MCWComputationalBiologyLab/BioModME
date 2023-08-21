@@ -1,0 +1,12 @@
+The app currently contains two main functions: ui.R & server.R.  These hold sources and load in all individual files.
+
+folder: server - contains all individual server files that make up the whole of the app
+folder: ui - contains all individual ui files that make up the whole app
+folder: docs - contains sphinx type loadout for documentation with nested rst files. 
+folder: functions - contains custom functions (one by script) (became too cumbersome to keep them all in a helper script)
+folder: ui_functions - contains custom ui functions, such as hrTitle a function generating taglists for ui generation
+folder: base_models - contains all models that will load into "repository" of application
+folder: shared_files - files for tutorials that can be downloaded from github (have no effect on application0
+folder: www - contains relevant images, js, and css files.
+folder: test_scripts - contains scripts I use for testing and have been too scared to delete. 
+folder: utils - contains functions that are used in program but need to be loaded in session as they use program elements.

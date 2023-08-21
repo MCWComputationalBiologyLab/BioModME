@@ -11,6 +11,12 @@
 #             "colourpicker","shinyBS","shinyjqui", "bsplus", "plotly", "deSolve", "waiter", "ggpubr",
 #             "viridis", "Deriv", "shinycssloaders")
 # 
+# load.lib <- c("shinydashboard", "bs4Dash", "shiny", "ggplot2", "gridExtra","shinythemes",
+#               "shinyWidgets", "shinyjs", "DT", "tidyverse", "dplyr", "rhandsontable", "data.table",
+#               "ggpmisc", "colourpicker", "shinyBS", "shinyjqui", "bsplus", "deSolve", "plotly",
+#               "Deriv", "viridis", "ggpubr", "shinycssloaders", "waiter", "fresh", "readxl",
+#               "minpack.lm", "measurements", "qdapRegex")
+
 # 
 # install.lib<-load.lib[!load.lib %in% installed.packages()]
 # for(lib in install.lib) install.packages(lib,dependencies=TRUE)
@@ -42,69 +48,53 @@ library(ggpubr)
 library(shinycssloaders)
 library(waiter)
 library(fresh)
+# newly added since merge
+library(readxl)
+library(minpack.lm)
+library(measurements)
+library(qdapRegex)
+library(XML)
+library(xml2)
+library(katex)
+library(reshape2)
+library(clipr)
+library(jsonlite)
+# library(htmltools)
+# library(htmlwidgets)
 
-#load files with UI outputs
-source("./ui/00_homeUI.R")
-source("./ui/01_model_varCreate_ui.R")
-source("./ui/02_model_equationCreate_ui.R")
-source("./ui/03_input_outputsUI.R")
-source("./ui/04_model_parameters_ui.R")
-source("./ui/05_model_ICs_ui.R")
-source("./ui/06_model_diffEqs_ui.R")
-source("./ui/11_run_executeUI.R")
-source("./ui/12_run_post_processing.R")
-source("./ui/13_run_lineplotUI.R")
 
-source("./ui/21_export_ui.R")
+fxn.sources <- file.path("ui_functions", list.files("ui_functions"))
+sapply(fxn.sources, source)
 
-source("./ui/31_documentationUI.R")
-source("./ui/41_SummaryUI.R")
-#source("./ui/51_parameter_estimination_UI.R")
-source("./ui/contributionsUI.R")
+# Source in UI tabs
+source(file.path("ui", "00_home_ui.R"))
+source(file.path("ui", "01_create_model_ui.R"))
+source(file.path("ui", "11_run_execute_ui.R"))
+source(file.path("ui", "12_run_post_processing_ui.R"))
+source(file.path("ui", "13_run_lineplot_ui.R"))
+source(file.path("ui", "21_export_ui.R"))
+# source(file.path("ui", "31_documentation_ui.R"))
+source(file.path("ui", "41_summary_ui.R"))
+# source(file.path("ui", "contributions_ui.R"))
+source(file.path("ui", "51_parameter_estimation_ui.R"))
+source(file.path("ui", "51_create_custom_law_ui.R"))
+source(file.path("ui", "51_create_custom_eqn_ui.R"))
+source(file.path("ui", "61_global_options_ui.R"))
+source(file.path("ui", "repository_ui.R"))
+source(file.path("ui", "debug_ui.R"))
+# source(file.path("server", "tableLayout.R"))
 
-mytheme <- create_theme(
-  bs4dash_vars(
-    navbar_light_color = "#37a7e7",
-    navbar_light_active_color = "#178acc",
-    navbar_light_hover_color = "#178acc"
-  ),
-  # bs4dash_yiq(
-  #   contrasted_threshold = 10,
-  #   text_dark = "#FFF",
-  #   text_light = "#272c30"
-  # ),
-  bs4dash_layout(
-    main_bg = "#ecf0f5"
-  ),
-  bs4dash_sidebar_light(
-    bg = "#222d32",  #background color
-    color = "grey",  #text color
-    hover_color = "white",
-    submenu_bg = "#272c30",
-    submenu_color = "grey",
-    submenu_hover_color = "white"
-  ),
-  bs4dash_status(
-    primary = "#37a7e7", danger = "#BF616A", light = "#272c30"
-  ),
-  bs4dash_color(
-    gray_900 = "#FFF", white = "white"
-  )
-)
 
-js1 <- paste0(c(
-  "Selectize.prototype.selectall = function(){",
-  "  var self = this;",
-  "  self.setValue(Object.keys(self.options));",
-  "}"), 
-  collapse = "\n")
-
-js2 <- paste0(c(
-  "var selectinput = document.getElementById('lineplot_yvar');",
-  "selectinput.selectize.setValue(-1, false);",
-  "selectinput.selectize.selectall();",
-  "$('#select + .selectize-control .item').removeClass('active');"),
-  collapse = "\n")
+jsColChanger <- '
+shinyjs.backgroundCol = function(params) {
+var defaultParams = {
+id : null,
+col : "red"
+};
+params = shinyjs.getParams(params, defaultParams);
+var el = $("#" + params.id);
+el.css("background-color", params.col);
+}'
 
 loading_screen <- tagList(
   spin_pong(), 
@@ -118,147 +108,189 @@ ui <- dashboardPage(
       #color = "primary",
       image = "icon.svg"
     )
-    
   ),
-  sidebar = dashboardSidebar(skin = "light",
-                             sidebarMenu(
-                               #menuItem("Home", tabName = "Tab_home", icon = icon("home")),
-                               menuItem("Create Model", tabName = "TAB_MODEL_BUILD", startExpanded = FALSE, icon = icon("tasks", lib = "glyphicon")
-                                        ,menuSubItem("Define Variables", tabName = "TAB_VAR_CREATE")
-                                        ,menuSubItem("Build Equations", tabName = "TAB_Equation_Create")
-                                        #,menuSubItem("Add Input/Output", tabName = "TAB_InOut")
-                                        ,menuSubItem("Parameter Values", tabName = "TAB_Parameters")
-                                        ,menuSubItem("Initial Conditions", tabName = "TAB_ICs")
-                                        ,menuSubItem("Differential Equations", tabName = "TAB_diffEqs")
-                               )
-                               ,menuItem("Execute Model", tabName = "TAB_RUN_EXECUTE", icon = icon("laptop-code"))
-                               ,menuItem("Visualization", tabName = "TAB_RUN_LINEPLOT", icon = icon("images"))
-                               #,menuItem("Modeler's Toolbox", tabName = "TAB_Toolbox",
-                                         #menuSubItem("Parameter Estimation", tabName = "Tab_Parameter_Estimation"))
-                               #,menuSubItem("Plot Model", tabName = "TAB_RUN_LINEPLOT"))
-                               ,menuItem("Export", tabName = "TAB_export", icon = icon("file-export"))
-                               ,menuItem("Summary", tabName = "TAB_SUMMARY", icon = icon("list-alt"))
-                               ,menuItem("Documentation", tabName = "TAB_DOCUMENTATION", icon = icon("book"))
-                               ,menuItem("Contributions", tabName = "TAB_Contributions")
-                               ,absolutePanel("Version 1.0.0", bottom = 0, left = 5, fixed = TRUE)
-                               
-                             )#end SideBarMenu
-  ), #end dashboardSidebar
-  body = dashboardBody(
-    #use_theme(mytheme),
-    autoWaiter("eqnCreate_equationBuilder_chem",
-               color = "white",
-               html = spin_refresh()
-    ),
-    #tags$style(js),
-    tags$link(rel = "stylesheet", type = "text/css", href = "nonColorStyling.css"),
-    #tags$link(rel = "stylesheet", type = "text/css", href = "royalBlue.css"),
-    tags$head(tags$script(js1)),
-    tags$head(tags$script(js2)),
-    tags$head(tags$style("
-                       .jhr{
-                       display: inline;
-                       vertical-align: middle;
-                       padding-left: 10px;
-                       }")),
-    tags$head(tags$style("
-                       .main-sidebar { font-size: 20px;}")),
-    tags$head(tags$style("
-                       .brand-text {font-weight: bold !important; 
-                                    font-size: 1.5rem;
-                                    padding-left: 15px;};")),
-    tags$head(tags$style("
-                       .brand-link {line-height: 1.25};")),
-    
-    #activates shiny javascript so that I can play with vanishing and appearing div files
-    useShinyjs()
-    ,withMathJax()
-    ,useWaiter()
-    ,tags$script(src = "popup.js")
-    ,tags$script(src = "press_enter.js")
-    ,uiOutput("css_themes")
-    
-    ,tabItems(Tab_home
-              ,TAB_VAR_CREATE
-              ,TAB_Equation_Create
-              ,TAB_InOut
-              ,TAB_ICs
-              ,TAB_Parameters
-              ,TAB_diffEqs
-              ,TAB_export
-              ,TAB_RUN_EXECUTE
-              ,TAB_RUN_LINEPLOT
-              ,TAB_SUMMARY
-              #,Tab_Parameter_Estimation
-              ,TAB_DOCUMENTATION
-              ,TAB_Contributions
-    )
-  ) #end dashboardBody
+  sidebar = 
+    dashboardSidebar(
+      skin = "light",
+      sidebarMenu(
+        id = "sidebar_tabs",
+        #menuItem("Home", tabName = "TAB_HOME", icon = icon("home")),
+        menuItem(
+          "Create Model",
+          tabName = "TAB_VAR_CREATE",
+          icon = icon("tasks", lib = "glyphicon")
+        ),
+        menuItem(
+          "Execute Model",
+          tabName = "TAB_RUN_EXECUTE",
+          icon = icon("laptop-code")
+        ),
+        menuItem(
+          "Visualization",
+          tabName = "TAB_RUN_LINEPLOT",
+          icon = icon("images")
+        ),
+        menuItem(
+          "Modeler's Toolbox",
+          tabName = "TAB_Toolbox",
+          icon = icon("toolbox"),
+          menuSubItem("Parameter Estimation",
+                      tabName = "TAB_PARAMETER_ESTIMATION"),
+          menuSubItem("Build Custom Law",
+                      tabName = "TAB_CREATE_CUSTOM_LAW"),
+          menuSubItem("Custom Equations",
+                      tabName = "TAB_CREATE_CUSTOM_EQN")
+        ),
+        menuItem("Export",
+                 tabName = "TAB_EXPORT",
+                 icon = icon("file-export")),
+        menuItem("Summary",
+                 tabName = "TAB_SUMMARY",
+                 icon = icon("list-alt")),
+        menuItem(
+          "Options",
+          tabName = "TAB_GLOBAL_OPTIONS",
+          icon = icon("tags", lib = "glyphicon")
+        ),
+        # menuItem("Documentation",
+        #          tabName = "TAB_DOCUMENTATION",
+        #          icon = icon("book")),
+        menuItem("Repository",
+                 tabName = "TAB_MODEL_REPOSITORY",
+                 icon = icon("book")),
+        menuItem(
+          "Debug",
+          tabName = "TAB_DEBUG",
+          icon = icon("erase", lib = "glyphicon")
+        ),
+        
+        # menuItem("Contributions",
+        #          tabName = "TAB_CONTRIBUTIONS"),
+        
+        absolutePanel(
+          "v1.0",
+          bottom = 0,
+          left = 5,
+          fixed = TRUE
+        )
+      )#end SideBarMenu
+     ), #end dashboardSidebar
   
-  ,controlbar = dashboardControlbar("version 1.0",
-                                    fileInput("load_model"
-                                              ,"Load Model"
-                                              ,placeholder = "Choose .rds File"
-                                              ,multiple = FALSE
-                                              ,accept = c(".rds")
-                                    ),
-                                    checkboxInput("show_debug_tools",
-                                                  "Show Debug",
-                                                  value = FALSE),
-                                    conditionalPanel(
-                                      condition = "input.show_debug_tools",
-                                      h4("Debugging Tools"),
-                                      actionButton(inputId = "refresh_text_eqns",
-                                                   label = "Refresh Equations"),
-                                      hr(),
-                                      numericInput(inputId = "sum_box_size",
-                                                   label = "Text Size (px)",
-                                                   value = 25,
-                                                   step = 1,
-                                                   min = 1),
-                                      hr(),
-                                      numericInput(inputId = "sum_table_font_size",
-                                                   label = "Table Font (%)",
-                                                   value = 135,
-                                                   min = 5,
-                                                   max = 200,
-                                                   step = 5),
-                                      hr(),
-                                      actionButton(inputId = "view_eqns_debug",
-                                                   label = "View eqns")
-                                      ,actionButton(inputId = "view_ids",
-                                                    label = "view ids",
-                                                    style = "color: #fff; background-color: green; border-color: #2e6da4")
-                                      ,actionButton(inputId = "param_view_parameters"
-                                                    ,label = "View Parameters"
-                                                    ,style = "color: #fff; background-color: green; border-color: #2e6da4")
-                                      ,hr()
-                                      ,actionButton(inputId = "param_remove_duplicate_parameters"
-                                                    ,label = "Delete Duplicate Parameters"
-                                                    ,style = "color: #fff; background-color: green; border-color: #2e6da4")
-                                      ,hr()
-                                      ,actionButton(inputId = "createEqn_refreshEquations"
-                                                    ,label = "Refesh"
-                                                    ,style = "color: #fff; background-color: green; border-color: #2e6da4")
-                                      ,hr()
-                                      ,actionButton(inputId = "createEqn_removeFirstRate"
-                                                    ,label = "Remove First Rate"
-                                                    ,style = "color: #fff; background-color: red; border-color: #2e6da4")
-                                      ,hr()
-                                      ,actionButton(inputId = "createEqn_removeEqnFromList"
-                                                    ,label = "Remove Last Added"
-                                                    ,style = "color: #fff; background-color: red; border-color: #2e6da4")
-                                      ,pickerInput(inputId = "css_selector",
-                                                   label = "Select Skin",
-                                                   choices = c("default",
-                                                               "royalBlue")
-                                                   ,select = "default"
-                                      )
-                                      ,div(skinSelector())
-                                    ),
-                                    "$$\\require{mhchem}$$",
-  )
+  body = dashboardBody(
+    autoWaiter(
+      "eqnCreate_equationBuilder_chem",
+      color = "white",
+      html = spin_refresh()
+    ),
+    # Apply outside functionalities
+    useShinyjs(),
+    extendShinyjs(text = jsColChanger, functions = c("backgroundCol")),
+    withMathJax(),
+    useWaiter(),
+    useHostess(),
+    useSweetAlert(),
+    #apply css
+    includeCSS(file.path("www", "css", "nonColorStyling.css")),
+    # tags$link(rel = "stylesheet",
+    #           type = "text/css",
+    #           href = "css/nonColorStyling.css"),
+    
+    # 'HTML-CSS': { linebreaks: { automatic: true } },
+    # SVG: { linebreaks: { automatic: true } },
+    
+    # Sets mathjax context menu to show up on modals
+    tags$div(HTML(
+      "<script type='text/x-mathjax-config'>
+        MathJax.Hub.Config({
+          TeX: {
+            Macros: {
+            set: ['\\left\\{#1\\right\\}',1],
+            }
+          },
+        MathMenu: {
+          styles: {
+            '#MathJax_About': {'z-index':1201},
+            '.MathJax_Menu': {'z-index':1201}
+          }
+        }
+        });
+
+        MathJax.Hub.Register.StartupHook('MathMenu Ready',function () {
+          MathJax.Menu.BGSTYLE['z-index'] = 1200;
+        });
+      </script>"
+    )),
+    
+    # Apply js functionalites from scripts
+    includeScript("www/js/popup.js"),
+    includeScript("www/js/select_all.js"),
+    includeScript("www/js/remove_all.js"),
+    includeScript("www/js/press_enter.js"),
+    includeScript(file.path("www", "js", "tablePopup.js")),
+    includeScript(file.path("www", "js", "plotPopup.js")),
+    includeScript(file.path("www", "js", "evalExpression.js")),
+    # Remove help switch icon from the top of the navbar (?) (added in newer
+    # versions of bs4dash I guess.)
+    tags$head(
+      tags$style(HTML("
+          .custom-control.custom-switch.mx-2.mt-2 {
+              display: none !important;
+          }
+      "))
+    ),
+    # Functionality for changing page themes
+    #uiOutput("css_themes"),
+    
+    # Apply tabs
+    tabItems(
+      TAB_HOME,
+      TAB_VAR_CREATE,
+      TAB_EXPORT,
+      TAB_RUN_EXECUTE,
+      TAB_RUN_LINEPLOT,
+      TAB_SUMMARY,
+      TAB_PARAMETER_ESTIMATION,
+      TAB_CREATE_CUSTOM_LAW,
+      TAB_CREATE_CUSTOM_EQN,
+      TAB_GLOBAL_OPTIONS,
+      # TAB_DOCUMENTATION,
+      # TAB_CONTRIBUTIONS,
+      TAB_MODEL_REPOSITORY,
+      TAB_DEBUG
+    )
+  ), #end dashboardBody
+  
+  # Sidebar of main page
+  controlbar = dashboardControlbar(
+    uiOutput("UIOutput_renderTab_options"),
+    fileInput(
+      "file_input_load_rds",
+      "Load From .rds",
+      placeholder = "Choose .rds File",
+      multiple = FALSE,
+      accept = c(".rds")
+    ),
+    fileInput(
+      "file_input_load_sbml",
+      "Load From SBML",
+      placeholder = " .xml",
+      multiple = FALSE,
+      accept = c(".xml")
+    ),
+    pickerInput(
+      inputId = "css_selector",
+      label = "Select Skin",
+      choices = c("Default",
+                  "Night",
+                  "RoyalBlue"),
+      select = "Default"
+    ),
+    div(skinSelector()), 
+    "$$\\require{mhchem}$$",
+  ),
   #,footer = NULL
-  #,dark = NULL
+  # Needed to remove light/dark switch
+  dark = NULL
+
 ) #end dashboardPage
 

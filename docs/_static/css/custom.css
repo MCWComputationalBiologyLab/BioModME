@@ -1,0 +1,37 @@
+.underline {
+  text-decoration: underline;
+}
+
+.borderblack {
+  border: 1px solid black;
+}
+
+.bordergrey {
+  border: 1px solid lightgrey;
+  padding-bottom: 15px;
+  margin-bottom: 20px;
+}
+
+.bordergrey2 {
+  border: 0px solid lightgrey;
+  padding-bottom: 15px;
+  margin-bottom: 20px;
+}
+
+.bottomMargin {
+  border: 0px solid lightgrey;
+  margin-bottom: 20px;
+}
+
+.bottomPadding {
+  padding-bottom: 15px;
+}
+
+.center {
+  text-align: center;
+}
+
+.botTopMargin {
+  margin-bottom: 20px;
+  margin-top: 20px;
+}

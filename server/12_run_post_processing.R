@@ -2,7 +2,6 @@
 
 #update picker inputs on model run
 observeEvent(input$execute_run_model, {
-  observe({print("new1")})
   n.rows <- length(colnames(model_output()))
   updatePickerInput(session
                     ,"pp_add_vars"
@@ -93,17 +92,16 @@ ppEqnToAddColumn <- function(){
 PostProcessModel <- function(){
   #problem is when we rerun and change the time that the dataframe is staying as the old time.
   #this is because it doesn't take the old model.  It probably can each time. 
-  if (results$is.pp) {
-    #if (!results$is.pp)
-    results$pp.model <- as.data.frame(results$model)
+  if (rv.RESULTS$results.is.pp) {
+    #if (!rv.RESULTS$results.is.pp)
+    rv.RESULTS$results.pp.model <- as.data.frame(rv.RESULTS$results.model)
     
-    n.col.to.add <- length(results$pp.eqns.col)
-   #observe({print(n.col.to.add)})
-    
+    n.col.to.add <- length(rv.RESULTS$results.pp.eqns.col)
+
     for (i in seq(n.col.to.add)) {
-      new.col <- eval(parse(text = results$pp.eqns.col[i]))
-      #observe({print(head(new.col))})
-      eval(parse(text = paste0("results$pp.model$",results$pp.vars[i], "<-new.col")))
+      new.col <- eval(parse(text = rv.RESULTS$results.pp.eqns.col[i]))
+      eval(parse(text = paste0("rv.RESULTS$results.pp.model$",
+                               rv.RESULTS$results.pp.vars[i], "<-new.col")))
     }
   }
 }
@@ -121,12 +119,12 @@ observeEvent(input$execute_run_model, {
 observeEvent(input$pp_submit_new_var, {
   
   #store variables to their proper place
-  results$pp.vars <- c(results$pp.vars, input$pp_new_var)
-  results$pp.eqns <- c(results$pp.eqns, ppEqnToAdd())
-  results$pp.eqns.col <- c(results$pp.eqns.col, ppEqnToAddColumn())
+  rv.RESULTS$results.pp.vars <- c(rv.RESULTS$results.pp.vars, input$pp_new_var)
+  rv.RESULTS$results.pp.eqns <- c(rv.RESULTS$results.pp.eqns, ppEqnToAdd())
+  rv.RESULTS$results.pp.eqns.col <- c(rv.RESULTS$results.pp.eqns.col, ppEqnToAddColumn())
   PostProcessModel()
   
-  results$is.pp = TRUE
+  rv.RESULTS$results.is.pp = TRUE
   
   n.rows <- length(colnames(model_output()))
   updatePickerInput(session
@@ -145,38 +143,31 @@ observeEvent(input$pp_submit_new_var, {
                   )
 })
 
-observeEvent({counts$loading.model
+observeEvent({rv.COUNTS$loading.model
              input$pp_submit_new_var
              input$execute_run_model}, {
-  jPrint("Model to run is being processed")
-  if (results$is.pp) {
-    jPrint("is.pp is true - processed model")
-    model.to.use <- results$pp.model
+  if (rv.RESULTS$results.is.pp) {
+    model.to.use <- rv.RESULTS$results.pp.model
   }else{
-    jPrint("is.pp is false - normal model")
-    model.to.use <- results$model
+    model.to.use <- rv.RESULTS$results.model
   }
-  results$model.final <- model.to.use
-  jPrint("Final model to use")
-  jPrint(results$model.final)
+  rv.RESULTS$results.model.final <- model.to.use
   
   updatePickerInput(session
                     ,"lineplot_xvar"
-                    ,choices = colnames(results$model.final[1]))
+                    ,choices = colnames(rv.RESULTS$results.model.final[1]))
   updateSelectizeInput(session,
                        "lineplot_yvar"
-                       ,choices  = colnames(results$model.final)[2:ncol(results$model.final)]
-                       ,selected = colnames(results$model.final)[2:ncol(results$model.final)]
+                       ,choices  = colnames(rv.RESULTS$results.model.final)[2:ncol(rv.RESULTS$results.model.final)]
+                       ,selected = colnames(rv.RESULTS$results.model.final)[2:ncol(rv.RESULTS$results.model.final)]
   )
 })
 
 # ModelToUse <- reactive({
-#   if (results$is.pp) {
-#     observe({print("is.pp is true - processed model")})
-#     model.to.use <- results$pp.model
+#   if (rv.RESULTS$results.is.pp) {
+#     model.to.use <- rv.RESULTS$results.pp.model
 #   }else{
-#     observe({print("is.pp is false - normal model")})
-#     model.to.use <- results$model
+#     model.to.use <- rv.RESULTS$results.model
 #   }
 #   return(model.to.use)
 # })

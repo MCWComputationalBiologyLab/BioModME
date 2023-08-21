@@ -174,18 +174,95 @@
 ***********************************************************************
 */
 
-#lineplot_dropdown_1 {border:0px solid black;}
+#lineplot_dropdown_1 {
+      border:0px solid black;
+}
 
-#lineplot_dropdown_2 {border:0px solid black;}
+#lineplot_dropdown_2 {
+      border:0px solid black;
+}
 
-#lineplot_dropdown_3 {border:0px solid black;}
+#lineplot_dropdown_3 {
+      border:0px solid black;
+}
 
-#lineplot_dropdown_4 {border:0px solid black;}
+#lineplot_dropdown_4 {
+      border:0px solid black;
+}
 
 
-#myVariables_DT tr {background-color: #fff0;
-                    border: 0px solid black;}
+#myVariables_DT tr {
+      background-color: #fff0;
+      border: 0px solid black;
+}
 
-#myVariables_DT th {background-color:#fff0;
-                    color: black;
-                    border: 0px solid black;}
+#myVariables_DT th {
+      background-color:#fff0;
+      color: black;
+      border: 0px solid black;
+}
+
+#createVar_add_compartment_button {
+      background: #F9F9F9;
+      color: grey;
+}
+
+#createVar_remove_compartment_button {
+      background: #F9F9F9;
+      color: grey;
+}
+                                      
+#createVar_add_variable_button {
+      background: #F9F9F9;
+      color: grey;
+}
+
+#createVar_remove_variable_button {
+      background: #F9F9F9;
+      color: grey;
+}
+                                    
+#createVar_add_variable_to_all_button {
+      background: #F9F9F9;
+      color: grey;
+}
+
+#eqns_add_open_modal {
+      background: #F9F9F9;
+      color: grey ;
+}
+                                                      
+#eqns_delete_open_modal {
+      background: #F9F9F9;
+      color: grey
+}
+                                
+#io_add_open_modal {
+      background: #F9F9F9;
+      color: grey;
+}
+                                                              
+#io_delete_open_modal {
+      background: #F9F9F9;
+      color: grey
+}
+/* 
+***********************************************************************
+                   Tables that are UI inputs
+***********************************************************************
+
+.PE_variable_UI_table label {display: table-cell; 
+                             text-align: center;
+                             vertical-align: top; } 
+
+.PE_variable_UI_table .form-group {display: table-cell;} 
+*/
+.blank_row {
+    height: 10px !important; /* overwrites any other rules */
+    background-color: #FFFFFF;
+}
+
+.PE_variable_UI_table {
+      border-collapse: collapse;
+      border-spacing: 0;
+}

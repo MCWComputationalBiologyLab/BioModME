@@ -8,6 +8,7 @@ GenerateId <- function(currentSeed, type) {
   # Outputs: 
   #   @list: seed - incremented seed Values, id - unique id of variable
   
+
   #format the seed to a nice format and convert it to a string
   if (currentSeed < 10) {
     seed <- paste0("000", as.character(currentSeed))
@@ -20,15 +21,7 @@ GenerateId <- function(currentSeed, type) {
   }
   
   #create unique id
-  if (type == "variable") {
-    id <- paste0("var", seed)
-  } else if (type == "parameter") {
-    id <- paste0("par", seed)
-  } else if (type == "eqn") {
-    id <- paste0("eqn", seed)
-  } else if (type == "diffeq") {
-    id <- paste0("dif", seed)
-  }
+  id <- paste0(type, seed)
   
   #increment seed
   currentSeed <- currentSeed + 1

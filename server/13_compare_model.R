@@ -13,10 +13,10 @@ w.compare <- Waiter$new(id = "Lineplot_Compare",
 )
 
 # Adds parameters to picker input for comparing
-observeEvent(params$vars.all, {
+observeEvent(rv.PARAMETERS$vars.all, {
   updatePickerInput(session,
                     "compare_models_select_vars",
-                    choices = params$vars.all, 
+                    choices = rv.PARAMETERS$vars.all, 
                     selected = NULL)
 })
 
@@ -59,8 +59,8 @@ observeEvent(input$compare_models_select_vars, {
     #We add variables user selected in picker input to this vector
     if (!(var %in% df.2.vec)) {
       #find vars parameter value and adds it to the model df
-      idx = match(var, params$vars.all)
-      value = params$vals.all[idx]
+      idx <- match(var, rv.PARAMETERS$parameters.df$Name)
+      value <- rv.PARAMETERS$parameters.df$Name[idx]
       row.to.df <- c(var, value, value, value, value)
       #add parameter to df
       if (compareModel$no.values) {
@@ -141,17 +141,18 @@ observeEvent(input$run_compared_model, {
   time.out <- as.numeric(input$execute_time_end)
   time.step <- as.numeric(input$execute_time_step)
   times <- seq(time.in, time.out, by = time.step)
-  diff_eqns <- diffeq_to_text(DE$eqns, vars$species)
-  rate_eqns <- rateEqns_to_text(eqns$additional.eqns)
-  state <- output_ICs_for_ode_solver(vars$species ,ICs$vals)
-  d_of_var <- output_var_for_ode_solver(vars$species)
+  diff_eqns <- diffeq_to_text(rv.DE$de.eqns, rv.SPECIES$species.names)
+  rate_eqns <- CustomEqnsToText(rv.REACTIONS$additional.eqns)
+  state <- output_ICs_for_ode_solver(rv.SPECIES$species.names ,ICs$vals)
+  d_of_var <- output_var_for_ode_solver(rv.SPECIES$species.names)
   if (input$execute_turnOn_time_scale_var) {
     d_of_var = paste0(input$execute_time_scale_var, "*", d_of_var)
   }
-  
   params.to.change <- pull(compareModel$df, "Variable")
-  param.vars <- params$vars.all
-  param.vals <- params$vals.all
+  param.vars <- VectorizeListValue(rv.PARAMETERS$parameters, "Name")
+  param.vals <- VectorizeListValue(rv.PARAMETERS$parameters, 
+                                   "Value", 
+                                   init.mode = "numeric")
   solver <- function(t, state, parameters){
     with(as.list(c(state, parameters)), {
       eval(parse(text = rate_eqns))
@@ -167,17 +168,18 @@ observeEvent(input$run_compared_model, {
   # Model 1
   # Find and change parameter values
   new.values <- compareModel$df[,2]  #copy original param tables
-  param.vals <- params$vals.all
+  param.vals <- rv.PARAMETERS$parameters.df$Value
   count = 1
   for (var in params.to.change) {
     # find idx matching parameter to change
-    idx <- match(var, param.vars) 
+    idx <- match(var, rv.PARAMETERS$parameters.df$Name) 
     # use above index to change param value for the model
     param.vals[idx] <- new.values[count]
     count = count + 1
   }
   
-  parameters <- output_param_for_ode_solver(param.vars, param.vals)
+  parameters <- as.numeric(param.vals)
+  names(parameters) <- param.vars
   compareModel$model.1 <- ode(y = state, 
                               times = times, 
                               func = solver, 
@@ -186,7 +188,7 @@ observeEvent(input$run_compared_model, {
   
   # Model 2---------------------------------------------------------------------
   new.values <- compareModel$df[,3]
-  param.vals <- params$vals.all
+  param.vals <- rv.PARAMETERS$vals.all
   count = 1
   for (var in params.to.change) {
     # find idx matching parameter to change
@@ -206,7 +208,7 @@ observeEvent(input$run_compared_model, {
   # Model 3---------------------------------------------------------------------
   new.values <- compareModel$df[,4]
   count = 1
-  param.vals <- params$vals.all
+  param.vals <- rv.PARAMETERS$vals.all
   for (var in params.to.change) {
     # find idx matching parameter to change
     idx <- match(var, param.vars) 
@@ -225,7 +227,7 @@ observeEvent(input$run_compared_model, {
   # Model 4---------------------------------------------------------------------
   new.values <- compareModel$df[,5]
   count = 1
-  param.vals <- params$vals.all
+  param.vals <- rv.PARAMETERS$vals.all
   for (var in params.to.change) {
     # find idx matching parameter to change
     idx <- match(var, param.vars) 
@@ -285,28 +287,4 @@ output$Lineplot_Compare <- renderPlot({
   }
 
   print(to.plot)
-})
-
-# View  differential table -----------------------------------------------------
-output$diffeq_display_diffEqs_compare_mode <- renderText({
-  # paste(paste0('d(', vars$species, ")/dt = ", DE$eqns), collapse="<br><br>")
-  
-  if (length(vars$species) == 0) {
-    "No variables entered"
-  }
-  else {
-    n_eqns = length(vars$species)
-    eqns_to_display <- c()
-    for (i in seq(n_eqns)) {
-      if (input$diffeq_option_simplify) {
-        new_eqn <- paste0("(",i, ") ", 'd(', vars$species[i], ")/dt = ", 
-                          Deriv::Simplify(DE$eqns[i]))
-      } else {
-        new_eqn <- paste0("(",i, ") ", 'd(', vars$species[i], ")/dt = ", 
-                          DE$eqns[i])
-      }
-      eqns_to_display <- c(eqns_to_display, new_eqn)
-    }
-    paste(eqns_to_display, collapse = "<br><br>")
-  }
 })
