@@ -646,26 +646,37 @@ observeEvent(input$myVariables_DT$changes$changes, {
     # Steps: 
     #  Search eqn df for id.
     # Rename Parameters Found in Reaction Lists
-    rv.REACTIONS$reactions  <- 
-      RenameVarInList(old, new, rv.REACTIONS$reactions)
-    
-    rv.REACTIONS$massAction  <- 
-      RenameVarInList(old, new, rv.REACTIONS$massAction)
-    
-    rv.REACTIONS$massActionwReg  <- 
-      RenameVarInList(old, new, rv.REACTIONS$massActionwReg)
-    
-    rv.REACTIONS$michaelisMenten  <- 
-      RenameVarInList(old, new, rv.REACTIONS$michaelisMenten)
-    
-    rv.REACTIONS$synthesis  <- 
-      RenameVarInList(old, new, rv.REACTIONS$synthesis)
-    
-    rv.REACTIONS$degradation.by.rate  <- 
-      RenameVarInList(old, new, rv.REACTIONS$degradation.by.rate)
-    
-    rv.REACTIONS$degradation.by.enzyme  <-
-      RenameVarInList(old, new, rv.REACTIONS$degradation.by.enzyme)
+    # rv.REACTIONS <- replace_word_recursive(rv.REACTIONS, old, new)
+    # browser()
+    names.list <- names(rv.REACTIONS)
+    for (name in names.list) {
+      rv.REACTIONS[[name]] <- 
+        replace_word_recursive(rv.REACTIONS[[name]], old, new)
+      rv.REACTIONS[[name]] <- 
+        replace_word_recursive(rv.REACTIONS[[name]], old, new, to.latex = TRUE)
+      rv.REACTIONS[[name]] <- 
+        replace_word_recursive(rv.REACTIONS[[name]], old, new, to.mathjax=TRUE)
+    }
+    # rv.REACTIONS$reactions  <- 
+    #   RenameVarInList(old, new, rv.REACTIONS$reactions)
+    # 
+    # rv.REACTIONS$massAction  <- 
+    #   RenameVarInList(old, new, rv.REACTIONS$massAction)
+    # 
+    # rv.REACTIONS$massActionwReg  <- 
+    #   RenameVarInList(old, new, rv.REACTIONS$massActionwReg)
+    # 
+    # rv.REACTIONS$michaelisMenten  <- 
+    #   RenameVarInList(old, new, rv.REACTIONS$michaelisMenten)
+    # 
+    # rv.REACTIONS$synthesis  <- 
+    #   RenameVarInList(old, new, rv.REACTIONS$synthesis)
+    # 
+    # rv.REACTIONS$degradation.by.rate  <- 
+    #   RenameVarInList(old, new, rv.REACTIONS$degradation.by.rate)
+    # 
+    # rv.REACTIONS$degradation.by.enzyme  <-
+    #   RenameVarInList(old, new, rv.REACTIONS$degradation.by.enzyme)
     
     # Rename Parameters found in IO Lists
     rv.IO$InputOutput  <- 

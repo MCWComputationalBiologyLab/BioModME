@@ -15,7 +15,8 @@
 #               "shinyWidgets", "shinyjs", "DT", "tidyverse", "dplyr", "rhandsontable", "data.table",
 #               "ggpmisc", "colourpicker", "shinyBS", "shinyjqui", "bsplus", "deSolve", "plotly",
 #               "Deriv", "viridis", "ggpubr", "shinycssloaders", "waiter", "fresh", "readxl",
-#               "minpack.lm", "measurements", "qdapRegex")
+#               "minpack.lm", "measurements", "qdapRegex", "XML", "xml2", "katex",
+#               "reshape2", "clipr", "jsonlite")
 
 # 
 # install.lib<-load.lib[!load.lib %in% installed.packages()]
@@ -158,10 +159,13 @@ ui <- dashboardPage(
         menuItem("Repository",
                  tabName = "TAB_MODEL_REPOSITORY",
                  icon = icon("book")),
-        menuItem(
-          "Debug",
-          tabName = "TAB_DEBUG",
-          icon = icon("erase", lib = "glyphicon")
+        conditionalPanel(
+          condition = "input.CB_showDegbugTab",
+          menuItem(
+            "Debug",
+            tabName = "TAB_DEBUG",
+            icon = icon("erase", lib = "glyphicon")
+          )
         ),
         
         # menuItem("Contributions",
@@ -276,6 +280,11 @@ ui <- dashboardPage(
       placeholder = " .xml",
       multiple = FALSE,
       accept = c(".xml")
+    ),
+    checkboxInput(
+      inputId = "CB_showDegbugTab",
+      label = "Show Debug",
+      value = FALSE
     ),
     pickerInput(
       inputId = "css_selector",
