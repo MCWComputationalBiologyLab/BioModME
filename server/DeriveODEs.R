@@ -27,7 +27,6 @@ DeriveDifferentialEquations <- function(compartments.rv,
   # @latex.eqns - vector of differential equations in latex form
   # @eqns.for.calc - vector of diffeqs with proper volume divided
 
-  # browser()
   # Break down var data structure.
   species.list  <- species.rv$species
   species.names <- species.rv$species.names
@@ -207,6 +206,7 @@ DeriveEquationBasedODEs <- function(species.list.entry,
         } else if (law == "mass_action_w_reg") {
           ma.list <- reactions.rv$massActionwReg[[eqn.id]]
         }
+        print(ma.list)
         # check for stoich modifier
         if (inReactant) {
           # Determine which index
@@ -221,6 +221,9 @@ DeriveEquationBasedODEs <- function(species.list.entry,
           product.names <- strsplit(ma.list$Products, ", ")[[1]]
           idx <- which(product.names %in% name)
           stoich <- strsplit(ma.list$p.stoichiometry, ", ")[[1]]
+          print(product.names)
+          print(idx)
+          print(stoich)
           if (stoich[idx] != "1") {
             applyMultiple <- TRUE
             multiple <- stoich[idx]

@@ -4,7 +4,7 @@
 solveForDiffEqs <- function() {
   # Solve the differential equations using RVs.
   # Store results to their respective RVs. 
-
+  
   results <- DeriveDifferentialEquations(rv.COMPARTMENTS,
                                          rv.SPECIES,
                                          rv.REACTIONS,

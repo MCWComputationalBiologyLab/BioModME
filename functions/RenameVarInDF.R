@@ -7,6 +7,7 @@ RenameVarInDF <- function(oldName, newName, dfToSearch) {
   #   @vectorToCheck - Vector of data to look for string in
   # Output:   
   #   Returns df with changed name values (if any) 
+  regex_oldName <- paste0("\\b", oldName, "\\b")
   
   n.rows <- nrow(dfToSearch)
   n.cols <- ncol(dfToSearch)
@@ -15,9 +16,9 @@ RenameVarInDF <- function(oldName, newName, dfToSearch) {
   if (n.rows != 0 & n.cols != 0) {
     for (i in seq(n.rows)) {
       for (j in seq(n.cols)) {
-        has.var <- grepl(oldName, dfToSearch[i,j], fixed = TRUE)
+        has.var <- grepl(regex_oldName, dfToSearch[i,j], fixed = TRUE)
         if (has.var) {
-          new.df[i,j] <- gsub(oldName, newName, dfToSearch[i,j])
+          new.df[i,j] <- gsub(regex_oldName, newName, dfToSearch[i,j])
         }
       }
     }

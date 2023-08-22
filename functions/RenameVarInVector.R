@@ -14,14 +14,15 @@ RenameVarInVector <- function(oldName, newName, vectorToSearch) {
   #   DE$de.eqns?
   #   PP section?
   #   params - pretty much all sections
+  regex_oldName <- paste0("\\b", oldName, "\\b")
   
   idx = 0
   print("Running Rename Parameter")
   for (string.var in vectorToSearch) {
     idx = idx + 1 
-    has.var <- grepl(oldName, string.var, fixed = TRUE)
+    has.var <- grepl(regex_oldName, string.var, fixed = TRUE)
     if (has.var) {
-      new.eqn <- gsub(oldName, newName, string.var) #replace old name with new and place in new variable
+      new.eqn <- gsub(regex_oldName, newName, string.var) #replace old name with new and place in new variable
       vectorToSearch[idx] <- new.eqn #replace string in variable its stored
     }
   }

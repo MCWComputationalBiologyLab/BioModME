@@ -630,7 +630,6 @@ observeEvent(input$myVariables_DT$changes$changes, {
     # Find which variable is being changed
   var.name  <- rv.SPECIES$plotted.var.table[xi+1, 1]
   search.id <- FindId(var.name)
-  
   # If Name changed
   if (yi == 0) {
     # SPECIES NAME CHANNGE

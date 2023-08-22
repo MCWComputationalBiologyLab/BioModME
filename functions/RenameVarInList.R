@@ -6,12 +6,12 @@ RenameVarInList <- function(oldName, newName, listToSearch) {
     # Search for Variable Name
     latex.name <- Var2Latex(oldName)
     mathjax.name <- Var2MathJ(oldName)
-    
+    regex_oldName <- paste0("\\b", oldName, "\\b")
     print(latex.name)
     print(mathjax.name)
     for (i in seq_along(out)) {
       # print(out[[i]])
-      var.indices <- which(grepl(oldName, out[[i]], fixed = TRUE))
+      var.indices <- which(grepl(regex_oldName, out[[i]], fixed = TRUE))
       print(var.indices)
       if (length(var.indices) > 0) {
         for (idx in var.indices) {
