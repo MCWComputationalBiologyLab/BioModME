@@ -67,6 +67,10 @@ library(jsonlite)
 fxn.sources <- file.path("ui_functions", list.files("ui_functions"))
 sapply(fxn.sources, source)
 
+# Source Modules
+source(file.path("modules", "tableDownloadButtonsUI.R"))
+source(file.path("modules", "tableDownloadButtons.R"))
+
 # Source in UI tabs
 source(file.path("ui", "00_home_ui.R"))
 source(file.path("ui", "01_create_model_ui.R"))

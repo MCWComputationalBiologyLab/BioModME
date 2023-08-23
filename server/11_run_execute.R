@@ -251,52 +251,59 @@ observeEvent(input$execute_results_unit, {
 })
 
 # DT Table Button Addons  ------------------------------------------------------
-# copy
-observeEvent(input$bttn_download_model_results_copy, {
-  clipr::write_clip(rv.RESULTS$results.model.final)
-  showModal(modalDialog(
-    title = "Copy",
-    "Table copied to clipboard.",
-    easyClose = TRUE,
-    footer = NULL
-  ))
+execute_table <- reactive({
+  rv.RESULTS$results.model.final
 })
 
+callModule(tableDownloadButtons, 
+           "module_execute_buttons", 
+           execute_table)
 
-# csv file
-output$bttn_download_model_results_csv <- downloadHandler(
-  filename = function() {
-    "download.csv"
-  },
-  content = function(file) {
-    write.csv(rv.RESULTS$results.model.final, 
-              file,
-              row.names = FALSE)
-  }
-)
-
-# xlsx file
-output$bttn_download_model_results_xlsx <- downloadHandler(
-  filename = function() {
-    "download.xlsx"
-  },
-  content = function(file) {
-    writexl::write_xlsx(
-      as.data.frame(rv.RESULTS$results.model.final),
-      path = file
-    )
-  }
-)
-
-# Open in New Window
-observeEvent(input$bttn_download_model_results_new_window, {
-  htmlFile <- tempfile(fileext = ".html")
-  DT::datatable(rv.RESULTS$results.model.final) %>%
-    DT::saveWidget(htmlFile, selfcontained = TRUE)
-  
-  # Open the HTML file in a new window or tab
-  # browseURL(htmlFile)
-})
+# # copy
+# observeEvent(input$bttn_download_model_results_copy, {
+#   clipr::write_clip(rv.RESULTS$results.model.final)
+#   showModal(modalDialog(
+#     title = "Copy",
+#     "Table copied to clipboard.",
+#     easyClose = TRUE,
+#     footer = NULL
+#   ))
+# })
+# 
+# 
+# # csv file
+# output$bttn_download_model_results_csv <- downloadHandler(
+#   filename = function() {
+#     "download.csv"
+#   },
+#   content = function(file) {
+#     write.csv(rv.RESULTS$results.model.final, 
+#               file,
+#               row.names = FALSE)
+#   }
+# )
+# 
+# # xlsx file
+# output$bttn_download_model_results_xlsx <- downloadHandler(
+#   filename = function() {
+#     "download.xlsx"
+#   },
+#   content = function(file) {
+#     writexl::write_xlsx(
+#       as.data.frame(rv.RESULTS$results.model.final),
+#       path = file
+#     )
+#   }
+# )
+# 
+# # Open in New Window
+# observeEvent(input$bttn_download_model_results_new_window, {
+# 
+#   showTableInPopup(rv.RESULTS$results.model.final, 
+#                    session, 
+#                    width = 900, 
+#                    height = 500)
+# })
 
 # Results Table Render ---------------------------------------------------------
 output$execute_table_for_model <- DT::renderDataTable({
