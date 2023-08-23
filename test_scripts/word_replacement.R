@@ -225,9 +225,311 @@ lst <- list(
     df = data.frame(A = c("Prot A", "I.Prot B", "Prot C"), B = c("No Prot", "I.Prot D", "E"))
   ),
   df = data.frame(X = c("Prot X", "I.Prot Y"), Y = c("Prot Z", "I.Prot W")),
-  vec = c("Another Prot", "Last Prot", "I.Prot End")
+  vec = c("Another Prot", "Last Prot", "I.Prot End"),
+  IO = "-(F*Prot), +(F_1*Prot), +(F_2*Prot)",
+  another = "-(F[Prot]), +(F_1[Prot]), +(F_2[Prot])",
+  lat = "-(F*A_{1})+(F_{1}*A_{2})+(F_{2}*A_{4})"
 )
 
 print(lst)  # before replacement
-lst <- replace_word_recursive(lst, "Prot", "Replacement")
+lst <- replace_word_recursive(lst, "A_{1}", "Replacement")
 print(lst)  # after replacement
+
+replace_word_recursive <- function(lst, target, replacement, to.latex = FALSE, to.mathjax = FALSE) {
+  
+  # Apply Var2Latex or Var2Mathjax transformations based on the provided flags
+  if (to.latex) {
+    target <- Var2Latex(target)
+    replacement <- Var2Latex(replacement)
+  } else if (to.mathjax) {
+    target <- Var2Mathjax(target)
+    replacement <- Var2Mathjax(replacement)
+  }
+  
+  # Constructing the regular expression patterns for the target and its replacement.
+  target_pattern <- paste0("(^|[^a-zA-Z0-9])", target, "(?![a-zA-Z0-9])")
+  replacement_pattern <- paste0("\\1", replacement)
+  
+  # Apply function to each item in the list
+  lapply(lst, function(item) {
+    # If item is a character vector
+    if (is.character(item)) {
+      # Using gsub to replace all occurrences
+      return(gsub(target_pattern, replacement_pattern, item, perl = TRUE))
+    }
+    # If item is a dataframe
+    else if (is.data.frame(item)) {
+      return(replace_word_df(item, target, replacement))
+    }
+    # If item is a list
+    else if (is.list(item)) {
+      return(replace_word_recursive(item, target, replacement, to.latex, to.mathjax))
+    }
+    # If item is none of the above
+    else {
+      return(item)
+    }
+  })
+}
+
+replace_latex_variable_recursive <- function(lst, target, replacement) {
+  
+  # Constructing the regular expression patterns for the LaTeX-style variable.
+  # This pattern matches a LaTeX-style subscript variable like A_{1}
+  target_pattern <- paste0(target, "(?=_\\{\\d+\\})")
+  replacement_pattern <- replacement
+  
+  # Apply function to each item in the list
+  lapply(lst, function(item) {
+    # If item is a character vector
+    if (is.character(item)) {
+      # Using gsub to replace all occurrences
+      return(gsub(target_pattern, replacement_pattern, item, perl = TRUE))
+    }
+    # If item is a dataframe
+    else if (is.data.frame(item)) {
+      return(data.frame(lapply(item, function(col) {
+        if (is.character(col)) {
+          return(gsub(target_pattern, replacement_pattern, col, perl = TRUE))
+        } else {
+          return(col)
+        }
+      })))
+    }
+    # If item is a list
+    else if (is.list(item)) {
+      return(replace_latex_variable_recursive(item, target, replacement))
+    }
+    # If item is none of the above
+    else {
+      return(item)
+    }
+  })
+}
+
+# Test
+lst <- list(
+  vec = c("A_{1}", "B_{2}", "C_{1} * A_{1}"),
+  df = data.frame(X = c("A_{1} + B_{2}", "D_{1}"), Y = c("E_{2} * A_{1}", "F_{3}")),
+  inner_list = list(
+    vec2 = c("G_{2} / A_{1}", "H_{4}")
+  )
+)
+
+lst <- replace_latex_variable_recursive(lst, "A", "NewVar")
+print(lst)
+
+replace_latex_variable_recursive <- function(lst, target, replacement) {
+  
+  # Constructing the regular expression patterns for the LaTeX-style variable.
+  # This pattern matches a LaTeX-style subscript variable like A_{1} entirely
+  target_pattern <- paste0(target, "_\\{\\d+\\}")
+  replacement_pattern <- replacement
+  
+  # Apply function to each item in the list
+  lapply(lst, function(item) {
+    # If item is a character vector
+    if (is.character(item)) {
+      # Using gsub to replace all occurrences
+      return(gsub(target_pattern, replacement_pattern, item, perl = TRUE))
+    }
+    # If item is a dataframe
+    else if (is.data.frame(item)) {
+      return(data.frame(lapply(item, function(col) {
+        if (is.character(col)) {
+          return(gsub(target_pattern, replacement_pattern, col, perl = TRUE))
+        } else {
+          return(col)
+        }
+      })))
+    }
+    # If item is a list
+    else if (is.list(item)) {
+      return(replace_latex_variable_recursive(item, target, replacement))
+    }
+    # If item is none of the above
+    else {
+      return(item)
+    }
+  })
+}
+
+# Test
+lst <- list(
+  vec = c("A_{1}", "B_{2}", "C_{1} * A_{1}"),
+  df = data.frame(X = c("A_{1} + B_{2}", "D_{1}"), Y = c("E_{2} * A_{1}", "F_{3}")),
+  inner_list = list(
+    vec2 = c("G_{2} / A_{1}", "H_{4}")
+  )
+)
+
+lst <- replace_latex_variable_recursive(lst, "A", "NewVar")
+print(lst)
+
+
+replace_latex_variable_recursive <- function(lst, target, replacement) {
+  
+  # Constructing the regular expression patterns for the LaTeX-style variable.
+  # This pattern matches a LaTeX-style subscript variable like A_{1} entirely,
+  # accounting for potential LaTeX commands and mathematical symbols
+  target_pattern <- paste0("(\\\\left\\()?(", target, "_\\{\\d+\\})", "(\\\\right\\))?")
+  
+  # Apply function to each item in the list
+  lapply(lst, function(item) {
+    # If item is a character vector
+    if (is.character(item)) {
+      # Using gsub to replace all occurrences
+      return(gsub(target_pattern, replacement, item, perl = TRUE))
+    }
+    # If item is a dataframe
+    else if (is.data.frame(item)) {
+      return(data.frame(lapply(item, function(col) {
+        if (is.character(col)) {
+          return(gsub(target_pattern, replacement, col, perl = TRUE))
+        } else {
+          return(col)
+        }
+      })))
+    }
+    # If item is a list
+    else if (is.list(item)) {
+      return(replace_latex_variable_recursive(item, target, replacement))
+    }
+    # If item is none of the above
+    else {
+      return(item)
+    }
+  })
+}
+
+# Test
+lst <- list(
+  vec1 = c("-(F*A_{1})", "+(F_{1}*A_{1})", "+(F_{2}*A_{1})"),
+  vec2 = c("-\\left(F*A_{1}\\right)", "+\\left(F_{1}*A_{1}\\right)", "+\\left(F_{2}*A_{1}\\right)")
+)
+
+lst <- replace_latex_variable_recursive(lst, "A", "NewVar")
+print(lst)
+
+
+
+replace_latex_variable_recursive <- function(lst, target, replacement) {
+  
+  # Constructing the regular expression patterns for the LaTeX-style variable.
+  # This pattern matches a LaTeX-style subscript variable like A_{1} entirely,
+  # but leaves surrounding LaTeX commands untouched.
+  target_pattern <- paste0(target, "_\\{\\d+\\}")
+  
+  # Apply function to each item in the list
+  lapply(lst, function(item) {
+    # If item is a character vector
+    if (is.character(item)) {
+      # Using gsub to replace all occurrences
+      return(gsub(target_pattern, replacement, item, perl = TRUE))
+    }
+    # If item is a dataframe
+    else if (is.data.frame(item)) {
+      return(data.frame(lapply(item, function(col) {
+        if (is.character(col)) {
+          return(gsub(target_pattern, replacement, col, perl = TRUE))
+        } else {
+          return(col)
+        }
+      })))
+    }
+    # If item is a list
+    else if (is.list(item)) {
+      return(replace_latex_variable_recursive(item, target, replacement))
+    }
+    # If item is none of the above
+    else {
+      return(item)
+    }
+  })
+}
+
+replace_latex_variable_recursive <- function(lst, target, replacement) {
+  
+  # Constructing the regular expression patterns for the LaTeX-style variable.
+  target_pattern <- target
+  
+  # Apply function to each item in the list
+  lapply(lst, function(item) {
+    # If item is a character vector
+    if (is.character(item)) {
+      # Using gsub to replace all occurrences
+      return(gsub(target_pattern, replacement, item, perl = TRUE))
+    }
+    # If item is a dataframe
+    else if (is.data.frame(item)) {
+      return(data.frame(lapply(item, function(col) {
+        if (is.character(col)) {
+          return(gsub(target_pattern, replacement, col, perl = TRUE))
+        } else {
+          return(col)
+        }
+      })))
+    }
+    # If item is a list
+    else if (is.list(item)) {
+      return(replace_latex_variable_recursive(item, target, replacement))
+    }
+    # If item is none of the above
+    else {
+      return(item)
+    }
+  })
+}
+
+replace_latex_variable_recursive <- function(lst, target, replacement) {
+  # Check if target contains an underscore; if not, return the original list.
+  if (!grepl("_", target)) {
+    print("No need to check latex")
+    return(lst)
+  }
+  # The target is taken as a literal string to match, no need for boundary checks.
+  target_pattern <- target
+  
+  # Apply function to each item in the list
+  lapply(lst, function(item) {
+    # If item is a character vector
+    if (is.character(item)) {
+      # Using gsub to replace all occurrences
+      return(gsub(target_pattern, replacement, item, fixed = TRUE))
+    }
+    # If item is a dataframe
+    else if (is.data.frame(item)) {
+      return(data.frame(lapply(item, function(col) {
+        if (is.character(col)) {
+          return(gsub(target_pattern, replacement, col, fixed = TRUE))
+        } else {
+          return(col)
+        }
+      })))
+    }
+    # If item is a list
+    else if (is.list(item)) {
+      return(replace_latex_variable_recursive(item, target, replacement))
+    }
+    # If item is none of the above
+    else {
+      return(item)
+    }
+  })
+}
+
+
+
+lst <- list(
+  vec = c("A_{1}", "B_{2}", "C_{1} * A_{1}"),
+  df = data.frame(X = c("A_{1} + B_{2}", "D_{1}"), Y = c("E_{2} * A_{1}", "F_{3}")),
+  inner_list = list(
+    vec2 = c("G_{2} / A_{1}", "H_{4}")
+  ),
+  vec2 = c("-(F*A_{1})", "+(F_{1}*A_{1})", "+(F_{2}*A_{1})"),
+  vec3 = c("-\\left(F*A_{1}\\right)", "+\\left(F_{1}*A_{1}\\right)", "+\\left(F_{2}*A_{1}\\right)")
+)
+
+lst <- replace_latex_variable_recursive(lst, "A_{1}", "NewVar")
+print(lst)
+

@@ -1,34 +1,34 @@
-observeEvent(input$test_popup_table, {
-  print("Test popout button")
-  if (input$createVar_show_active_compartment_only) {
-    #Extract variables of active compartment
-    my.compartment <- input$createVar_active_compartment
-    df.by.comp <- filter(rv.SPECIES$species.df, Compartment == my.compartment)
-    df.by.comp <- select(df.by.comp, 
-                         Name, 
-                         Value, 
-                         Unit, 
-                         Compartment, 
-                         Description)
-  } else {
-    df.by.comp <- select(rv.SPECIES$species.df, 
-                         Name, 
-                         Value, 
-                         Unit, 
-                         Compartment, 
-                         Description)
-  }
-  df.by.comp <- as.data.frame(df.by.comp)
-  colnames(df.by.comp) <- c("Name",
-                            "Value",
-                            "Unit",
-                            "Compartment",
-                            "Description"
-  )
-  print(df.by.comp)
-  showTableInPopup(df.by.comp, session, width = 900, height = 500)
-  print("show over")
-})
+# observeEvent(input$test_popup_table, {
+#   print("Test popout button")
+#   if (input$createVar_show_active_compartment_only) {
+#     #Extract variables of active compartment
+#     my.compartment <- input$createVar_active_compartment
+#     df.by.comp <- filter(rv.SPECIES$species.df, Compartment == my.compartment)
+#     df.by.comp <- select(df.by.comp, 
+#                          Name, 
+#                          Value, 
+#                          Unit, 
+#                          Compartment, 
+#                          Description)
+#   } else {
+#     df.by.comp <- select(rv.SPECIES$species.df, 
+#                          Name, 
+#                          Value, 
+#                          Unit, 
+#                          Compartment, 
+#                          Description)
+#   }
+#   df.by.comp <- as.data.frame(df.by.comp)
+#   colnames(df.by.comp) <- c("Name",
+#                             "Value",
+#                             "Unit",
+#                             "Compartment",
+#                             "Description"
+#   )
+#   print(df.by.comp)
+#   showTableInPopup(df.by.comp, session, width = 900, height = 500)
+#   print("show over")
+# })
 
 # Helper Functions -------------------------------------------------------------
 variableCheck <- function(variable, 
@@ -652,53 +652,22 @@ observeEvent(input$myVariables_DT$changes$changes, {
     for (name in names.list) {
       rv.REACTIONS[[name]] <- 
         replace_word_recursive(rv.REACTIONS[[name]], old, new)
+
       rv.REACTIONS[[name]] <- 
-        replace_word_recursive(rv.REACTIONS[[name]], old, new, to.latex = TRUE)
-      rv.REACTIONS[[name]] <- 
-        replace_word_recursive(rv.REACTIONS[[name]], old, new, to.mathjax=TRUE)
+        replace_latex_variable_recursive(rv.REACTIONS[[name]], 
+                                         Var2Latex(old), 
+                                         Var2Latex(new))
     }
-    # rv.REACTIONS$reactions  <- 
-    #   RenameVarInList(old, new, rv.REACTIONS$reactions)
-    # 
-    # rv.REACTIONS$massAction  <- 
-    #   RenameVarInList(old, new, rv.REACTIONS$massAction)
-    # 
-    # rv.REACTIONS$massActionwReg  <- 
-    #   RenameVarInList(old, new, rv.REACTIONS$massActionwReg)
-    # 
-    # rv.REACTIONS$michaelisMenten  <- 
-    #   RenameVarInList(old, new, rv.REACTIONS$michaelisMenten)
-    # 
-    # rv.REACTIONS$synthesis  <- 
-    #   RenameVarInList(old, new, rv.REACTIONS$synthesis)
-    # 
-    # rv.REACTIONS$degradation.by.rate  <- 
-    #   RenameVarInList(old, new, rv.REACTIONS$degradation.by.rate)
-    # 
-    # rv.REACTIONS$degradation.by.enzyme  <-
-    #   RenameVarInList(old, new, rv.REACTIONS$degradation.by.enzyme)
     
-    # Rename Parameters found in IO Lists
-    rv.IO$InputOutput  <- 
-      RenameVarInList(old, new, rv.IO$InputOutput)
-    
-    rv.IO$Flow.In  <- 
-      RenameVarInList(old, new, rv.IO$Flow.In)
-    
-    rv.IO$Flow.Out  <- 
-      RenameVarInList(old, new, rv.IO$Flow.Out)
-    
-    rv.IO$Flow.Between  <- 
-      RenameVarInList(old, new, rv.IO$Flow.Between)
-    
-    rv.IO$Clearance  <- 
-      RenameVarInList(old, new, rv.IO$Clearance)
-    
-    rv.IO$Simple.Diffusion  <- 
-      RenameVarInList(old, new, rv.IO$Simple.Diffusion)
-    
-    rv.IO$Facilitated.Diffusion  <- 
-      RenameVarInList(old, new, rv.IO$Facilitated.Diffusion)
+    names.list <- names(rv.IO)
+    for (name in names.list) {
+      rv.IO[[name]] <- 
+        replace_word_recursive(rv.IO[[name]], old, new)
+      rv.IO[[name]] <- 
+        replace_latex_variable_recursive(rv.IO[[name]],
+                                         Var2Latex(old), 
+                                         Var2Latex(new))
+    }
     
     # Change name in species list
     rv.SPECIES$species[[search.id]]$Name <- new

@@ -30,22 +30,27 @@ replace_word_recursive <- function(lst,
   # Apply Var2Latex or Var2Mathjax transformations based on the provided flags
   # These functions should be found in the "functions" folder
   if (to.latex) {
-    target <- Var2Latex(target)
-    replacement <- Var2Latex(replacement)
+    target.mod <- Var2Latex(target)
+    replacement.mod <- Var2Latex(replacement)
   } else if (to.mathjax) {
-    target <- Var2MathJ(target)
-    replacement <- Var2MathJ(replacement)
+    target.mod <- Var2MathJ(target)
+    replacement.mod <- Var2MathJ(replacement)
+  } else {
+    target.mod <- target
+    replacement.mod <- replacement
   }
-  
+
   # Constructing the regular expression patterns for the target and 
   # its replacement.
-  # The pattern (^|\\s|,|\\*|\\(|\\)|\\+|-|/) is saying: Match the beginning
-  # of a string OR a whitespace OR a comma OR an asterisk OR an open parenthesis
-  # OR a close parenthesis OR a plus sign OR a minus sign OR a forward slash.
-  target_pattern <- paste0("(^|\\s|,|\\*|\\(|\\)|\\+|-|/)", 
+  # Constructing the regular expression patterns for the target and its replacement.
+  # Escape the square brackets, underscores, and curly braces to match them literally
+  target_pattern <- paste0("(^|\\s|,|\\*|\\(|\\)|\\+|-|/|\\[|\\]|\\{|\\}|_)", 
                            target, 
-                           "($|\\s|,|\\*|\\(|\\)|\\+|-|/)")
-  replacement_pattern <- paste0("\\1", replacement, "\\2")
+                           "($|\\s|,|\\*|\\(|\\)|\\+|-|/|\\[|\\]|\\{|\\}|_)")
+  # target_pattern <- paste0("(^|\\s|,|\\*|\\(|\\)|\\+|-|/)", 
+  #                          target.mod, 
+  #                          "($|\\s|,|\\*|\\(|\\)|\\+|-|/)")
+  replacement_pattern <- paste0("\\1", replacement.mod, "\\2")
   
   # Apply function to each item in the list
   lapply(lst, function(item) {
@@ -90,7 +95,7 @@ replace_word_recursive <- function(lst,
 #  the specified replacement
 replace_word_vector <- function(vec, target, replacement) {
   # Apply the replacement to each element of the vector using sub
-  replaced_vec <- sapply(vec, function(item) sub(target, replacement, item))
+  replaced_vec <- sapply(vec, function(item) gsub(target, replacement, item))
   return(unname(replaced_vec))
 }
 
@@ -113,7 +118,7 @@ replace_word_vector <- function(vec, target, replacement) {
 replace_word_df <- function(df, target, replacement) {
   df[] <- lapply(df, function(col) {
     if (is.character(col)) {
-      return(sapply(col, function(cell) sub(target, replacement, cell)))
+      return(sapply(col, function(cell) gsub(target, replacement, cell)))
     }
     return(col)
   })

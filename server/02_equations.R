@@ -2142,8 +2142,10 @@ observeEvent(input$eqnCreate_addEqnToVector, {
 # Equation Main Table Render ---------------------------------------------------
 output$main_eqns_table <- renderRHandsontable({
   override <- rv.REFRESH$refresh.eqn.table
-  
-  if (nrow(rv.REACTIONS$reactions.df) == 0) {
+  df <- bind_rows(rv.REACTIONS$reactions)
+  print(df)
+  if (nrow(df) == 0) {
+  # if (nrow(rv.REACTIONS$reactions.df) == 0) {
     temp <- data.frame(c("Press addition button below to add equations
                        to compartment."))
     temp <- transpose(temp)
@@ -2173,7 +2175,8 @@ output$main_eqns_table <- renderRHandsontable({
                        allowColEdit = FALSE
       )
     } else {
-    df.to.show <- select(rv.REACTIONS$reactions.df,
+    # print(rv.REACTIONS$reactions.df)
+    df.to.show <- select(df,
                          "Equation.Text",
                          "Eqn.Display.Type",
                          "Compartment")
@@ -2550,7 +2553,9 @@ observeEvent(input$modal_delete_eqn_button, {
 observeEvent(rv.REACTIONS$reactions, {
     # rv.REACTIONS$reactions.df <- bind_rows(rv.REACTIONS$reactions)
   rv.REACTIONS$reactions.df <- as.tibble(
-    do.call(rbind, rv.REACTIONS$reactions))  
+    do.call(rbind, rv.REACTIONS$reactions))
+  
+  print(rv.REACTIONS$reactions.df)
   #Update Number Counters on Equation Modals
   updatePickerInput(session,
                     'eqnCreate_edit_select_equation',

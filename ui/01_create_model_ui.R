@@ -146,10 +146,10 @@ TAB_VAR_CREATE <-
             fluidRow(
               column(
                 width = 12,
-                actionButton(
-                  inputId = "test_popup_table",
-                  "Popout"
-                ),
+                # actionButton(
+                #   inputId = "test_popup_table",
+                #   "Popout"
+                # ),
                 div(
                   rHandsontableOutput("myVariables_DT"),
                   fluidRow(
