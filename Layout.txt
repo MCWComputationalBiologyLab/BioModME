@@ -10,3 +10,4 @@ folder: shared_files - files for tutorials that can be downloaded from github (h
 folder: www - contains relevant images, js, and css files.
 folder: test_scripts - contains scripts I use for testing and have been too scared to delete. 
 folder: utils - contains functions that are used in program but need to be loaded in session as they use program elements.
+folder: modules - contains module functions in r for repeating UI elements
