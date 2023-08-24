@@ -156,7 +156,7 @@ server <- shinyServer(function(input, output, session) {
     }
   })
   outputOptions(output, "UIOutput_renderTab_options", suspendWhenHidden = FALSE)
-  
+  options(shiny.tooltip = TRUE)
   # This changes the colors of the generated DT table UI
   # observeEvent(input$css_selector, {
   #   if (input$css_selector == "default") {
