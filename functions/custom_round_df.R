@@ -1,9 +1,10 @@
 # custom_round_df
 #
-# This function rounds numeric columns in a dataframe based on specified parameters.
-# The primary goal is to provide custom rounding options, with added flexibility for
-# the first column. It can also convert values to scientific notation if they round to zero.
-# Non-numeric columns are returned untouched.
+# Purpose:
+#   This function rounds numeric columns in a dataframe based on specified parameters.
+#   The primary goal is to provide custom rounding options, with added flexibility for
+#   the first column. It can also convert values to scientific notation based on the 
+#   conditions set by the user. Non-numeric columns are returned untouched.
 #
 # Args:
 #   df: The input dataframe.
@@ -16,16 +17,16 @@
 #                     Default is FALSE.
 #   first_col_digits: Number of decimal places to which the first column should be rounded.
 #                     If not specified, it defaults to the value of 'digits'.
+#   all_sci: If TRUE, all numeric values are displayed in scientific notation regardless of their magnitude.
+#            Default is FALSE.
+#   ignore_rounding: If TRUE, values will not be rounded but other format options like scientific notation will still be applied.
+#                    Default is FALSE.
 #
 # Returns:
-#   A dataframe with rounded numeric columns based on the specified parameters.
+#   A dataframe with numeric columns formatted based on the specified parameters.
 
-custom_round_df <- function(df, 
-                            digits = 2, 
-                            zero_as_plain = TRUE, 
-                            to_sci = TRUE, 
-                            ignore_first_col = FALSE, 
-                            first_col_digits = NULL) {
+custom_round_df <- function(df, digits = 2, zero_as_plain = TRUE, to_sci = TRUE, ignore_first_col = FALSE, 
+                            first_col_digits = NULL, all_sci = FALSE, ignore_rounding = FALSE) {
   
   # If first_col_digits is not provided, use the default digits value
   if (is.null(first_col_digits)) {
@@ -35,12 +36,18 @@ custom_round_df <- function(df,
   # Internal function for custom rounding
   custom_round <- function(x, custom_digits = digits) {
     
+    # Convert value to scientific notation if all_sci is TRUE
+    if(all_sci) {
+      return(formatC(x, format = "e", digits = custom_digits))
+    }
+    
     # Check if value is zero and zero_as_plain is TRUE
     if(zero_as_plain && x == 0) {
       return(0)
     }
     
-    rounded_x <- round(x, custom_digits)
+    # Decide whether to round or not
+    rounded_x <- if (ignore_rounding) x else round(x, custom_digits)
     
     # Check if the rounded value is close enough to zero for scientific notation
     if(to_sci && abs(rounded_x) < 10^(-custom_digits)) {
