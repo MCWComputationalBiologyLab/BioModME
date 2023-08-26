@@ -266,10 +266,41 @@ output$execute_table_for_model <- DT::renderDataTable({
   
   # m <- custom_round_df(m,
   #                      ignore_first_col = TRUE)
+  
+  to_sci <- input$execute_view_scientific_notation
+  ignore_first_col <- FALSE
+  first_col_digits <- get_decimal_places(time_step)
+  all_sci <- FALSE
+  ignore_rounding <- input$execute_view_round_values
+  
+  if (to_sci) {
+    if (input$PI_execute_sci_not_options == "ALL") {
+      all_sci <- TRUE
+    } 
+  } 
+  
+  if (input$execute_view_round_values) {
+    ignore_rounding <- FALSE
+    if (input$CBI_execute_first_col_use_time) {
+      first_col_digits <- get_decimal_places(time_step)
+    } else {
+      first_col_digits <- input$execute_view_round_digits_first_col
+    }
+  } else {
+    ignore_rounding <- TRUE
+  }
+
+  
   m <-
     custom_round_df(
-      m,
-      first_col_digits = get_decimal_places(time_step)
+      df = m,
+      digits = input$execute_view_round_digits,
+      zero_as_plain = TRUE,
+      to_sci = to_sci, 
+      ignore_first_col = ignore_first_col, 
+      first_col_digits = first_col_digits, 
+      all_sci = all_sci,
+      ignore_rounding = ignore_rounding
       )
   # if (input$execute_view_round_values) {
   #   m <- round(m[1:nrow(m), 1:ncol(m)], 

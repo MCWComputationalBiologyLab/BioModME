@@ -46,13 +46,6 @@ TAB_RUN_EXECUTE <-
                   inputId = "execute_show_advanced_options",
                   label = "Advanced Options",
                   value = FALSE)
-              ),
-              div(
-                style = "padding-top: 33px",
-                awesomeCheckbox(
-                  inputId = "execute_show_viewing_options",
-                  label = "Viewing Options",
-                  value = FALSE)
               )
             )
           ),
@@ -101,47 +94,6 @@ TAB_RUN_EXECUTE <-
                                          "ode23",
                                          "ode45",
                                          "radau")
-                )
-              )
-            )
-          ),
-          conditionalPanel(
-            condition = "input.execute_show_viewing_options",
-            hr(),
-            h2(tags$u(tags$b("Viewing Options"))),
-            fluidRow(
-              column(
-                width = 3, 
-                checkboxInput(
-                  inputId = "execute_view_scientific_notation",
-                  label = "Scientific Notation",
-                  value = FALSE
-                ),
-                textInput(
-                  inputId = "execute_view_scinot_digits",
-                  label = "Digits",
-                  value = "2"
-                )
-              ), 
-              column(
-                width = 3,
-                checkboxInput(
-                  inputId = "execute_view_round_values",
-                  label = "Round",
-                  value = TRUE
-                ),
-                textInput(
-                  inputId = "execute_view_round_digits",
-                  label = "Round to",
-                  value = "3"
-                )
-              ),
-              column(
-                width = 3, 
-                pickerInput(
-                  inputId = "execute_results_unit",
-                  label = "Results Units",
-                  choices = measurements::conv_unit_options$count
                 )
               )
             )
@@ -203,16 +155,136 @@ TAB_RUN_EXECUTE <-
               )
             )
           )
+        ),
+        tabPanel(
+          title = "Viewing Options",
+          fluidRow(
+            column(
+              width = 6,
+              tableLayoutDualColumns(
+                labels = c("", ""),
+                widgets = list(
+                  div(
+                    style = "margin-top: 35px;",
+                    checkboxInput(
+                      inputId = "execute_view_round_values",
+                      label = "Round",
+                      value = TRUE
+                    )
+                  ),
+                  div(
+                    style = "margin-top: 35px;",
+                    checkboxInput(
+                      inputId = "execute_view_scientific_notation",
+                      label = "Scientific Notation",
+                      value = FALSE
+                    )
+                  )
+                ),
+                widgets2 = list(
+                  numericInput(
+                    inputId = "execute_view_round_digits",
+                    label = "Round to",
+                    value = 3,
+                    min = 1,
+                    max = 50,
+                    step = 1
+                  ),
+                  pickerInput(
+                    inputId = "PI_execute_sci_not_options",
+                    label = "Choose:",
+                    choices = c("All Values" = "ALL",
+                                "Values smaller than round" = "STR"),
+                    selected = "STR"
+                  )
+                ),
+                headerLabels = c("", ""),
+                removeFirstCol = TRUE,      
+                colPercents = c(40,60)
+              )
+            ),
+            column(
+              width = 6,
+              tableLayoutDualColumns(
+                labels = c("", ""),
+                widgets = list(
+                  div(
+                    style = "margin-top: 35px;",
+                    checkboxInput(
+                      inputId = "CBI_execute_first_col_separate",
+                      label = "Round Time Separate",
+                      value = TRUE
+                    )
+                  ),
+                  div(
+                    style = "margin-top: 35px;",
+                    checkboxInput(
+                      inputId = "CBI_execute_first_col_use_time",
+                      label = "Round with time step",
+                      value = TRUE
+                    )
+                  )
+                ),
+                widgets2 = list(
+                  numericInput(
+                    inputId = "execute_view_round_digits_first_col",
+                    label = "Round to",
+                    value = 3,
+                    min = 1,
+                    max = 50,
+                    step = 1
+                  ),
+                  NULL
+                ),
+                headerLabels = c("", ""),
+                removeFirstCol = TRUE,      
+                colPercents = c(40,60),
+                colSpacing = "30px"
+              ),
+            )
+          ),
+          hr(),
+          fluidRow(
+            column(
+              width = 3,
+              pickerInput(
+                inputId = "execute_results_unit",
+                label = "Results Units",
+                choices = measurements::conv_unit_options$count
+              )
+            )
+          )
+          # fluidRow(
+          #   column(
+          #     width = 3,
+          #     checkboxInput(
+          #       inputId = "execute_view_scientific_notation",
+          #       label = "Scientific Notation",
+          #       value = FALSE
+          #     )
+          #   ),
+          #   column(
+          #     width = 4,
+          #     conditionalPanel(
+          #       condition = "input.execute_view_round_values",
+          #       pickerInput(
+          #         inputId = "PI_execute_sci_not_options",
+          #         label = "Choose:",
+          #         choices = c("All Values" = "ALL",
+          #                     "Values smaller than round" = "STR"),
+          #         selected = "STR"
+          #       )
+          #     )
+          #   )
+          # )
         )
       ),
     hr(),
 
     tableDownloadButtonsUI("module_execute_buttons"),
-     # tags$head(tags$style(".datatables .display {margin-left: 0;}"))
-     # ,shinycssloaders::withSpinner(DTOutput("execute_table_for_model"))
     DTOutput("execute_table_for_model"),
     inlineCSS("#execute_table_for_model .dataTables_length  
-              {float: right !important;")
-     # ,tableOutput("table_output_test1")
-      
+              {float: right !important;
+              margin-top: -35px}
+              ")
 )
