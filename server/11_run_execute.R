@@ -251,92 +251,56 @@ observeEvent(input$execute_results_unit, {
 })
 
 # DT Table Button Addons  ------------------------------------------------------
-execute_table <- reactive({
-  rv.RESULTS$results.model.final
-})
 
-callModule(tableDownloadButtons, 
-           "module_execute_buttons", 
-           execute_table)
-
-# # copy
-# observeEvent(input$bttn_download_model_results_copy, {
-#   clipr::write_clip(rv.RESULTS$results.model.final)
-#   showModal(modalDialog(
-#     title = "Copy",
-#     "Table copied to clipboard.",
-#     easyClose = TRUE,
-#     footer = NULL
-#   ))
-# })
-# 
-# 
-# # csv file
-# output$bttn_download_model_results_csv <- downloadHandler(
-#   filename = function() {
-#     "download.csv"
-#   },
-#   content = function(file) {
-#     write.csv(rv.RESULTS$results.model.final, 
-#               file,
-#               row.names = FALSE)
-#   }
-# )
-# 
-# # xlsx file
-# output$bttn_download_model_results_xlsx <- downloadHandler(
-#   filename = function() {
-#     "download.xlsx"
-#   },
-#   content = function(file) {
-#     writexl::write_xlsx(
-#       as.data.frame(rv.RESULTS$results.model.final),
-#       path = file
-#     )
-#   }
-# )
-# 
-# # Open in New Window
-# observeEvent(input$bttn_download_model_results_new_window, {
-# 
-#   showTableInPopup(rv.RESULTS$results.model.final, 
-#                    session, 
-#                    width = 900, 
-#                    height = 500)
-# })
+callModule(tableDownloadButtons,
+           "module_execute_buttons",
+           rv.RESULTS$results.model.final)
 
 # Results Table Render ---------------------------------------------------------
 output$execute_table_for_model <- DT::renderDataTable({
   req(rv.RESULTS$results.model.has.been.solved)
   m <- rv.RESULTS$results.model.units.view
-  if (input$execute_view_round_values) {
-    m <- round(m[1:nrow(m), 1:ncol(m)], 
-               digits = as.numeric(input$execute_view_round_digits))
-  }
   
-  if (input$execute_view_scientific_notation) {
-    m1 <- m[,1]
-    m2 <- format(m[,2:ncol(m)],
-                 scientific = TRUE,
-                 digits = as.numeric(input$execute_view_scinot_digits))
-    m <- cbind(m1, m2)
-    
-    # m <- format(m, 
-    #             scientific = TRUE,
-    #             digits = as.numeric(input$execute_view_scinot_digits))
-  }
+
+  isolate(time_step <- input$execute_time_step)
   
-  time.w.units <- paste0("time (", rv.RESULTS$results.time.units, ")")
+  # m <- custom_round_df(m,
+  #                      ignore_first_col = TRUE)
+  m <-
+    custom_round_df(
+      m,
+      first_col_digits = get_decimal_places(time_step)
+      )
+  # if (input$execute_view_round_values) {
+  #   m <- round(m[1:nrow(m), 1:ncol(m)], 
+  #              digits = as.numeric(input$execute_view_round_digits))
+  # }
+  # 
+  # if (input$execute_view_scientific_notation) {
+  #   m1 <- m[,1]
+  #   m2 <- format(m[,2:ncol(m)],
+  #                scientific = TRUE,
+  #                digits = as.numeric(input$execute_view_scinot_digits))
+  #   m <- cbind(m1, m2)
+  #   
+  #   # m <- format(m, 
+  #   #             scientific = TRUE,
+  #   #             digits = as.numeric(input$execute_view_scinot_digits))
+  # }
+  
+  time.w.units <- paste0("Time (", rv.RESULTS$results.time.units, ")")
   # time.w.units <- "time (min)"
   colnames(m)[1] <- time.w.units
 
   DT::datatable(m,
-                options = list(autoWidth = TRUE,
-                               ordering = FALSE,
-                               dom = "ltipr",
-                               lengthMenu = list(c(5, 15, 100, -1),
-                                                 c('5', '15', "100", 'All')
-                                                 ),
-                               pageLength = 100)
+                options = list(
+                  autoWidth = TRUE,
+                  ordering = FALSE,
+                  dom = "ltipr",
+                  columnDefs = list(list(className = "dt-center",
+                                         targets = "_all")),
+                  lengthMenu = list(c(5, 15, 100, -1),
+                                    c('5', '15', "100", 'All')),
+                  pageLength = 100)
                 )
 })

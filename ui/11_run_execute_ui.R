@@ -206,35 +206,7 @@ TAB_RUN_EXECUTE <-
         )
       ),
     hr(),
-    # fluidRow(
-    #   # Moves buttons further down to align with table better but we need to 
-    #   # add a z index to the bottom to make the tooltips popup
-    #   style = "margin-bottom: -35px;",
-    #   actionButton(
-    #     inputId = "bttn_download_model_results_copy",
-    #     label = NULL,
-    #     icon = icon("copy", lib = "font-awesome"),
-    #     style = "z-index: 100;"
-    #   ),
-    #  downloadButton(
-    #    outputId = "bttn_download_model_results_csv",
-    #    label = NULL,
-    #    icon = icon("file-csv", lib = "font-awesome"),
-    #    style = "z-index: 100;"
-    #  ),
-    #   downloadButton(
-    #     outputId = "bttn_download_model_results_xlsx",
-    #     label = NULL,
-    #     icon = icon("table", lib = "font-awesome"),
-    #     style = "z-index: 100;"
-    #   ),
-    #   actionButton(
-    #     inputId = "bttn_download_model_results_new_window",
-    #     label = NULL,
-    #     icon = icon("arrow-up-right-from-square", lib = "font-awesome"),
-    #     style = "z-index: 100;"
-    #   )
-    # ),
+
     tableDownloadButtonsUI("module_execute_buttons"),
      # tags$head(tags$style(".datatables .display {margin-left: 0;}"))
      # ,shinycssloaders::withSpinner(DTOutput("execute_table_for_model"))

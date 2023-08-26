@@ -1,4 +1,6 @@
-tableDownloadButtons <- function(input, output, session, data) {
+tableDownloadButtons <- function(input, output, session, rvdata) {
+  
+  data <- reactive(rvdata)
   
   observeEvent(input$bttn_download_model_results_copy, {
     clipr::write_clip(data())
@@ -30,7 +32,7 @@ tableDownloadButtons <- function(input, output, session, data) {
   
   # Open in New Window
   observeEvent(input$bttn_download_model_results_new_window, {
-    showTableInPopup(data(), session, width = 900, height = 500)
+    showTableInPopup(as.data.frame(data()), session, width = 900, height = 500)
   })
   
 }

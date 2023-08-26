@@ -53,21 +53,19 @@ tableDownloadButtonsUI <- function(id, placement = "bottom") {
     tags$style(HTML("
                     
       .custom-tooltip.bottom {
-      visibility: visible;
-    top: 100%;   /* This positions it right below the button */
-    left: 50%;
-    transform: translateX(-50%);
-    margin-top: 5px;   /* This provides a little space between the button and the tooltip */
-}
-
+        visibility: visible;
+        top: 100%;   /* This positions it right below the button */
+        left: 50%;
+        transform: translateX(-50%);
+        margin-top: 5px;   /* This provides a little space between the button and the tooltip */
+      }
       
-.custom-tooltip.top {
-    bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    margin-bottom: 5px;   /* This provides a little space between the button and the tooltip */
-}
-
+      .custom-tooltip.top {
+          bottom: 100%;
+          left: 50%;
+          transform: translateX(-50%);
+          margin-bottom: 5px;   /* This provides a little space between the button and the tooltip */
+      }
       
       .custom-tooltip-wrapper {
         position: relative;
@@ -91,6 +89,10 @@ tableDownloadButtonsUI <- function(id, placement = "bottom") {
         pointer-events: none;
         max-width: 200px; 
         white-space: nowrap; 
+        box-sizing: border-box;
+        min-height: 30px;  /* Minimum height */
+        max-height: 70px;  /* Maximum height, adjust as needed */
+        overflow: hidden;  /* Ensures content that exceeds max height isn't visible */
       }
       
       .custom-tooltip-wrapper:hover .custom-tooltip {
@@ -98,14 +100,9 @@ tableDownloadButtonsUI <- function(id, placement = "bottom") {
         opacity: 1;
       }
       
-
     "))
-    
   )
 }
-
-
-
 
 # Server logic for the module
 tableDownloadButtons <- function(input, output, session, resultsRV) {
