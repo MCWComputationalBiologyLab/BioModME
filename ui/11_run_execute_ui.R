@@ -110,52 +110,52 @@ TAB_RUN_EXECUTE <-
             )
           )
         ),
-        tabPanel(
-          title = "Post Processing",
-          fluidRow(
-            textInput(
-              inputId = "pp_new_var",
-                     label = "New Variable Name",
-                     value = ""),
-            div(
-             style = "padding-top:30px;
-                      padding-left:5px;
-                      padding-right:5px;",
-               "="
-            ),
-            pickerInput(
-              inputId = "pp_add_vars",
-              label = "Variables to Add",
-              choices = c(),
-              multiple = TRUE,
-              options = list(title = "Select Variables To Add")
-            ),
-            pickerInput(
-              inputId = "pp_sub_vars",
-              label = "Variables to Subtract",
-              choices = c(),
-              multiple = TRUE,
-              options = list(title = "Select Variables To Subtract")
-            )
-          ),
-          fluidRow(
-            column(
-              width = 10,
-              verbatimTextOutput(
-                outputId = "pp_built_equation",
-                placeholder = TRUE
-              )
-            ),
-            column(
-              width = 2,
-              align = "right",
-              actionBttn(
-                inputId = "pp_submit_new_var",
-                label = "Submit"
-              )
-            )
-          )
-        ),
+        # tabPanel(
+        #   title = "Post Processing",
+        #   fluidRow(
+        #     textInput(
+        #       inputId = "pp_new_var",
+        #              label = "New Variable Name",
+        #              value = ""),
+        #     div(
+        #      style = "padding-top:30px;
+        #               padding-left:5px;
+        #               padding-right:5px;",
+        #        "="
+        #     ),
+        #     pickerInput(
+        #       inputId = "pp_add_vars",
+        #       label = "Variables to Add",
+        #       choices = c(),
+        #       multiple = TRUE,
+        #       options = list(title = "Select Variables To Add")
+        #     ),
+        #     pickerInput(
+        #       inputId = "pp_sub_vars",
+        #       label = "Variables to Subtract",
+        #       choices = c(),
+        #       multiple = TRUE,
+        #       options = list(title = "Select Variables To Subtract")
+        #     )
+        #   ),
+        #   fluidRow(
+        #     column(
+        #       width = 10,
+        #       verbatimTextOutput(
+        #         outputId = "pp_built_equation",
+        #         placeholder = TRUE
+        #       )
+        #     ),
+        #     column(
+        #       width = 2,
+        #       align = "right",
+        #       actionBttn(
+        #         inputId = "pp_submit_new_var",
+        #         label = "Submit"
+        #       )
+        #     )
+        #   )
+        # ),
         tabPanel(
           title = "Viewing Options",
           fluidRow(
