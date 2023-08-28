@@ -39,7 +39,8 @@ tableDownloadButtonsUI <- function(id,
           actionButton(
             inputId = ns("bttn_download_model_results_new_window"),
             label = NULL,
-            icon = icon("arrow-up-right-from-square", lib = "font-awesome"),
+            # icon = icon("arrow-up-right-from-square", lib = "font-awesome"),
+            icon = icon("square-arrow-up-right", lib = "font-awesome"),
             style = "z-index: 100;"
           ),
           span(class = paste0("custom-tooltip ", placement), "New Window")
