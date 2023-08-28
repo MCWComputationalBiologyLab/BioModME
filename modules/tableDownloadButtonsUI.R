@@ -40,7 +40,7 @@ tableDownloadButtonsUI <- function(id,
             inputId = ns("bttn_download_model_results_new_window"),
             label = NULL,
             # icon = icon("arrow-up-right-from-square", lib = "font-awesome"),
-            icon = icon("table", lib = "font-awesome"),
+            icon = icon("export", lib = "glyphicon"),
             style = "z-index: 100;"
           ),
           span(class = paste0("custom-tooltip ", placement), "New Window")
