@@ -7,16 +7,16 @@ js2 <- paste0(c(
 
 TAB_RUN_LINEPLOT <- tabItem(
   tabName = "TAB_RUN_LINEPLOT",
-  fluidRow(
-    column(
-      width = 3,
-      
-    ),
-    column(
-      width = 2,
-
-    )
-  ),  
+  # fluidRow(
+  #   column(
+  #     width = 3,
+  #     
+  #   ),
+  #   column(
+  #     width = 2,
+  # 
+  #   )
+  # ),  
   br(),
   fluidRow(
     column(
@@ -517,80 +517,80 @@ TAB_RUN_LINEPLOT <- tabItem(
   ),
   br(),
 # Model Variables Box ----------------------------------------------------------
-  fluidRow(
-    column(
-      width = 12,
-      style = "padding: 0px;",
-      box(
-        id = "plot_box_change_vars",
-        width = 12,
-        title = "Model Variables",
-        collapsible = TRUE,
-        collapsed = TRUE,
-        fluidRow(
-          column(
-            width = 12,
-            div(
-              style = "background-color:#F9F9F9;
-                   border: 1px solid #c5c5c5;
-                   border-radius: 12px;
-                   padding: 10px 10px 10px 10px;",
-              fluidRow(
-                column(
-                  width = 9,
-                  fluidRow(
-                    textInput(
-                      inputId = "plot_execute_time_start",
-                      label = "Starting Time",
-                      value = "0"), 
-                    textInput(
-                      inputId = "plot_execute_time_end",
-                      label = "End Time",
-                      value = "10"), 
-                    textInput(
-                      inputId = "plot_execute_time_step",
-                      label = "Time Step",
-                      value = "0.1"), 
-                    pickerInput(
-                      inputId = "plot_execute_time_unit",
-                      label = "Unit",
-                      choices = measurements::conv_unit_options$duration
-                    )
-                  )
-                ),
-                column(
-                  offset = 1,
-                  width = 2,
-                  align = "right",
-                  div(style = "padding-top: 33px",
-                      actionButton(
-                        inputId = "plot_execute_refresh_plot",
-                        label = "Refresh Plot")
-                  )
-                )
-              )
-            )
-          )
-        ),
-        br(),
-        fluidRow(
-          column(
-            width = 12,
-            h5(shiny::tags$u("Change Model Parameters")),
-            rHandsontableOutput(outputId = "plot_param_table")
-          )
-        ),
-        br(),
-        fluidRow(
-          column(
-            width = 12,
-            h5(shiny::tags$u("Change Initial Conditions")),
-            rHandsontableOutput(outputId = "plot_var_table")
-          )
-        )
-      )
-    )
-  ),
+  # fluidRow(
+  #   column(
+  #     width = 12,
+  #     style = "padding: 0px;",
+  #     box(
+  #       id = "plot_box_change_vars",
+  #       width = 12,
+  #       title = "Model Variables",
+  #       collapsible = TRUE,
+  #       collapsed = TRUE,
+  #       fluidRow(
+  #         column(
+  #           width = 12,
+  #           div(
+  #             style = "background-color:#F9F9F9;
+  #                  border: 1px solid #c5c5c5;
+  #                  border-radius: 12px;
+  #                  padding: 10px 10px 10px 10px;",
+  #             fluidRow(
+  #               column(
+  #                 width = 9,
+  #                 fluidRow(
+  #                   textInput(
+  #                     inputId = "plot_execute_time_start",
+  #                     label = "Starting Time",
+  #                     value = "0"), 
+  #                   textInput(
+  #                     inputId = "plot_execute_time_end",
+  #                     label = "End Time",
+  #                     value = "10"), 
+  #                   textInput(
+  #                     inputId = "plot_execute_time_step",
+  #                     label = "Time Step",
+  #                     value = "0.1"), 
+  #                   pickerInput(
+  #                     inputId = "plot_execute_time_unit",
+  #                     label = "Unit",
+  #                     choices = measurements::conv_unit_options$duration
+  #                   )
+  #                 )
+  #               ),
+  #               column(
+  #                 offset = 1,
+  #                 width = 2,
+  #                 align = "right",
+  #                 div(style = "padding-top: 33px",
+  #                     actionButton(
+  #                       inputId = "plot_execute_refresh_plot",
+  #                       label = "Refresh Plot")
+  #                 )
+  #               )
+  #             )
+  #           )
+  #         )
+  #       ),
+  #       br(),
+  #       fluidRow(
+  #         column(
+  #           width = 12,
+  #           h5(shiny::tags$u("Change Model Parameters")),
+  #           rHandsontableOutput(outputId = "plot_param_table")
+  #         )
+  #       ),
+  #       br(),
+  #       fluidRow(
+  #         column(
+  #           width = 12,
+  #           h5(shiny::tags$u("Change Initial Conditions")),
+  #           rHandsontableOutput(outputId = "plot_var_table")
+  #         )
+  #       )
+  #     )
+  #   )
+  # ),
 # Import Data Box --------------------------------------------------------------
   fluidRow(
     column(
