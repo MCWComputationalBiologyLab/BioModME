@@ -261,7 +261,7 @@ output$execute_table_for_model <- DT::renderDataTable({
   req(rv.RESULTS$results.model.has.been.solved)
   m <- rv.RESULTS$results.model.units.view
   
-
+  # print(head(m))
   isolate(time_step <- input$execute_time_step)
   
   # m <- custom_round_df(m,
@@ -290,34 +290,17 @@ output$execute_table_for_model <- DT::renderDataTable({
     ignore_rounding <- TRUE
   }
 
-  
   m <-
     custom_round_df(
-      df = m,
+      df = as.data.frame(m),
       digits = input$execute_view_round_digits,
       zero_as_plain = TRUE,
-      to_sci = to_sci, 
-      ignore_first_col = ignore_first_col, 
-      first_col_digits = first_col_digits, 
+      to_sci = to_sci,
+      ignore_first_col = ignore_first_col,
+      first_col_digits = first_col_digits,
       all_sci = all_sci,
       ignore_rounding = ignore_rounding
       )
-  # if (input$execute_view_round_values) {
-  #   m <- round(m[1:nrow(m), 1:ncol(m)], 
-  #              digits = as.numeric(input$execute_view_round_digits))
-  # }
-  # 
-  # if (input$execute_view_scientific_notation) {
-  #   m1 <- m[,1]
-  #   m2 <- format(m[,2:ncol(m)],
-  #                scientific = TRUE,
-  #                digits = as.numeric(input$execute_view_scinot_digits))
-  #   m <- cbind(m1, m2)
-  #   
-  #   # m <- format(m, 
-  #   #             scientific = TRUE,
-  #   #             digits = as.numeric(input$execute_view_scinot_digits))
-  # }
   
   time.w.units <- paste0("Time (", rv.RESULTS$results.time.units, ")")
   # time.w.units <- "time (min)"

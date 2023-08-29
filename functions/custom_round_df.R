@@ -25,8 +25,14 @@
 # Returns:
 #   A dataframe with numeric columns formatted based on the specified parameters.
 
-custom_round_df <- function(df, digits = 2, zero_as_plain = TRUE, to_sci = TRUE, ignore_first_col = FALSE, 
-                            first_col_digits = NULL, all_sci = FALSE, ignore_rounding = FALSE) {
+custom_round_df <- function(df, 
+                            digits = 2, 
+                            zero_as_plain = TRUE, 
+                            to_sci = TRUE, 
+                            ignore_first_col = FALSE, 
+                            first_col_digits = NULL, 
+                            all_sci = FALSE, 
+                            ignore_rounding = FALSE) {
   
   # If first_col_digits is not provided, use the default digits value
   if (is.null(first_col_digits)) {
