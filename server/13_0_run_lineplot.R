@@ -18,7 +18,7 @@ gatherData <- function(data, varsToSelect){
   if (!is.null(varsToSelect)) {
     selectedData <- gather(select(data.frame(data),
                                   "time",
-                                  varsToSelect),
+                                  all_of(varsToSelect)),
                            Variable,
                            Value,
                            -one_of("time")
