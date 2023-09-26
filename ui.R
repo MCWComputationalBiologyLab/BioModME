@@ -176,7 +176,7 @@ ui <- dashboardPage(
         #          tabName = "TAB_CONTRIBUTIONS"),
         
         absolutePanel(
-          "v1.0",
+          "v1.1",
           bottom = 0,
           left = 5,
           fixed = TRUE
