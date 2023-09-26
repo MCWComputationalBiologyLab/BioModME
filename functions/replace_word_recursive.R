@@ -40,6 +40,11 @@ replace_word_recursive <- function(lst,
     replacement.mod <- replacement
   }
 
+  # Check if the input is a single atomic element (e.g., a double) and return it unchanged.
+  if (is.atomic(lst) && !is.character(lst)) {
+    return(lst)
+  }
+  
   # Constructing the regular expression patterns for the target and 
   # its replacement.
   # Constructing the regular expression patterns for the target and its replacement.

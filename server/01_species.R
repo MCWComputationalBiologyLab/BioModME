@@ -649,14 +649,22 @@ observeEvent(input$myVariables_DT$changes$changes, {
     # rv.REACTIONS <- replace_word_recursive(rv.REACTIONS, old, new)
     # browser()
     names.list <- names(rv.REACTIONS)
+    print(rv.REACTIONS$reaction.id.counter)
+    print(typeof(rv.REACTIONS$reaction.id.counter))
     for (name in names.list) {
+      print(name)
       rv.REACTIONS[[name]] <- 
         replace_word_recursive(rv.REACTIONS[[name]], old, new)
-
+      print("before latex")
+      print(rv.REACTIONS$reaction.id.counter)
+      print(typeof(rv.REACTIONS$reaction.id.counter))
       rv.REACTIONS[[name]] <- 
         replace_latex_variable_recursive(rv.REACTIONS[[name]], 
                                          Var2Latex(old), 
                                          Var2Latex(new))
+      print("after latex")
+      print(rv.REACTIONS$reaction.id.counter)
+      print(typeof(rv.REACTIONS$reaction.id.counter))
     }
     
     names.list <- names(rv.IO)

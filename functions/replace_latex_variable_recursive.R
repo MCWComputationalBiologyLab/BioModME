@@ -22,6 +22,10 @@ replace_latex_variable_recursive <- function(lst, target, replacement) {
     return(lst)
   }
   
+  # Check if the input is a single atomic element (e.g., a double) and return it unchanged.
+  if (is.atomic(lst) && !is.character(lst)) {
+    return(lst)
+  }
   # The target is taken as a literal string to match.
   target_pattern <- target
   
