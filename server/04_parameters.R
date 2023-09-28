@@ -113,50 +113,26 @@ observeEvent(input$parameters_DT$changes$changes, {
 
     rv.LOGS$IO.logs <- RenameVarInVector(old, new, rv.LOGS$IO.logs)
 
-    # Rename Parameters Found in Reaction Lists
-    rv.REACTIONS$reactions  <- 
-      RenameVarInList(old, new, rv.REACTIONS$reactions)
+    names.list <- names(rv.REACTIONS)
+    for (name in names.list) {
+      rv.REACTIONS[[name]] <- 
+        replace_word_recursive(rv.REACTIONS[[name]], old, new)
+      
+      rv.REACTIONS[[name]] <- 
+        replace_latex_variable_recursive(rv.REACTIONS[[name]], 
+                                         Var2Latex(old), 
+                                         Var2Latex(new))
+    }
     
-    rv.REACTIONS$massAction  <- 
-      RenameVarInList(old, new, rv.REACTIONS$massAction)
-    
-    rv.REACTIONS$massActionwReg  <- 
-      RenameVarInList(old, new, rv.REACTIONS$massActionwReg)
-    
-    rv.REACTIONS$michaelisMenten  <- 
-      RenameVarInList(old, new, rv.REACTIONS$michaelisMenten)
-    
-    rv.REACTIONS$synthesis  <- 
-      RenameVarInList(old, new, rv.REACTIONS$synthesis)
-    
-    rv.REACTIONS$degradation.by.rate  <- 
-      RenameVarInList(old, new, rv.REACTIONS$degradation.by.rate)
-    
-    rv.REACTIONS$degradation.by.enzyme  <-
-      RenameVarInList(old, new, rv.REACTIONS$degradation.by.enzyme)
-    
-    # Rename Parameters found in IO Lists
-    rv.IO$InputOutput  <- 
-      RenameVarInList(old, new, rv.IO$InputOutput)
-    
-    rv.IO$Flow.In  <- 
-      RenameVarInList(old, new, rv.IO$Flow.In)
-    
-    rv.IO$Flow.Out  <- 
-      RenameVarInList(old, new, rv.IO$Flow.Out)
-    
-    rv.IO$Flow.Between  <- 
-      RenameVarInList(old, new, rv.IO$Flow.Between)
-    
-    rv.IO$Clearance  <- 
-      RenameVarInList(old, new, rv.IO$Clearance)
-    
-    rv.IO$Simple.Diffusion  <- 
-      RenameVarInList(old, new, rv.IO$Simple.Diffusion)
-    
-    rv.IO$Facilitated.Diffusion  <- 
-      RenameVarInList(old, new, rv.IO$Facilitated.Diffusion)
-    
+    names.list <- names(rv.IO)
+    for (name in names.list) {
+      rv.IO[[name]] <- 
+        replace_word_recursive(rv.IO[[name]], old, new)
+      rv.IO[[name]] <- 
+        replace_latex_variable_recursive(rv.IO[[name]],
+                                         Var2Latex(old), 
+                                         Var2Latex(new))
+    }
     
     # If volume change in compartment data structure
     if (rv.PARAMETERS$parameters[[par.id]]$Type == "Compartment") {
