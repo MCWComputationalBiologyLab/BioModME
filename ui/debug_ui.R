@@ -1,6 +1,9 @@
 TAB_DEBUG <-   
   tabItem(
     tabName = "TAB_DEBUG",
+    "This page is meant for developers to be able to quickly/easily see different
+    variables and data structures of the application.  Allowing insight, and, 
+    hopefully, ease of finding and narrowing down software bugs.",
     fluidRow(
       column(
         width = 3,
