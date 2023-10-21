@@ -406,6 +406,83 @@ buildMathjaxEqn <- function(de.entry,
 
 
 # Download Button - Modal ------------------------------------------------------
+
+observe({
+  
+  eqn.choices  <- unname(sapply(rv.DE$de.equations.list,
+                         get,
+                         x = "Name"))
+  
+  updatePickerInput(
+    session = session,
+    inputId = "PI_dde_mathml_selection",
+    choices = c("View All", eqn.choices)
+  )
+})
+
+output$vTO_displayEquations_txt <- renderText({
+  eqns  <- unname(sapply(rv.DE$de.equations.list,
+                         get,
+                         x = "ODES.eqn.string"))
+  print(paste(eqns, collapse = "\n"))
+})
+
+output$vTO_displayEquations_mathml <- renderText({
+  # browser()
+  eqns  <- unname(sapply(rv.DE$de.equations.list,
+                         get,
+                         x = "ODES.eqn.string"))
+  
+  equations_vector <- 
+    unname(
+      sapply(
+        rv.DE$de.equations.list,
+        get,
+        x = "Name"
+      )
+    )
+  
+  # Convert to mathml
+  mathml_equations <- c()
+  for (i in seq_along(eqns)) {
+    temp <- 
+      paste0(
+        "<math xmlns=\"http://www.w3.org/1998/Math/MathML\">",
+        string2mathml(eqns[i]),
+        "</math>"
+      )
+    mathml_equations <- c(mathml_equations, temp)
+  }
+  
+  if (input$PI_dde_mathml_selection == "View All") {
+    formatted_mathml <- sapply(mathml_equations, function(eq) {
+      parsed_xml <- read_xml(eq)
+      xml_str <- as.character(parsed_xml)
+      xml_str <- gsub('<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n', 
+                      '', 
+                      xml_str,
+                      fixed = TRUE)
+    })
+    paste(formatted_mathml, collapse = "\n\n")
+  } else {
+    index <- which(equations_vector == input$PI_dde_mathml_selection)
+    parsed_xml <- read_xml(mathml_equations[[index]])
+    xml_str <- as.character(parsed_xml)
+    xml_str <- gsub('<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n', 
+                    '', 
+                    xml_str,
+                    fixed = TRUE)
+  }
+  # print(eqns)
+})
+
+output$vTO_displayEquations_latex <- renderText({
+  eqns  <- unname(sapply(rv.DE$de.equations.list,
+                         get,
+                         x = "ODES.eqn.string"))
+  print(eqns)
+})
+
 output$dbttn_download_diffequations_specific <- downloadHandler(
   filename = function() {
     # paste0(input$PI_dde_choose_download_type,
