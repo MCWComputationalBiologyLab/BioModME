@@ -346,7 +346,7 @@ TAB_VAR_CREATE <-
                 align = "right",
                 actionButton(
                   inputId = "diffeq_generate_equations",
-                  label = "Generate")
+                  label = "Refresh")
               )
             ),
             conditionalPanel(
