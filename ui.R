@@ -85,6 +85,7 @@ source(file.path("ui", "51_parameter_estimation_ui.R"))
 source(file.path("ui", "51_create_custom_law_ui.R"))
 source(file.path("ui", "51_create_custom_eqn_ui.R"))
 source(file.path("ui", "61_global_options_ui.R"))
+source(file.path("ui", "71_import_ui.R"))
 source(file.path("ui", "repository_ui.R"))
 source(file.path("ui", "debug_ui.R"))
 # source(file.path("server", "tableLayout.R"))
@@ -149,6 +150,9 @@ ui <- dashboardPage(
         menuItem("Export",
                  tabName = "TAB_EXPORT",
                  icon = icon("file-export")),
+        menuItem("Import",
+                 tabName = "TAB_IMPORT",
+                 icon = icon("file-import")),
         menuItem("Summary",
                  tabName = "TAB_SUMMARY",
                  icon = icon("list-alt")),
@@ -254,6 +258,7 @@ ui <- dashboardPage(
       TAB_HOME,
       TAB_VAR_CREATE,
       TAB_EXPORT,
+      TAB_IMPORT,
       TAB_RUN_EXECUTE,
       TAB_RUN_LINEPLOT,
       TAB_SUMMARY,
@@ -271,20 +276,6 @@ ui <- dashboardPage(
   # Sidebar of main page
   controlbar = dashboardControlbar(
     uiOutput("UIOutput_renderTab_options"),
-    fileInput(
-      "file_input_load_rds",
-      "Load From .rds",
-      placeholder = "Choose .rds File",
-      multiple = FALSE,
-      accept = c(".rds")
-    ),
-    fileInput(
-      "file_input_load_sbml",
-      "Load From SBML",
-      placeholder = " .xml",
-      multiple = FALSE,
-      accept = c(".xml")
-    ),
     checkboxInput(
       inputId = "CB_showDegbugTab",
       label = "Show Debug",
