@@ -25,6 +25,10 @@ TAB_VAR_CREATE <-
     # Input/Ouput Modals
     source(file.path(".", "ui", "modal_IO_add.R"), local = TRUE)$value, 
     source(file.path(".", "ui", "modal_IO_delete.R"), local = TRUE)$value,
+    
+    # Differenial Equation Modals
+    source(file.path(".", "ui", "modal_download_differential_equations.R"),
+           local = TRUE)$value,
 
     jqui_sortable(
     div(
@@ -344,6 +348,10 @@ TAB_VAR_CREATE <-
               column(
                 width = 12,
                 align = "right",
+                actionButton(
+                  inputId = "bttn_diffeq_download_modal",
+                  label = "Download"
+                ),
                 actionButton(
                   inputId = "diffeq_generate_equations",
                   label = "Refresh")

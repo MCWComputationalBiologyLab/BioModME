@@ -403,3 +403,54 @@ buildMathjaxEqn <- function(de.entry,
 
 #   return(out)
 # })
+
+
+# Download Button - Modal ------------------------------------------------------
+output$dbttn_download_diffequations_specific <- downloadHandler(
+  filename = function() {
+    # paste0(input$PI_dde_choose_download_type,
+    #        "_differential_equation.txt")
+    
+    # paste("equation.", input$PI_dde_choose_download_type, sep = "")
+    switch(input$PI_dde_choose_download_type,
+           "txt" = "txt_differential_equations.txt",
+           "latex" = "latex_differential_equations.txt",
+           "mathml" = "mathml_differential_equations.txt")
+  },
+  content = function(file) {
+
+    
+    if(input$PI_dde_choose_download_type == "txt") {
+      
+      eqns  <- unname(sapply(rv.DE$de.equations.list,
+                             get,
+                             x = "ODES.eqn.string"))
+      eqns  <- paste0(eqns, collapse = "\n")
+      # TODO add LHS off equation d[A]/dt = eqns[i]
+      writeLines(eqns, file)
+      
+    } else if(input$PI_dde_choose_download_type == "mathml") {
+      
+      eqns  <- unname(sapply(rv.DE$de.equations.list,
+                             get,
+                             x = "ODES.eqn.string"))
+      # Convert to mathml
+      mathml.eqns <- c()
+      for (i in seq_along(eqns)) {
+        temp <- 
+          paste0(
+            "<math xmlns=\"http://www.w3.org/1998/Math/MathML\">",
+            string2mathml(eqns[i]),
+            "</math>"
+          )
+        mathml.eqns <- c(mathml.eqns, temp)
+      }
+      
+      mathml.eqns <- paste0(mathml.eqns, collapse = "\n")
+      writeLines(mathml.eqns, file)
+      
+    } else if(input$PI_dde_choose_download_type == "latex") {
+      writeLines(equation_as_latex, file)
+    }
+  }
+)
