@@ -78,9 +78,9 @@ source(file.path("ui", "11_run_execute_ui.R"))
 source(file.path("ui", "12_run_post_processing_ui.R"))
 source(file.path("ui", "13_run_lineplot_ui.R"))
 source(file.path("ui", "21_export_ui.R"))
-# source(file.path("ui", "31_documentation_ui.R"))
+source(file.path("ui", "31_documentation_ui.R"))
 source(file.path("ui", "41_summary_ui.R"))
-# source(file.path("ui", "contributions_ui.R"))
+source(file.path("ui", "contributions_ui.R"))
 source(file.path("ui", "51_parameter_estimation_ui.R"))
 source(file.path("ui", "51_create_custom_law_ui.R"))
 source(file.path("ui", "51_create_custom_eqn_ui.R"))
@@ -161,9 +161,9 @@ ui <- dashboardPage(
           tabName = "TAB_GLOBAL_OPTIONS",
           icon = icon("tags", lib = "glyphicon")
         ),
-        # menuItem("Documentation",
-        #          tabName = "TAB_DOCUMENTATION",
-        #          icon = icon("book")),
+        menuItem("Documentation",
+                 tabName = "TAB_DOCUMENTATION",
+                 icon = icon("book")),
         menuItem("Repository",
                  tabName = "TAB_MODEL_REPOSITORY",
                  icon = icon("book")),
@@ -175,9 +175,8 @@ ui <- dashboardPage(
             icon = icon("erase", lib = "glyphicon")
           )
         ),
-        
-        # menuItem("Contributions",
-        #          tabName = "TAB_CONTRIBUTIONS"),
+        menuItem("Contributions",
+                 tabName = "TAB_CONTRIBUTIONS"),
         
         absolutePanel(
           "v1.10",
@@ -266,8 +265,8 @@ ui <- dashboardPage(
       TAB_CREATE_CUSTOM_LAW,
       TAB_CREATE_CUSTOM_EQN,
       TAB_GLOBAL_OPTIONS,
-      # TAB_DOCUMENTATION,
-      # TAB_CONTRIBUTIONS,
+      TAB_DOCUMENTATION,
+      TAB_CONTRIBUTIONS,
       TAB_MODEL_REPOSITORY,
       TAB_DEBUG
     )
