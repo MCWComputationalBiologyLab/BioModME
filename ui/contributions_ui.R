@@ -36,7 +36,7 @@ TAB_CONTRIBUTIONS <-
     "This application was made in conjuction with the Dash/Terhune labs at the 
     Medical College of Wisconsin.",
     br(),
-    "Lead programmers in the development wereJustin Womack and Viren Shah.",
+    "Lead programmers in the development were Justin Womack and Viren Shah.",
     br(),
     br(),
     "Ranjan Dash: rdash@mcw.edu",
