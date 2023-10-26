@@ -22,7 +22,6 @@ ssd_objective <- function(par.to.estimate,
   # Outputs: 
   # (1) out - vector of residuals to be analyzed with a minimization function
   
-  
   # Unpack parameters 
   par.to.run <- listReplace(par.to.estimate, par.in.model)
   
@@ -151,6 +150,11 @@ observeEvent(rv.PARAMETERS$parameters.names, {
 
 # Function to update PE RV for selected parameters -----------------------------
 observeEvent(input$pe_select_par, {
+  # This event occurs when the "Parameters to Estimate:" pickerinput changes
+  # and more parameters are added to be estimated. It serves as a stoarge 
+  # transfer, adding/removing changes to the parameters that will be reflected
+  # in the generated parameter table.
+  
   pars <- input$pe_select_par
   
   # Remove vars from RV that are no longer selected
@@ -162,8 +166,8 @@ observeEvent(input$pe_select_par, {
   }
   
   if (length(idx.to.remove > 0)) {
-    rv.PAR.ESTIMATION$pe.parameters <- r
-    v.PAR.ESTIMATION$pe.parameters[-idx.to.remove]
+    rv.PAR.ESTIMATION$pe.parameters <- 
+      rv.PAR.ESTIMATION$pe.parameters[-idx.to.remove]
     
     rv.PAR.ESTIMATION$pe.initial.guess <- 
       rv.PAR.ESTIMATION$pe.initial.guess[-idx.to.remove]
@@ -194,6 +198,7 @@ observeEvent(input$pe_select_par, {
 
 # Generate Rhandsontable for parameters to estimate ----------------------------
 output$pe_parameter_value_table <- renderRHandsontable({
+  print("PE table gen")
   # Make first column uneditable
   # Make second column needs to be numeric between certain values
   # Bound columns need to be same as last with Infs
@@ -219,7 +224,7 @@ output$pe_parameter_value_table <- renderRHandsontable({
 
 # Edit and save changed to pe parameter value table (rhandontable) -------------
 observeEvent(input$pe_parameter_value_table$changes$changes, {
-  
+
   # xi, yi are table coordinates (remember js starts at 0, so we add 1 for R)
   # xi is 
   # old, new are the old value in that cell and the new value in the cell
