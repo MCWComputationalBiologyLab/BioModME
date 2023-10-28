@@ -219,8 +219,10 @@ observeEvent(input$parameters_DT$changes$changes, {
       
       if (comparison$is.match) {
         # Parameter unit change
-        rv.PARAMETERS$parameters[[par.id]]$Unit <- new
+        new <- Unit_Dict_Convert(UNIT_MAPPING, new)
         
+        rv.PARAMETERS$parameters[[par.id]]$Unit <- new
+        rv.REFRESH$refresh.param.table <- rv.REFRESH$refresh.param.table + 1
         
         # We take current value on table as unitvalue
         # We take current unit as the previous units

@@ -150,6 +150,10 @@ observeEvent(input$createVar_compartment_table$changes$changes, {
                               rv.UNITS$units.choices)
     
     if (comparison$is.match) {
+      new <- Unit_Dict_Convert(UNIT_MAPPING, new)
+      rv.REFRESH$refresh.compartment.table <- 
+        rv.REFRESH$refresh.compartment.table + 1
+      
       # Change units in compartment data structure
       rv.COMPARTMENTS$compartments[[comp.id]]$Unit <- new
       
