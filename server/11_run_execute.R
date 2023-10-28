@@ -36,13 +36,13 @@ observeEvent(rv.UNITS$units.selected$Duration, {
     )
   }
   
-  if (rv.UNITS$units.selected$Duration != input$GO_base_duration) {
-    updatePickerInput(
-      session = session,
-      "GO_base_duration",
-      selected = rv.UNITS$units.selected$Duration
-    )
-  }
+  # if (rv.UNITS$units.selected$Duration != input$GO_base_duration) {
+  #   updatePickerInput(
+  #     session = session,
+  #     "GO_base_duration",
+  #     selected = rv.UNITS$units.selected$Duration
+  #   )
+  # }
 })
 
 observeEvent(rv.UNITS$units.selected$Count, {

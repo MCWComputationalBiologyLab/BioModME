@@ -1,13 +1,10 @@
 # Server for global options
 
+# Units
+
+
 observeEvent(input$GO_base_duration, {
   rv.UNITS$units.selected$Duration <- input$GO_base_duration
-  
-  # updatePickerInput(
-  #   session = session,
-  #   "execute_time_unit",
-  #   selected = input$GO_base_duration
-  # )
 })
 
 observeEvent(input$GO_base_energy, {
@@ -43,4 +40,3 @@ observeEvent(input$GO_species_unit_choice, {
     rv.UNITS$units.choices$For.Var <- rv.UNITS$units.choices$Mass
   }
 })
-
