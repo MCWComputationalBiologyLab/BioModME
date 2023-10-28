@@ -33,7 +33,7 @@ server <- shinyServer(function(input, output, session) {
   #allows for the import of bigger data frames
   options(shiny.maxRequestSize = 30000 * 1024 ^ 2)
   table.header <- reactiveValues(bg = "#3c8dbc",color = 'white')
-  #options(shiny.sanitize.errors = TRUE)
+  options(shiny.sanitize.errors = FALSE)
   
   fxn.sources <- file.path("functions", list.files("functions"))
   sapply(fxn.sources, source)
