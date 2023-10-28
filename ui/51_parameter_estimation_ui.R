@@ -72,6 +72,15 @@ TAB_PARAMETER_ESTIMATION <-
                       label = "Run"
                     )
                   )
+                ),
+                fluidRow(
+                  column(
+                    width = 12,
+                    align = "right",
+                    uiOutput(
+                      outputId = "uiOut_pe_precheck_error_message"
+                    )
+                  )
                 )
             #   )
             # )

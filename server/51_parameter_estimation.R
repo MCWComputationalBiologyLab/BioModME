@@ -123,7 +123,11 @@ w.pe <- Waiter$new(html =  tagList(
 
 # Read imported data -----------------------------------------------------------
 data.for.estimation <- reactive({
-  req(input$pe_obs_data)
+  # req(input$pe_obs_data)
+  if (is.null(input$pe_obs_data)) {
+    return(NULL)
+  }
+  
   #fread(input$data$datapath, na.strings=c("", NA))
   if(endsWith(input$pe_obs_data$datapath, ".csv")){
      out <- read.csv(input$pe_obs_data$datapath)
@@ -297,9 +301,23 @@ output$pe_logs <- renderPrint({
 observeEvent(input$pe_run_parameter_estimation, {
   # browser()
   w.pe$show()
-  
+
   # Resolve for DiffEqs just to avoid any nonsense errors
   solveForDiffEqs()
+  
+  # Perform Basic Check that Data is observed
+  data  <- data.for.estimation()
+  if (is.null(data)) {
+    sendSweetAlert(
+      session = session,
+      title = "Error...",
+      text = "No data loaded for estimation.",
+      type = "error"
+    )
+    w.pe$hide()
+    return(NULL)
+  }
+  
   # browser()
   error.result <- tryCatch({
     # Grab information needed for parameter estimation
@@ -307,8 +325,7 @@ observeEvent(input$pe_run_parameter_estimation, {
     time_out  <- as.numeric(input$execute_time_end)
     time_step <- as.numeric(input$execute_time_step)
     times     <- seq(time_in, time_out, by = time_step)
-    data      <- data.for.estimation()
-    
+
     # Preping Terms for ODE Solver
     #initialize parameters
     parameters <- output_param_for_ode_solver(rv.PARAMETERS$parameters)
@@ -526,5 +543,19 @@ observeEvent(input$pe_store_estimated_parameters, {
 })
 
 
+output$uiOut_pe_precheck_error_message <- renderUI({
 
+    # Check to see if combo file exists/not null
+    if (is.null(data.for.estimation())) {
+      tags$h6(
+        HTML(
+          paste0(
+            "<font color=\"#FF0000\">",
+            "Warning: No data imported for estimation.",
+            "</font>"
+          )
+        )
+      )
+    }
 
+})
