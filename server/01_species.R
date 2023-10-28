@@ -705,7 +705,8 @@ observeEvent(input$myVariables_DT$changes$changes, {
                               rv.UNITS$units.choices)
     
     if (comparison$is.match) {
-      
+      new <- Unit_Dict_Convert(UNIT_MAPPING, new)
+      rv.REFRESH$refresh.species.table <- rv.REFRESH$refresh.species.table + 1
       # Change units
       rv.SPECIES$species[[search.id]]$Unit  <- new
       

@@ -84,6 +84,18 @@ VectorizeListValue <- function(l, value, init.mode = "character") {
   return(out)
 }
 
+Unit_Dict_Convert <- function(dict, unit_term) {
+  new_split <- UnitBreak(unit_term)
+  converted_vec <- 
+    sapply(
+      new_split, 
+      function(x) ifelse(x %in% names(dict), dict[x], x)
+    )
+  
+  new <- paste0(converted_vec, collapse = "")
+  return(new)
+}
+
 UnitCompare <- function(unitDescriptor, 
                         unitToCompare,
                         possibleUnitsData,

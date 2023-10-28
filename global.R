@@ -87,43 +87,42 @@ UNIT_MAPPING <- c(
 DURATION_CHOICES <- 
   setdiff(
     measurements::conv_unit_options$duration,
-    names(unit_mapping)
+    names(UNIT_MAPPING)
   )
 
 VOLUME_CHOICES <- 
   setdiff(
     measurements::conv_unit_options$volume,
-    names(unit_mapping)
+    names(UNIT_MAPPING)
   )
 
 MASS_CHOICES <- 
   setdiff(
     measurements::conv_unit_options$mass,
-    names(unit_mapping)
+    names(UNIT_MAPPING)
   )
 
 LENGTH_CHOICES <- 
   setdiff(
     measurements::conv_unit_options$length,
-    names(unit_mapping)
+    names(UNIT_MAPPING)
   )
 
 ENERGY_CHOICES <- 
   setdiff(
     measurements::conv_unit_options$energy,
-    names(unit_mapping)
+    names(UNIT_MAPPING)
   )
 
 FLOW_CHOICES <- 
   setdiff(
     measurements::conv_unit_options$flow,
-    names(unit_mapping)
+    names(UNIT_MAPPING)
   )
 
 COUNT_CHOICES <- 
   setdiff(
     measurements::conv_unit_options$count,
-    names(unit_mapping)
+    names(UNIT_MAPPING)
   )
 
-print(DURATION_CHOICES)
