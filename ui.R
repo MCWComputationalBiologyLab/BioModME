@@ -77,6 +77,13 @@ ui <- dashboardPage(
       title = "BioModME",
       #color = "primary",
       image = "icon.svg"
+    ),
+    downloadButton(
+      outputId = "dbttn_header_download_model",
+      label = "Save Model",
+      icon = NULL,
+      class = "btn btn-lg",
+      style = "border: 2px solid black"
     )
   ),
   sidebar = 
