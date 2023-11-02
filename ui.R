@@ -83,7 +83,7 @@ ui <- dashboardPage(
       label = "Save Model",
       icon = NULL,
       class = "btn btn-lg",
-      style = "border: 2px solid black"
+      style = "border: 1.5px solid grey"
     )
   ),
   sidebar = 

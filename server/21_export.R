@@ -46,6 +46,52 @@ output$export_save_data <- downloadHandler(
   }
 )
 
+output$dbttn_header_download_model <- downloadHandler(
+  filename = function(){
+    # paste0("model", Sys.time(), ".rds")
+    "BioModME_model.rds"
+  },
+  content = function(file){
+    mod.info  <- reactiveValuesToList(rv.MODEL.INFO)
+    comp.temp <- reactiveValuesToList(rv.COMPARTMENTS)
+    spec.temp <- reactiveValuesToList(rv.SPECIES)
+    eqns.temp <- reactiveValuesToList(rv.REACTIONS)
+    IO.temp   <- reactiveValuesToList(rv.IO)
+    pars.temp <- reactiveValuesToList(rv.PARAMETERS)
+    diff.temp <- reactiveValuesToList(rv.DE)
+    opts.temp <- reactiveValuesToList(rv.SOLVER.OPTIONS)
+    rslt.temp <- reactiveValuesToList(rv.RESULTS)
+    info.temp <- reactiveValuesToList(rv.PROGRAM.INFO)
+    logs.temp <- reactiveValuesToList(rv.LOGS)
+    id.temp   <- reactiveValuesToList(rv.ID)
+    pe.temp   <- reactiveValuesToList(rv.PAR.ESTIMATION)
+    unit.temp <- reactiveValuesToList(rv.UNITS)
+    react.law <- reactiveValuesToList(rv.REACTIONLAWS)
+    CL.temp   <- reactiveValuesToList(rv.CUSTOM.LAWS)
+    CE.temp   <- reactiveValuesToList(rv.CUSTOM.EQNS)
+    
+    to.save <- c(mod.info,
+                 comp.temp,
+                 spec.temp,
+                 eqns.temp,
+                 IO.temp,
+                 pars.temp,
+                 diff.temp,
+                 opts.temp,
+                 rslt.temp,
+                 info.temp,
+                 logs.temp,
+                 id.temp,
+                 pe.temp, 
+                 unit.temp,
+                 react.law,
+                 CL.temp,
+                 CE.temp)
+    
+    saveRDS(to.save, file)
+  }
+)
+
 # Export SBML ------------------------------------------------------------------
 output$export_save_as_sbml <- downloadHandler(
   filename = function(){
