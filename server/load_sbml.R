@@ -16,7 +16,8 @@ waiter_fxn <- function(msg, spinner, bar_value) {
 LoadSBML_show_progress <- function(sbmlFile, w_sbml, spinner) {
   # This function is the same as LoadSBML but it is designed to show the 
   # progress bar screesn
-  sleep.time <- 0.5
+  # sleep.time <- 0.5
+  
   out <- list()
   # Set initializers and bools
   
@@ -174,15 +175,23 @@ LoadSBML_show_progress <- function(sbmlFile, w_sbml, spinner) {
 observeEvent(input$file_input_load_sbml, {
 
   spinner <- RandomHTMLSpinner()
-  w_sbml <- Waiter$new(html = waiter_fxn("Loading SBML Model",
+  w_sbml <- Waiter$new(
+    id = "import_for_waiter",
+    html = waiter_fxn("Loading SBML Model",
                                          spinner, 
                                          0))
   w_sbml$show()
-  
   # TODO: Clear All current model information
-  sbml.model <- LoadSBML_show_progress(input$file_input_load_sbml$datapath,
-                                       w_sbml, 
-                                       spinner)
+  tryCatch({
+    sbml.model <- LoadSBML_show_progress(input$file_input_load_sbml$datapath,
+                                         w_sbml, 
+                                         spinner)
+  }, 
+  error = function(e) {
+    print(paste0("Error: ", e))
+    w_sbml$hide
+  })
+
   # browser()
   # Load SMBL
   # sbml.model <- LoadSBML(input$file_input_load_sbml$datapath)
@@ -328,83 +337,89 @@ observeEvent(input$file_input_load_sbml, {
   mes <- "Converting Species information to BioModME..."
   w_sbml$update(html = waiter_fxn(mes, 
                                   spinner, 70))
-  
-  need.species.conversion <- FALSE
-  # browser()
-  species <- sbml.model$species
-  n.species <- nrow(species)
-  # print(species)
-
-  # Species from SBML have the following columns
-  #   id, name, initialConcentration, substanceUnits, compartment, constant,
-  #   boundaryCondition
-  
-  species.id     <- species %>% pull(id)
-  species.names  <- species %>% pull(name)
-  species.values <- as.numeric(species %>% pull(initialConcentration))
-  species.comp   <- species %>% pull(compartment)
-  
-  if (!identical(species.id, species.names)) {
-    need.species.conversion <- TRUE
-    species.df.conv <- data.frame(species.id, species.names)
-    colnames(species.df.conv) <- c("id", "name")
-  }
-  
-  # Convert compartments names 
-  if (need.compartment.conversion) {
-    new.spec <- vector(mode = "character", length = length(species.comp))
-    for (i in seq_along(species.comp)) {
-      idx <- which(species.comp[i] %in% comp.df.conv$id)
-      new.spec[i] <- comp.df.conv$name[idx]
+  tryCatch({
+    need.species.conversion <- FALSE
+    # browser()
+    species <- sbml.model$species
+    n.species <- nrow(species)
+    # print(species)
+    
+    # Species from SBML have the following columns
+    #   id, name, initialConcentration, substanceUnits, compartment, constant,
+    #   boundaryCondition
+    
+    species.id     <- species %>% pull(id)
+    species.names  <- species %>% pull(name)
+    species.values <- as.numeric(species %>% pull(initialConcentration))
+    species.comp   <- species %>% pull(compartment)
+    
+    if (!identical(species.id, species.names)) {
+      need.species.conversion <- TRUE
+      species.df.conv <- data.frame(species.id, species.names)
+      colnames(species.df.conv) <- c("id", "name")
     }
-    species.comp <- new.spec
-  }
-  
-  # Need Compartment Ids
-  species.comp.id <- unname(sapply(species.comp, FindId))
-  
-  # Extract Boundary Condition
-  species.bounds <- species %>% pull(boundaryCondition)
+    
+    # Convert compartments names 
+    if (need.compartment.conversion) {
+      new.spec <- vector(mode = "character", length = length(species.comp))
+      for (i in seq_along(species.comp)) {
+        idx <- which(species.comp[i] %in% comp.df.conv$id)
+        new.spec[i] <- comp.df.conv$name[idx]
+      }
+      species.comp <- new.spec
+    }
+    
+    # Need Compartment Ids
+    species.comp.id <- unname(sapply(species.comp, FindId))
+    
+    # Extract Boundary Condition
+    species.bounds <- species %>% pull(boundaryCondition)
+    
+    # Generate Species IDs
+    species.ids <- c()
+    for (i in seq_len(nrow(species))) {
+      # Generate Compartment IDs
+      new.id <- GenerateId(rv.ID$id.var.seed, "var")
+      species.ids <- c(species.ids, new.id$id)
+      rv.ID$id.var.seed <- new.id$seed
+      idx.to.add <- nrow(rv.ID$id.df) + 1
+      rv.ID$id.df[idx.to.add, ] <- c(new.id$id, species.names[i])
+    }
+    
+    species.list     <- vector("list", n.species)
+    # Add additional list tags for our problem
+    for (i in seq_along(species.list)) {
+      # Build Compartment Entry
+      species.list[[i]]$ID                <- species.ids[i]
+      species.list[[i]]$Name              <- species.names[i]
+      species.list[[i]]$Value             <- species.values[i]
+      species.list[[i]]$Unit              <- rv.UNITS$units.base$For.Var
+      species.list[[i]]$UnitDescription   <- "conc (mol)"
+      species.list[[i]]$BaseUnit          <- rv.UNITS$units.base$For.Var
+      species.list[[i]]$BaseValue         <- species.values[i]
+      species.list[[i]]$Description       <- ""
+      species.list[[i]]$Compartment       <- species.comp[i]
+      species.list[[i]]$Compartment.id    <- species.comp.id[i]
+      species.list[[i]]$boundaryCondition <- species.bounds[i]
+      species.list[[i]]$Reaction.ids      <- NA
+      species.list[[i]]$IO.ids            <- NA
+    }
+    
+    
+    names(species.list) <- species.ids
+    
+    # Assign to RV
+    rv.SPECIES$species <- species.list
+    rv.SPECIES$species.df <- bind_rows(rv.SPECIES$species)
+    var.names <- rv.SPECIES$species.df %>% dplyr::select(Name)
+    rv.SPECIES$species.names <- as.vector(unlist(var.names))
+    rv.REFRESH$refresh.species.table <- rv.REFRESH$refresh.species.table + 1
+  }, error = function(e) {
+    print(paste("Error: ", e))
+    
+    w_sbml$hide()
+  })
 
-  # Generate Species IDs
-  species.ids <- c()
-  for (i in seq_len(nrow(species))) {
-    # Generate Compartment IDs
-    new.id <- GenerateId(rv.ID$id.var.seed, "var")
-    species.ids <- c(species.ids, new.id$id)
-    rv.ID$id.var.seed <- new.id$seed
-    idx.to.add <- nrow(rv.ID$id.df) + 1
-    rv.ID$id.df[idx.to.add, ] <- c(new.id$id, species.names[i])
-  }
-
-  species.list     <- vector("list", n.species)
-  # Add additional list tags for our problem
-  for (i in seq_along(species.list)) {
-    # Build Compartment Entry
-    species.list[[i]]$ID                <- species.ids[i]
-    species.list[[i]]$Name              <- species.names[i]
-    species.list[[i]]$Value             <- species.values[i]
-    species.list[[i]]$Unit              <- rv.UNITS$units.base$For.Var
-    species.list[[i]]$UnitDescription   <- "conc (mol)"
-    species.list[[i]]$BaseUnit          <- rv.UNITS$units.base$For.Var
-    species.list[[i]]$BaseValue         <- species.values[i]
-    species.list[[i]]$Description       <- ""
-    species.list[[i]]$Compartment       <- species.comp[i]
-    species.list[[i]]$Compartment.id    <- species.comp.id[i]
-    species.list[[i]]$boundaryCondition <- species.bounds[i]
-    species.list[[i]]$Reaction.ids      <- NA
-    species.list[[i]]$IO.ids            <- NA
-  }
-
-
-  names(species.list) <- species.ids
-
-  # Assign to RV
-  rv.SPECIES$species <- species.list
-  rv.SPECIES$species.df <- bind_rows(rv.SPECIES$species)
-  var.names <- rv.SPECIES$species.df %>% dplyr::select(Name)
-  rv.SPECIES$species.names <- as.vector(unlist(var.names))
-  rv.REFRESH$refresh.species.table <- rv.REFRESH$refresh.species.table + 1
 
   # print(species.list)
   # print(rv.SPECIES$species)
