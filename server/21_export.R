@@ -301,7 +301,7 @@ createSBMLParameterExport <- function(parameterRV) {
     id      <- parameterRV[[i]]$ID
     name    <- parameterRV[[i]]$Name
     value   <- parameterRV[[i]]$BaseValue
-    cont    <- "false"
+    cont <- if (parameterRV[[i]]$Custom) "false" else "true"
     
     # Store to list entry
     entry <- list(id = id,
