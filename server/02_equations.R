@@ -2142,8 +2142,9 @@ observeEvent(input$eqnCreate_addEqnToVector, {
 # Equation Main Table Render ---------------------------------------------------
 output$main_eqns_table <- renderRHandsontable({
   override <- rv.REFRESH$refresh.eqn.table
-  df <- bind_rows(rv.REACTIONS$reactions)
-  print(df)
+  df <- as_tibble(do.call(rbind, rv.REACTIONS$reactions))
+  # df <- bind_rows(rv.REACTIONS$reactions)
+  # print(df)
   if (nrow(df) == 0) {
   # if (nrow(rv.REACTIONS$reactions.df) == 0) {
     temp <- data.frame(c("Press addition button below to add equations

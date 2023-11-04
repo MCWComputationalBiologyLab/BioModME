@@ -470,9 +470,9 @@ sbml_2_biomodme_reactions <- function(sbml.model) {
   # MathJax.Rate.Law  || MathJax version of rate law
   # Rate.MathML       || MathMl for rate law
   # Reversible        || Bool if the equation is reversible or not
-  
+  # browser()
   reactions <- bind_rows(sbml.model$reactions)
-
+  print(reactions)
   # Convert ids to names for values in reactions species and pars
   # Want to look at specific columns to convert
   
@@ -510,23 +510,21 @@ sbml_2_biomodme_reactions <- function(sbml.model) {
       # Parameters
       col <- reactions %>% pull(Parameters)
       reactions$Parameters <- RenameVarInDFColumn(old, new, col)
-      
-      # Equation.Text
-      col <- reactions %>% pull(Equation.Text)
-      reactions$Reactants <- RenameVarInDFColumn(old, new, col, isMath = TRUE)
     }
   }
   
   # For compartments
-  if (rv.sbml.load.variables$need.compartment.conversion) {
-    for (i in seq_len(nrow(rv.sbml.load.variables$comp.df.conv))) {
-      old <- rv.sbml.load.variables$comp.df.conv[i, 1]
-      new <- rv.sbml.load.variables$comp.df.conv[i, 2]
-      # Equation.Text
-      col <- reactions %>% pull(Equation.Text)
-      reactions$Reactants <- RenameVarInDFColumn(old, new, col, isMath = TRUE)
-    }
-  }
+  # if (rv.sbml.load.variables$need.compartment.conversion) {
+  #   for (i in seq_len(nrow(rv.sbml.load.variables$comp.df.conv))) {
+  #     browser()
+  #     old <- rv.sbml.load.variables$comp.df.conv[i, 1]
+  #     new <- rv.sbml.load.variables$comp.df.conv[i, 2]
+  #   
+  #     # Equation.Text
+  #     col <- reactions %>% pull(Compartments)
+  #     reactions$Compartments <- RenameVarInDFColumn(old, new, col)
+  #   }
+  # }
   
   for (i in seq_len(nrow(reactions))) {
     entry <- reactions[i,]
@@ -612,6 +610,8 @@ sbml_2_biomodme_reactions <- function(sbml.model) {
     }
     
     parameters.id <- c()
+    print("Parameters")
+    print(parameters)
     for (j in seq_along(parameters)) {
       parameters.id[j] <- FindId(parameters[j])
     }
@@ -698,8 +698,10 @@ sbml_2_biomodme_reactions <- function(sbml.model) {
           paste0(items, collapse = ", ")
       }
     }
+    print("REaction entery**************************")
+    print(reaction.entry)
   }
-
+  print(rbind(rv.REACTIONS$reactions))
   # for (i in seq_along(rv.REACTIONS$reactions)) {
   #   print(rv.REACTIONS$reactions[[i]]$Reactants)
   #   print(typeof(rv.REACTIONS$reactions[[i]]$Reactants))
@@ -905,6 +907,7 @@ LoadSBML_show_progress <- function(sbmlFile, w_sbml, spinner) {
                                   spinner, 50))
   # Extract Reactions
   if (!is.null(modelList$listOfReactions)) {
+    # browser()
     exists.listOfReactions <- TRUE
     
     # Pull Reaction Tags
@@ -950,12 +953,12 @@ LoadSBML_show_progress <- function(sbmlFile, w_sbml, spinner) {
                                            constant)
       colnames(reaction.parameters.df) <- c("id", "name", "value", "constant")
     }
-    
+    print(reaction.list)
     # Add math to reactions list
     reaction.list <- ExtractReactionMathFromSBML(doc, 
                                                  reaction.list,
                                                  function.definitions)
-    
+    print(reaction.list)
     # Combine Tags With Reaction Math
     reaction.list <- CombineReactionTagsWReactions(reaction.tags,
                                                    reaction.list)
@@ -1093,7 +1096,15 @@ observeEvent(input$file_input_load_sbml, {
     print(paste0("Error: ", e))
     w_sbml$hide()
   })
-  print(bind_rows(rv.REACTIONS$reactions))
+  # browser()
+  # print("reactions finished")
+  # for (i in seq_along(rv.REACTIONS$reactions)) {
+  #   print(rv.REACTIONS$reactions[[i]]$Modifiers)
+  #   print(typeof(rv.REACTIONS$reactions[[i]]$Modifiers))
+  # }
+  print(as_tibble(
+    do.call(rbind, rv.REACTIONS$reactions)))
+  print("done bind_rows")
 
   ## Unpack SBML Rules-------------------------------------------------------
   mes <- "Converting Rules to BioModME..."
@@ -1107,7 +1118,7 @@ observeEvent(input$file_input_load_sbml, {
     print(paste0("Error: ", e))
     w_sbml$hide()
   })
-  sbml_2_biomodme_rules
+  
   print(rv.CUSTOM.EQNS$ce.equations)
 
   # Finish load effects --------------------------------------------------------

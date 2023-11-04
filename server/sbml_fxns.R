@@ -529,7 +529,7 @@ ExtractReactionMathFromSBML <- function(doc,
   n.reactions <- length(reactions)
   
   for (i in seq_along(reactions)) {
-    
+    # browser()
     # Grab information on Reactants, Products, Modifiers
     # This information should already be in reactionlist from base extraction
     reactants  <- SplitEntry(reactionList[[i]]$Reactants)
@@ -567,8 +567,8 @@ ExtractReactionMathFromSBML <- function(doc,
           
           # Check to see if reaction parameters were already extracted and if
           # not then extract them
-          if (!is.na(reactionList[[i]]$Parameters)) {
-            parameters <- SplitEntry(reactionList[[i]]$Parameters)
+          if (!is.na(reactionList[[i]]$Parameters.name)) {
+            parameters <- SplitEntry(reactionList[[i]]$Parameters.name)
           } else {
             species <- c(reactants, products, modifiers)
             species <- RemoveNA(species)
@@ -602,8 +602,8 @@ ExtractReactionMathFromSBML <- function(doc,
       string.rate.law <- rmp(gsub(" ", "", convertML2R(mathml.exp)))
       
       # Grab Parameters
-      if (!is.na(reactionList[[i]]$Parameters)) {
-        parameters <- SplitEntry(reactionList[[i]]$Parameters)
+      if (!is.na(reactionList[[i]]$Parameters.name)) {
+        parameters <- SplitEntry(reactionList[[i]]$Parameters.name)
       } else {
         species <- c(reactants, products, modifiers)
         species <- RemoveNA(species)
