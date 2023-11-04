@@ -230,6 +230,7 @@ createSBMLFunctionExport <- function(customLawsRV) {
 createSBMLReactionExport <- function(reactionRV, parameterRV) {
   # Converts reaction reactive variable to sbml exportable form
   # @reactionRV - (list) of list of parameters (rv.REACTIONS$reactions)
+  # browser()
   print("STARTED REACTION ESPORTS")
   reactions <- vector(mode = "list", length = length(reactionRV))
   # browser()

@@ -601,3 +601,11 @@ rv.LOADBUTTONS <- reactiveValues(
   LB.button.name = "",
   LB.count = 1
 )
+
+rv.sbml.load.variables <- reactiveValues(
+  need.compartment.conversion = FALSE,
+  need.species.conversion = FALSE,
+  need.parameter.conversion = FALSE,
+  comp.df.conv = data.frame(),
+  species.df.conv = data.frame()
+)
