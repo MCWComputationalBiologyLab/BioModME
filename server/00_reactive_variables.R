@@ -607,5 +607,6 @@ rv.sbml.load.variables <- reactiveValues(
   need.species.conversion = FALSE,
   need.parameter.conversion = FALSE,
   comp.df.conv = data.frame(),
-  species.df.conv = data.frame()
+  species.df.conv = data.frame(),
+  parameter.df.conv = data.frame()
 )

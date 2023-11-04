@@ -135,16 +135,32 @@ LoadSBML <- function(sbmlFile) {
     # Check if Reaction Parameters Exist
     if (!is.na(reaction.list[[1]]$Parameter.Values)) {
       exists.parInReactions <- TRUE
-      reaction.pars <- c()
+      reaction.pars.name <- c()
+      reaction.pars.id <- c()
       reaction.pars.vals <- c()
       for (ii in seq_along(reaction.list)) {
-        reaction.pars <- c(reaction.pars,
-                           SplitEntry(reaction.list[[ii]]$Parameters))
-        reaction.pars.vals <- c(reaction.pars.vals,
-                                SplitEntry(reaction.list[[ii]]$Parameter.Values))
+        reaction.pars.name <- 
+          c(
+            reaction.pars.name,
+            SplitEntry(reaction.list[[ii]]$Parameters.name)
+          )
+        reaction.pars.id <- 
+          c(
+            reaction.pars.id,
+            SplitEntry(reaction.list[[ii]]$Parameters.id)
+          )
+        reaction.pars.vals <- 
+          c(
+            reaction.pars.vals,
+            SplitEntry(reaction.list[[ii]]$Parameter.Values)
+          )
       }
-      reaction.parameters.df <- data.frame(reaction.pars, reaction.pars.vals)
-      colnames(reaction.parameters.df) <- c("Parameters", "Values")
+      constant <- rep(TRUE, length(reaction.pars.vals))
+      reaction.parameters.df <- data.frame(reaction.pars.id,
+                                           reaction.pars.name, 
+                                           reaction.pars.vals,
+                                           constant)
+      colnames(reaction.parameters.df) <- c("id", "name", "value", "constant")
     }
     
     print("REACTION MATH")
@@ -166,7 +182,8 @@ LoadSBML <- function(sbmlFile) {
   final.parameters.df <- FinalizeParameterData(listOfParameters,
                                                reaction.parameters.df,
                                                rules.list)
-  
+  print("final par df *************************")
+  print(final.parameters.df)
   out[["parameters"]] <- final.parameters.df
   print(final.parameters.df)
   return(out)
@@ -335,12 +352,14 @@ FinalizeParameterData <- function(parsFromSBMLMain,
   # Dataframe consisting of relevant parameter df in the following structure: 
   # id, name, value, constant
   # Non-constant (maybe just a vector of string expressions)
-  
+ 
   main.par.exist  <- FALSE
   react.par.exist <- FALSE
   rules.exist     <- FALSE
   
-  browser()
+  print(parsFromSBMLMain)
+  print(parsFromReactions)
+  # browser()
   print("Finalize Parameter Information")
   # Check which of the inputs exist
   if (isTruthy(parsFromSBMLMain)) {
@@ -362,32 +381,23 @@ FinalizeParameterData <- function(parsFromSBMLMain,
         # print("REP DONE")
       }
       out <- out %>% select(c("id", 
-                                     "name",
-                                     "value",
-                                     "constant"))
+                              "name",
+                              "value",
+                              "constant"))
     }
   }
    print(out)
+   
   # Check for reaction parameters
   if (isTruthy(parsFromReactions)) {
     if (nrow(parsFromReactions) > 0) {
       react.par.exist <- TRUE
-      df <- parsFromReactions %>% select(any_of(c("Parameters",
-                                                  "Values")))
-      colnames(df) <- c("id", "value")
+      df <- parsFromReactions %>% 
+        select(any_of(c("id", "name","value", "constant")))
       if (main.par.exist) {
-        # Merge the two dfs
-        name <- df %>% pull(id)
-        constant <- rep(TRUE, length(name))
-        df <- cbind(df, data.frame(name, constant))
-        # print(df)
-        # print(out)
         out <- rbind(out, df)
       } else {
-        # add name and constant column
-        name <- df %>% pull(id)
-        constant <- rep(TRUE, length(name))
-        out <- cbind(df, data.frame(name, constant))
+        out <- df
       }
     }
   }
@@ -428,11 +438,12 @@ FinalizeParameterData <- function(parsFromSBMLMain,
   column.order <- c("id", "name", "value", "constant")
   constant.parameters <- constant.parameters %>% 
                          select(column.order)%>%
-                         dplyr::distinct()
-  
+                         dplyr::distinct(id, .keep_all = TRUE)
+  print("CONSTANT PARAMETERS-----------------------------------")
+  print(constant.parameters)  
   out <- list("Parameters" = constant.parameters,
               "Variable.Parameters" = non.constant.parameters)
-  
+  print(out)
   return(out)
 }
 
@@ -501,20 +512,21 @@ ExtractReactionBaseFromSBML <- function(reactionEntry) {
     } else if (node.name == "kineticLaw") {
       # Check if parameter node exists
       node.par <- Attributes2Tibble(current.node$kineticLaw$listOfParameters)
-      browser()
+      # browser()
       if (ncol(node.par) != 0) {
         # IF PARAMETER INFORMATION IN REACTION XML INFO
 
-        out.list$Parameters <- collapseVector(node.par %>% pull(id), 
+        out.list$Parameters.id <- collapseVector(node.par %>% pull(id), 
                                               convertBlank = TRUE)
         out.list$Parameter.Values <- collapseVector(node.par %>% pull(value), 
                                                     convertBlank = TRUE)
+        # Assign name if name exists, else assign name as id   
         if (!is.null(node.par$name)) {
-          out.list$Parameters <- collapseVector(node.par %>% pull(name),
-                                                convertBlank = TRUE)
+          out.list$Parameters.name <- collapseVector(node.par %>% pull(name),
+                                                     convertBlank = TRUE)
         } else {
-          out.list$Parameters <- collapseVector(node.par %>% pull(id), 
-                                                convertBlank = TRUE)
+          out.list$Parameters.name <- collapseVector(node.par %>% pull(id), 
+                                                     convertBlank = TRUE)
         }
       } 
     } 

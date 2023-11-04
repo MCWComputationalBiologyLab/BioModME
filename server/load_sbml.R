@@ -46,7 +46,7 @@ sbml_2_biomodme_compartments <- function(sbml.model) {
   # So the only things we really look for here are the name
   # Overwrite ids
   # Assign base units as base volumn
-  # browser()
+  
   # sleep.time <- 0.5
   
   # Bool that is used in reactions. SBML stores compartment id and we want to 
@@ -150,7 +150,7 @@ sbml_2_biomodme_species <- function(sbml.model) {
   #   boundaryCondition (if true, differential eqn gen is ignored)
   
   rv.sbml.load.variables$need.species.conversion <- FALSE
-  # browser()
+
   species <- sbml.model$species
   n.species <- nrow(species)
   # print(species)
@@ -247,7 +247,7 @@ sbml_2_biomodme_parameters <- function(sbml.model) {
   # pars$parameters is constant parameters
   # pars$non.constant.parameters are non constant parameters which need to be 
   #     added to the appropriate RV
-  browser()
+
   rv.sbml.load.variables$need.parameter.conversion <- FALSE
   
   pars    <- sbml.model$parameters$Parameters
@@ -263,7 +263,8 @@ sbml_2_biomodme_parameters <- function(sbml.model) {
   
   if (!identical(parameters.id, parameters.names)) {
     rv.sbml.load.variables$need.parameter.conversion <- TRUE
-    parameter.df.conv <- data.frame(parameters.id, parameters.names)
+    rv.sbml.load.variables$parameter.df.conv <- 
+      data.frame(parameters.id, parameters.names)
     colnames(rv.sbml.load.variables$species.df.conv) <- c("id", "name")
   }
   
@@ -430,18 +431,34 @@ LoadSBML_show_progress <- function(sbmlFile, w_sbml, spinner) {
     
     # Check if Reaction Parameters Exist
     if (!is.na(reaction.list[[1]]$Parameter.Values)) {
-      browser()
       exists.parInReactions <- TRUE
-      reaction.pars <- c()
+      
+      reaction.pars.name <- c()
+      reaction.pars.id <- c()
       reaction.pars.vals <- c()
       for (ii in seq_along(reaction.list)) {
-        reaction.pars <- c(reaction.pars,
-                           SplitEntry(reaction.list[[ii]]$Parameters))
-        reaction.pars.vals <- c(reaction.pars.vals,
-                                SplitEntry(reaction.list[[ii]]$Parameter.Values))
+        reaction.pars.name <- 
+          c(
+            reaction.pars.name,
+            SplitEntry(reaction.list[[ii]]$Parameters.name)
+          )
+        reaction.pars.id <- 
+          c(
+            reaction.pars.id,
+            SplitEntry(reaction.list[[ii]]$Parameters.id)
+          )
+        reaction.pars.vals <- 
+          c(
+            reaction.pars.vals,
+            SplitEntry(reaction.list[[ii]]$Parameter.Values)
+          )
       }
-      reaction.parameters.df <- data.frame(reaction.pars, reaction.pars.vals)
-      colnames(reaction.parameters.df) <- c("Parameters", "Values")
+      constant <- rep(TRUE, length(reaction.pars.vals))
+      reaction.parameters.df <- data.frame(reaction.pars.id,
+                                           reaction.pars.name, 
+                                           reaction.pars.vals,
+                                           constant)
+      colnames(reaction.parameters.df) <- c("id", "name", "value", "constant")
     }
     
     # Add math to reactions list
@@ -473,7 +490,7 @@ LoadSBML_show_progress <- function(sbmlFile, w_sbml, spinner) {
 
 # Load from sbml file (xml)
 observeEvent(input$file_input_load_sbml, {
-  # browser()
+
   sleep.time <- 5
   spinner <- RandomHTMLSpinner()
   w_sbml <- Waiter$new(
@@ -554,7 +571,6 @@ observeEvent(input$file_input_load_sbml, {
   })
   
   print(rv.PARAMETERS$parameters.df)
-  break
   
   ## Unpack SBML Function-------------------------------------------------------
   # Items in rv.CUSTOM.LAWS$cl.reaction:
@@ -586,7 +602,7 @@ observeEvent(input$file_input_load_sbml, {
   # Products
   # Modifiers
   # Parameters
-  # browser()
+
   mes <- "Converting Functions to BioModME..."
   w_sbml$update(html = waiter_fxn(mes,
                                   spinner, 90))
@@ -766,9 +782,9 @@ observeEvent(input$file_input_load_sbml, {
   
   if (rv.sbml.load.variables$need.parameter.conversion) {
     # For parameters
-    for (i in seq_len(nrow(parameters.df.conv))) {
-      old <- parameters.df.conv[i, 1]
-      new <- parameters.df.conv[i, 2]
+    for (i in seq_len(nrow(rv.sbml.load.variables$parameter.df.conv))) {
+      old <- rv.sbml.load.variables$parameter.df.conv[i, 1]
+      new <- rv.sbml.load.variables$parameter.df.conv[i, 2]
       
       # Parameters
       col <- reactions %>% pull(Parameters)
@@ -1006,7 +1022,7 @@ observeEvent(input$file_input_load_sbml, {
   if (!isTruthy(sbml.model$rules)) {
     rv.CUSTOM.EQNS$ce.equations <- list()
   } else {
-    # browser()
+
     rules <- sbml.model$rules
     print(rules)
     for (i in seq_along(rules)) {
