@@ -340,8 +340,8 @@ FinalizeParameterData <- function(parsFromSBMLMain,
   react.par.exist <- FALSE
   rules.exist     <- FALSE
   
-
-  
+  browser()
+  print("Finalize Parameter Information")
   # Check which of the inputs exist
   if (isTruthy(parsFromSBMLMain)) {
     if (nrow(parsFromSBMLMain) > 0) {
@@ -367,7 +367,7 @@ FinalizeParameterData <- function(parsFromSBMLMain,
                                      "constant"))
     }
   }
-  
+   print(out)
   # Check for reaction parameters
   if (isTruthy(parsFromReactions)) {
     if (nrow(parsFromReactions) > 0) {
@@ -501,12 +501,21 @@ ExtractReactionBaseFromSBML <- function(reactionEntry) {
     } else if (node.name == "kineticLaw") {
       # Check if parameter node exists
       node.par <- Attributes2Tibble(current.node$kineticLaw$listOfParameters)
+      browser()
       if (ncol(node.par) != 0) {
         # IF PARAMETER INFORMATION IN REACTION XML INFO
+
         out.list$Parameters <- collapseVector(node.par %>% pull(id), 
                                               convertBlank = TRUE)
         out.list$Parameter.Values <- collapseVector(node.par %>% pull(value), 
                                                     convertBlank = TRUE)
+        if (!is.null(node.par$name)) {
+          out.list$Parameters <- collapseVector(node.par %>% pull(name),
+                                                convertBlank = TRUE)
+        } else {
+          out.list$Parameters <- collapseVector(node.par %>% pull(id), 
+                                                convertBlank = TRUE)
+        }
       } 
     } 
   }
