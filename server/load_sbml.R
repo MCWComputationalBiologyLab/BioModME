@@ -55,8 +55,7 @@ sbml_2_biomodme_compartments <- function(sbml.model) {
   
   compartments <- sbml.model$compartments
   n.compartments <- nrow(compartments)
-  # print(compartments)
-  
+
   # Compartments have the following columns
   #   id, name, size, constant, spatialDimensions
   
@@ -153,8 +152,7 @@ sbml_2_biomodme_species <- function(sbml.model) {
 
   species <- sbml.model$species
   n.species <- nrow(species)
-  # print(species)
-  
+
   # Species from SBML have the following columns
   #   id, name, initialConcentration, substanceUnits, compartment, constant,
   #   boundaryCondition
@@ -345,10 +343,8 @@ sbml_2_biomodme_functions <- function(sbml.model) {
     rv.CUSTOM.LAWS$cl.reaction <- list()
   } else {
     load.fxns <- sbml.model$functions
-    # print(load.fxns)
     for (i in seq_along(load.fxns)) {
       entry <- load.fxns[[i]]
-      # print(entry)
       # Transfer Information
       law.name   <- entry$name
       backend    <- paste0("user_custom_law_", entry$id)
@@ -476,8 +472,7 @@ sbml_2_biomodme_reactions <- function(sbml.model) {
   # Reversible        || Bool if the equation is reversible or not
   
   reactions <- bind_rows(sbml.model$reactions)
-  # print("reactions")
-  # print(reactions)
+
   # Convert ids to names for values in reactions species and pars
   # Want to look at specific columns to convert
   
@@ -533,9 +528,6 @@ sbml_2_biomodme_reactions <- function(sbml.model) {
     }
   }
   
-  # print(as.data.frame(reactions))
-  
-  print("BEGINNING REACTION TO BIOMODME")
   for (i in seq_len(nrow(reactions))) {
     entry <- reactions[i,]
     
@@ -690,8 +682,7 @@ sbml_2_biomodme_reactions <- function(sbml.model) {
       "Content.MathMl"   = content.ml,
       "Reversible"       = reversible
     )
-    # print("reaction entry")
-    # print(reaction.entry)
+
     rv.REACTIONS$reactions[[ID.to.add]] <- reaction.entry
     
     # Add Reaction To Species
@@ -708,19 +699,17 @@ sbml_2_biomodme_reactions <- function(sbml.model) {
       }
     }
   }
-  print("KELTHE")
-  print(rv.REACTIONS$reactions)
-  print("REACTANTS")
-  for (i in seq_along(rv.REACTIONS$reactions)) {
-    print(rv.REACTIONS$reactions[[i]]$Reactants)
-    print(typeof(rv.REACTIONS$reactions[[i]]$Reactants))
-  }
-  print("PRODUCTS")
-  for (i in seq_along(rv.REACTIONS$reactions)) {
-    print(rv.REACTIONS$reactions[[i]]$Products)
-  }
-  
-  print(do.call(rbind, rv.REACTIONS$reactions))
+
+  # for (i in seq_along(rv.REACTIONS$reactions)) {
+  #   print(rv.REACTIONS$reactions[[i]]$Reactants)
+  #   print(typeof(rv.REACTIONS$reactions[[i]]$Reactants))
+  # }
+  # 
+  # for (i in seq_along(rv.REACTIONS$reactions)) {
+  #   print(rv.REACTIONS$reactions[[i]]$Products)
+  # }
+  # 
+  # print(do.call(rbind, rv.REACTIONS$reactions))
 }
 
 sbml_2_biomodme_rules <- function(sbml.model) {
@@ -748,7 +737,6 @@ sbml_2_biomodme_rules <- function(sbml.model) {
   } else {
     
     rules <- sbml.model$rules
-    print(rules)
     for (i in seq_along(rules)) {
       entry <- rules[[i]]
       
@@ -767,7 +755,6 @@ sbml_2_biomodme_rules <- function(sbml.model) {
       # Build Equation from LHS.var and str.law
       
       eqn.out <- paste0(lhs.var, "=", rhs.eqn)
-      PrintVar(eqn.out)
       
       # TODO: Split the reaction to extract variables.Determine if they are in
       # reaction already. If not assign them to parameters (I guess)
@@ -814,7 +801,6 @@ sbml_2_biomodme_rules <- function(sbml.model) {
     }
     
   }
-  print("FINISHED RULES")
 }
 
 LoadSBML_show_progress <- function(sbmlFile, w_sbml, spinner) {
@@ -907,16 +893,10 @@ LoadSBML_show_progress <- function(sbmlFile, w_sbml, spinner) {
   # Extract Function Definitions
   if (!is.null(modelList$listOfFunctionDefinitions)) {
     func.info <- Attributes2Tibble(modelList$listOfFunctionDefinitions)
-    # print("FJSKLDNFLKSDKSGHOILJSDKL")
-    # print(func.info)
     function.definitions <- ExtractFunctionDefFromSBML(doc, func.info)
-    # print("FJSKLDNFLKSDKSGHOILJSDKL")
-    # print(function.definitions)
     function.definitions <- FindFunctionDefInformation(doc,
                                                        function.definitions,
                                                        sbmlList)
-    # print("FJSKLDNFLKSDKSGHOILJSDKL")
-    # print(function.definitions)
     out[["functions"]] <- function.definitions
   }
   Sys.sleep(sleep.time)
@@ -1022,8 +1002,6 @@ observeEvent(input$file_input_load_sbml, {
     print(paste0("Error: ", e))
     w_sbml$hide()
   })
-  
-  # print(sbml.model)
 
   ## Unpack SBML Compartments --------------------------------------------------
   
@@ -1115,9 +1093,8 @@ observeEvent(input$file_input_load_sbml, {
     print(paste0("Error: ", e))
     w_sbml$hide()
   })
-  # print(bind_rows(rv.REACTIONS$reactions))
+  print(bind_rows(rv.REACTIONS$reactions))
 
-  print("MOVING TO RULES")
   ## Unpack SBML Rules-------------------------------------------------------
   mes <- "Converting Rules to BioModME..."
   w_sbml$update(html = waiter_fxn(mes,
