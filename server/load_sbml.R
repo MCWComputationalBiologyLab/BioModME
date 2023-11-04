@@ -307,6 +307,516 @@ sbml_2_biomodme_parameters <- function(sbml.model) {
   
 }
 
+sbml_2_biomodme_functions <- function(sbml.model) {  
+## Unpack SBML Function-------------------------------------------------------
+  # Items in rv.CUSTOM.LAWS$cl.reaction:
+  # ID                || Specific equation ID
+  # Type              || Type of custom law (reaction, rate, etc)
+  # Law.Name          || Display name shown on tables
+  # Description       || Equation Description
+  # Reactants         || Reactants in custom law
+  # Products          || Products in custom law
+  # Modifiers         || Modifiers (in reaction but no used for rate)
+  # Parameters        || Parameters in equation
+  # Parameter.Types   || Correlated parameter type to above (time, vol, param)
+  # Equation.Text     || Text version of equation
+  # Equation.Latex    || Latex text version of equation
+  # Equation.Mathjax  || Mathjax text version of equation
+  # String.Rate.Law   || String text for rate law
+  # Latex.Rate.Law    || Latex version of rate law
+  # MathJax.Rate.Law  || MathJax version of rate law
+  # Rate.MathML       || MathMl for rate law
+  # Reversible        || Bool if the equation is reversible or not
+  
+  
+  #SBML Function Reader provides the following:
+  # id
+  # name
+  # variables
+  # law
+  # Reactants
+  # Products
+  # Modifiers
+  # Parameters
+  
+  reactions <- bind_rows(sbml.model$reactions)
+  # Check if Functions Exist
+  if (!isTruthy(sbml.model$functions)) {
+    rv.CUSTOM.LAWS$cl.reaction <- list()
+  } else {
+    load.fxns <- sbml.model$functions
+    # print(load.fxns)
+    for (i in seq_along(load.fxns)) {
+      entry <- load.fxns[[i]]
+      # print(entry)
+      # Transfer Information
+      law.name   <- entry$name
+      backend    <- paste0("user_custom_law_", entry$id)
+      reactants  <- entry$Reactants
+      products   <- entry$Products
+      modifiers  <- entry$Modifiers
+      parameters <- entry$Parameters
+      string.law <- entry$law
+      
+      # Build Information not in sbml load
+      #-----------------------------------
+      # Generate unique reaction ID
+      ids <- GenerateId(rv.ID$id.custeqn.seed, "customEqn")
+      unique.id <- ids[[2]]
+      rv.ID$id.custeqn.seed <- ids[[1]]
+      idx.to.add <- nrow(rv.ID$id.df) + 1
+      rv.ID$id.df[idx.to.add, ] <- c(unique.id, backend)
+      
+      # Function Description 
+      description <- law.name
+      # Parameter Types
+      param.type <-  rep("Parameter", length(SplitEntry(parameters)))
+      param.type <-  collapseVector(param.type)
+      
+      # Equations Text
+      eqn.builds <- BuildCustomEquationText(reactants,
+                                            products,
+                                            modifiers,
+                                            parameters)
+      eqn.text    <- eqn.builds$text
+      eqn.latex   <- eqn.builds$latex
+      eqn.mathjax <- eqn.builds$mathjax
+      
+      # Rate Law in latex, mathml, mathjax
+      latex.rate    <- NA
+      mathjax.rate  <- NA
+      mathml.rate   <- NA
+      tryCatch(
+        expr = {
+          law.converted <- ConvertRateLaw(string.law)
+          latex.rate    <- law.converted$latex
+          mathjax.rate  <- law.converted$mathjax
+          mathml.rate   <- law.converted$mathml
+        }
+      )
+      
+      
+      # Add Custom Law Data
+      to.list <- list("ID" = unique.id,
+                      "Type" = "Reaction",
+                      "Law.Name" = backend,
+                      "Description" = description,
+                      "Reactants" = reactants,
+                      "Products" = products,
+                      "Modifiers" = modifiers,
+                      "Parameters" = parameters,
+                      "Parameter.Types" = param.type,
+                      "Equation.Text" = eqn.text,
+                      "Equation.Latex" = eqn.latex,
+                      "Equation.Mathjax" = eqn.mathjax,
+                      "String.Rate.Law" = string.law,
+                      "Latex.Rate.Law" = latex.rate,
+                      "MathJax.Rate.Law" = mathjax.rate,
+                      "Rate.MathML" = mathml.rate,
+                      "Reversible" = FALSE)
+      
+      rv.CUSTOM.LAWS$cl.reaction[[unique.id]] <- to.list
+      
+      # Add to reaction laws RV
+      backend.entry <- backend
+      row.to.add <- c(law.name, backend.entry, "custom")
+      rv.REACTIONLAWS$laws <- rbind(rv.REACTIONLAWS$laws, row.to.add)
+      
+      reaction.type <- input$eqnCreate_type_of_equation
+      reaction.law  <- input$eqnCreate_reaction_law
+      
+      if (reaction.type == "All") {
+        option.names <- rv.REACTIONLAWS$laws %>% pull(Name)
+        options      <- rv.REACTIONLAWS$laws %>% pull(BackendName)
+      }  else if (reaction.type == "custom_reaction") {
+        option.names <- rv.REACTIONLAWS$laws %>% 
+          filter(Type == "custom") %>%
+          pull(Name)
+        options      <- rv.REACTIONLAWS$laws %>%
+          filter(Type == "custom") %>%
+          pull(BackendName)
+      }
+      
+      names(options) <- option.names
+      
+      updatePickerInput(
+        session = session, 
+        inputId = "eqnCreate_reaction_law",
+        choices = options,
+        selected = reaction.law
+      )
+    }
+  }}
+
+sbml_2_biomodme_reactions <- function(sbml.model) {
+  # Current Reaction values used by this program
+  # ID                || Specific equation ID
+  # Eqn.Display.Type  || Display name shown on tables
+  # Reaction.Law      || Law that the equation uses
+  # Species           || Species in equations
+  # Reactants         || Reactants in reactions
+  # Products          || Products in reactions
+  # Modifiers          || Species in equations that arent involved in diff eqns
+  # Rate.Constants    || Parameters in equation
+  # Compartment       || Compartment reaction occurs in
+  # Description       || Equation Description
+  # Species.id        || IDs of species in reaction
+  # Reactants.id      || IDs of reactants in reaction
+  # Products.id       || IDs of products in reaction
+  # Modifiers.id      || IDs of modifiers in model
+  # Parameters.id     || IDs of parameters in model
+  # Compartment.id    || ID of compartment eqn is in
+  # Equation.Text     || Text version of equation
+  # Equation.Latex    || Latex text version of equation
+  # Equation.MathJax  || Mathjax text version of equation
+  # String.Rate.Law   || String text for rate law
+  # Latex.Rate.Law    || Latex version of rate law
+  # MathJax.Rate.Law  || MathJax version of rate law
+  # Rate.MathML       || MathMl for rate law
+  # Reversible        || Bool if the equation is reversible or not
+  
+  reactions <- bind_rows(sbml.model$reactions)
+  # print("reactions")
+  # print(reactions)
+  # Convert ids to names for values in reactions species and pars
+  # Want to look at specific columns to convert
+  
+  # For species
+  if (rv.sbml.load.variables$need.species.conversion) {
+    for (i in seq_len(nrow(rv.sbml.load.variables$species.df.conv))) {
+      old <- rv.sbml.load.variables$species.df.conv[i, 1]
+      new <- rv.sbml.load.variables$species.df.conv[i, 2]
+      
+      # Reactants
+      col <- reactions %>% pull(Reactants)
+      reactions$Reactants <- RenameVarInDFColumn(old, new, col)
+      
+      # Products
+      col <- reactions %>% pull(Products)
+      reactions$Products <- RenameVarInDFColumn(old, new, col)
+      
+      # Modifiers
+      col <- reactions %>% pull(Modifiers)
+      reactions$Modifiers <- RenameVarInDFColumn(old, new, col)
+      
+      # Equation.Text
+      col <- reactions %>% pull(Equation.Text)
+      reactions$Equation.Text <- 
+        RenameVarInDFColumn(old, new, col, isMath = TRUE)
+    }
+  }
+  
+  if (rv.sbml.load.variables$need.parameter.conversion) {
+    # For parameters
+    for (i in seq_len(nrow(rv.sbml.load.variables$parameter.df.conv))) {
+      old <- rv.sbml.load.variables$parameter.df.conv[i, 1]
+      new <- rv.sbml.load.variables$parameter.df.conv[i, 2]
+      
+      # Parameters
+      col <- reactions %>% pull(Parameters)
+      reactions$Parameters <- RenameVarInDFColumn(old, new, col)
+      
+      # Equation.Text
+      col <- reactions %>% pull(Equation.Text)
+      reactions$Reactants <- RenameVarInDFColumn(old, new, col, isMath = TRUE)
+    }
+  }
+  
+  # For compartments
+  if (rv.sbml.load.variables$need.compartment.conversion) {
+    for (i in seq_len(nrow(rv.sbml.load.variables$comp.df.conv))) {
+      old <- rv.sbml.load.variables$comp.df.conv[i, 1]
+      new <- rv.sbml.load.variables$comp.df.conv[i, 2]
+      # Equation.Text
+      col <- reactions %>% pull(Equation.Text)
+      reactions$Reactants <- RenameVarInDFColumn(old, new, col, isMath = TRUE)
+    }
+  }
+  
+  # print(as.data.frame(reactions))
+  
+  print("BEGINNING REACTION TO BIOMODME")
+  for (i in seq_len(nrow(reactions))) {
+    entry <- reactions[i,]
+    
+    # Extract Reaction Main Inof
+    ID.to.add   <- entry %>% pull(id)
+    eqn.display <- entry %>% pull(description)
+    
+    # Extract Reactants
+    reactants  <- SplitEntry(entry %>% pull(Reactants))
+    products   <- SplitEntry(entry %>% pull(Products))
+    modifiers  <- SplitEntry(entry %>% pull(Modifiers))
+    parameters <- SplitEntry(entry %>% pull(Parameters))
+    
+    law.display   <- entry %>% pull(Reaction.Law)
+    law.name      <- paste0("user_custom_law_", law.display)
+    law.id        <- FindId(law.name)
+    string.law <- entry %>% pull(Equation.Text)
+    
+    # IDK if this is the best way to really do this but it'll be a bandaid
+    # for now.  Search for compartment names in string.law and replace them
+    # with the volume term this application generated. 
+    vectorized.law <- SplitEquationString(string.law)
+    species.descriptions <- unname(sapply(rv.SPECIES$species,
+                                          get,
+                                          x = "Description"))
+    comp.names <- 
+      unname(
+        sapply(
+          rv.COMPARTMENTS$compartments,
+          get,
+          x = "Name"
+        )
+      )
+    
+    comp.vol.names <- 
+      unname(
+        sapply(
+          rv.COMPARTMENTS$compartments,
+          get,
+          x = "Volume"
+        )
+      )
+    
+    for (j in seq_along(vectorized.law)) {
+      if (vectorized.law[j] %in% comp.names) {
+        # find idx of name and corresponding volume
+        idx <- which(comp.names %in% vectorized.law[j])
+        # replace in vectorized law
+        vectorized.law[j] <- comp.vol.names[idx]
+      }
+    }
+    
+    # Condense vectorized law to new string law
+    string.law <- collapseVector(vectorized.law, delimiter = " ")
+    mathml.law <- entry %>% pull(MathMl.Rate.Law)
+    reversible <- entry %>% pull(reversible)
+    
+    # Generate Reaction IDs
+    ID.gen <- GenerateId(rv.ID$id.eqn.seed, "eqn")
+    rv.ID$id.eqn.seed <- rv.ID$id.eqn.seed + 1
+    ID.to.add <- ID.gen[["id"]]
+    idx.to.add <- nrow(rv.ID$id.df) + 1
+    rv.ID$id.df[idx.to.add, ] <- c(ID.to.add, paste0(eqn.display, 
+                                                     " (",
+                                                     string.law,
+                                                     ")"))
+    
+    # Find IDs of species, reactants, products, and modifiers in reaction
+    reactants.id <- c()
+    for (j in seq_along(reactants)) {
+      reactants.id[j] <- FindId(reactants[j])
+    }
+    
+    products.id <- c()
+    for (j in seq_along(products)) {
+      products.id[j] <- FindId(products[j])
+    }
+    
+    modifiers.id <- c()
+    for (j in seq_along(modifiers)) {
+      modifiers.id[j] <- FindId(modifiers[j])
+    }
+    
+    parameters.id <- c()
+    for (j in seq_along(parameters)) {
+      parameters.id[j] <- FindId(parameters[j])
+    }
+    
+    species    <- RemoveNA(c(reactants, products))
+    species.id <- RemoveNA(c(reactants.id, products.id))
+    
+    # Find which compartment the species are in and assign that
+    compartment    <- rv.SPECIES$species[[species.id[1]]]$Compartment
+    compartment.id <- rv.SPECIES$species[[species.id[1]]]$Compartment.id
+    
+    # Build equation text, latex, and mathjax
+    eqn.builds <- BuildCustomEquationText(reactants,
+                                          products,
+                                          modifiers,
+                                          parameters)
+    
+    text.eqn    <- eqn.builds$text
+    latex.eqn   <- eqn.builds$latex
+    mathjax.eqn <- eqn.builds$mathjax
+    
+    # Build rate laws from string
+    convert.rate.law <- ConvertRateLaw(string.law)
+    p.rate.law       <- NA
+    latex.law        <- convert.rate.law$latex
+    mathjax.law      <- convert.rate.law$mathjax
+    mathml.law       <- katex::katex_mathml(latex.law)
+    content.ml       <- entry %>% pull(MathMl.Rate.Law)
+    
+    par.collapsed          <- collapseVector(parameters)
+    par.id.collapsed       <- collapseVector(parameters.id)
+    reactants.collapsed    <- collapseVector(reactants)
+    reactants.id.collapsed <- collapseVector(reactants.id)
+    products.collapsed     <- collapseVector(products)
+    products.id.collapsed  <- collapseVector(products.id)
+    species.collapsed      <- collapseVector(species)
+    species.id.collapsed   <- collapseVector(species.id)
+    modifiers.collapsed    <- collapseVector(modifiers)
+    modifiers.id.collapsed <- collapseVector(modifiers.id)
+    
+    # Add overall reaction information
+    reaction.entry <- list(
+      "ID"               = ID.to.add,
+      "Eqn.Display.Type" = law.display,
+      "Reaction.Law"     = law.name,
+      "Backend.Call"     = law.id,
+      "Species"          = species.collapsed,
+      "Reactants"        = reactants.collapsed,
+      "Products"         = products.collapsed,
+      "Modifiers"        = modifiers.collapsed,
+      "Parameters"       = par.collapsed,
+      "Compartment"      = compartment,
+      "Description"      = eqn.display,
+      "Species.id"       = species.id.collapsed,
+      "Reactants.id"     = reactants.id.collapsed,
+      "Products.id"      = products.id.collapsed,
+      "Modifiers.id"      = modifiers.id.collapsed,
+      "Parameters.id"    = par.id.collapsed,
+      "Compartment.id"   = compartment.id,
+      "Equation.Text"    = text.eqn,
+      "Equation.Latex"   = latex.eqn,
+      "Equation.MathJax" = mathjax.eqn,
+      "String.Rate.Law"  = string.law,
+      "Pretty.Rate.Law"  = p.rate.law,
+      "Latex.Rate.Law"   = latex.law,
+      "MathJax.Rate.Law" = mathjax.law,
+      "MathMl.Rate.Law"  = mathml.law,
+      "Content.MathMl"   = content.ml,
+      "Reversible"       = reversible
+    )
+    # print("reaction entry")
+    # print(reaction.entry)
+    rv.REACTIONS$reactions[[ID.to.add]] <- reaction.entry
+    
+    # Add Reaction To Species
+    for (jj in seq_along(species.id)) {
+      if (is.na(rv.SPECIES$species[[species.id[jj]]]$Reaction.ids)) {
+        rv.SPECIES$species[[species.id[jj]]]$Reaction.ids <- ID.to.add
+      } else {
+        items <- 
+          strsplit(
+            rv.SPECIES$species[[species.id[jj]]]$Reaction.ids, ", ")[[1]]
+        items <- c(items, ID.to.add)
+        rv.SPECIES$species[[species.id[jj]]]$Reaction.ids <- 
+          paste0(items, collapse = ", ")
+      }
+    }
+  }
+  print("KELTHE")
+  print(rv.REACTIONS$reactions)
+  print("REACTANTS")
+  for (i in seq_along(rv.REACTIONS$reactions)) {
+    print(rv.REACTIONS$reactions[[i]]$Reactants)
+    print(typeof(rv.REACTIONS$reactions[[i]]$Reactants))
+  }
+  print("PRODUCTS")
+  for (i in seq_along(rv.REACTIONS$reactions)) {
+    print(rv.REACTIONS$reactions[[i]]$Products)
+  }
+  
+  print(do.call(rbind, rv.REACTIONS$reactions))
+}
+
+sbml_2_biomodme_rules <- function(sbml.model) {
+  # Items in rv.CUSTOM.EQNS$ce.equations:
+  # ID                || Specific equation ID
+  # Equation          || Equation Description
+  # New.Species       || New Species in this equation
+  # New.Species.id    || Corresponding ids to above
+  # New.Parameters    || New Parameters in this equation
+  # New.Parameters.id || Corresponding ids to above
+  # Old.Species       || Old Species in this equation
+  # Old.Species.id    || Corresponding ids to above
+  # Old.Parameters    || Old Parameters in this equation
+  # Old.Parameters.id || Corresponding ids to above
+  # Has.Time.Var      || Boolean if time var exists
+  
+  #SBML Rules Reader provides the following:
+  # LHS.var
+  # mathml
+  # str.law
+  
+  # Check if rules exist
+  if (!isTruthy(sbml.model$rules)) {
+    rv.CUSTOM.EQNS$ce.equations <- list()
+  } else {
+    
+    rules <- sbml.model$rules
+    print(rules)
+    for (i in seq_along(rules)) {
+      entry <- rules[[i]]
+      
+      # Unpack entry
+      lhs.var <- entry$LHS.var
+      rhs.eqn <- entry$str.law
+      
+      # Generate Unique ID
+      ids <- GenerateId(rv.ID$id.custeqnaddional.seed, "custEqnAdditional")
+      unique.id <- ids[[2]]
+      rv.ID$id.custeqnaddional.seed <- ids[[1]]
+      idx.to.add <- nrow(rv.ID$id.df) + 1
+      rv.ID$id.df[idx.to.add, ] <- c(unique.id, paste0(lhs.var, "=", rhs.eqn))
+      eqn.id <- unique.id
+      
+      # Build Equation from LHS.var and str.law
+      
+      eqn.out <- paste0(lhs.var, "=", rhs.eqn)
+      PrintVar(eqn.out)
+      
+      # TODO: Split the reaction to extract variables.Determine if they are in
+      # reaction already. If not assign them to parameters (I guess)
+      # If we are loading, we would have to assume that all variables are
+      # somewhere.
+      
+      vars.in.eqn <- parse_string_expression(eqn.out)$valid.terms
+      par.names <- unname(sapply(rv.PARAMETERS$parameters,
+                                 get,
+                                 x = "Name"))
+      existing.params <- c()
+      existing.species <- c()
+      par.ids <- c()
+      spec.ids <- c()
+      for (j in seq_along(vars.in.eqn)) {
+        # Search if its in parameter
+        if (vars.in.eqn[j] %in% par.names) {
+          existing.params <- c(existing.params, vars.in.eqn[j])
+          par.ids <- c(par.ids, FindId(vars.in.eqn[j]))
+        } else {
+          # Store in species list
+          existing.species <- c(existing.species, vars.in.eqn[j])
+          spec.ids <- c(spec.ids, FindId(vars.in.eqn[j]))
+        }
+      }
+      
+      # TODO: Need to check for time vars
+      time.var.exists <- FALSE
+      
+      # Store to Output
+      to.ce.list <- list("ID" = eqn.id,
+                         "Equation" = eqn.out,
+                         "New.Species" = NA,
+                         "New.Species.id" = NA,
+                         "New.Parameters" = NA,
+                         "New.Parameters.id" = NA,
+                         "Old.Species" = collapseVector(existing.species),
+                         "Old.Species.id" = collapseVector(spec.ids),
+                         "Old.Parameters" = collapseVector(existing.params),
+                         "Old.Parameters.id" = collapseVector(par.ids),
+                         "Has.Time.Var" = time.var.exists)
+      
+      rv.CUSTOM.EQNS$ce.equations[[eqn.id]] <- to.ce.list
+    }
+    
+  }
+  print("FINISHED RULES")
+}
+
 LoadSBML_show_progress <- function(sbmlFile, w_sbml, spinner) {
   # This function is the same as LoadSBML but it is designed to show the 
   # progress bar screesn
@@ -510,7 +1020,7 @@ observeEvent(input$file_input_load_sbml, {
   }, 
   error = function(e) {
     print(paste0("Error: ", e))
-    w_sbml$hide
+    w_sbml$hide()
   })
   
   # print(sbml.model)
@@ -527,7 +1037,7 @@ observeEvent(input$file_input_load_sbml, {
   },
   error = function(e) {
     print(paste0("Error: ", e))
-    w_sbml$hide
+    w_sbml$hide()
   })
   
   print(rv.COMPARTMENTS$compartments.df)
@@ -547,7 +1057,7 @@ observeEvent(input$file_input_load_sbml, {
   }, 
   error = function(e) {
     print(paste0("Error: ", e))
-    w_sbml$hide
+    w_sbml$hide()
   })
 
   print(rv.SPECIES$species.df)
@@ -567,530 +1077,60 @@ observeEvent(input$file_input_load_sbml, {
   },
   error = function(e) {
     print(paste0("Error: ", e))
-    w_sbml$hide
+    w_sbml$hide()
   })
   
   print(rv.PARAMETERS$parameters.df)
   
-  ## Unpack SBML Function-------------------------------------------------------
-  # Items in rv.CUSTOM.LAWS$cl.reaction:
-  # ID                || Specific equation ID
-  # Type              || Type of custom law (reaction, rate, etc)
-  # Law.Name          || Display name shown on tables
-  # Description       || Equation Description
-  # Reactants         || Reactants in custom law
-  # Products          || Products in custom law
-  # Modifiers         || Modifiers (in reaction but no used for rate)
-  # Parameters        || Parameters in equation
-  # Parameter.Types   || Correlated parameter type to above (time, vol, param)
-  # Equation.Text     || Text version of equation
-  # Equation.Latex    || Latex text version of equation
-  # Equation.Mathjax  || Mathjax text version of equation
-  # String.Rate.Law   || String text for rate law
-  # Latex.Rate.Law    || Latex version of rate law
-  # MathJax.Rate.Law  || MathJax version of rate law
-  # Rate.MathML       || MathMl for rate law
-  # Reversible        || Bool if the equation is reversible or not
+  ## Unpack SBML Functions -----------------------------------------------------
+ 
   
-  
-  #SBML Function Reader provides the following:
-  # id
-  # name
-  # variables
-  # law
-  # Reactants
-  # Products
-  # Modifiers
-  # Parameters
-
   mes <- "Converting Functions to BioModME..."
-  w_sbml$update(html = waiter_fxn(mes,
-                                  spinner, 90))
+  w_sbml$update(
+    html = waiter_fxn(
+      mes,
+      spinner, 
+      82
+    )
+  )
   
-  reactions <- bind_rows(sbml.model$reactions)
-  # Check if Functions Exist
-  if (!isTruthy(sbml.model$functions)) {
-    rv.CUSTOM.LAWS$cl.reaction <- list()
-  } else {
-    load.fxns <- sbml.model$functions
-    # print(load.fxns)
-    for (i in seq_along(load.fxns)) {
-      entry <- load.fxns[[i]]
-      # print(entry)
-      # Transfer Information
-      law.name   <- entry$name
-      backend    <- paste0("user_custom_law_", entry$id)
-      reactants  <- entry$Reactants
-      products   <- entry$Products
-      modifiers  <- entry$Modifiers
-      parameters <- entry$Parameters
-      string.law <- entry$law
-      
-      # Build Information not in sbml load
-      #-----------------------------------
-      # Generate unique reaction ID
-      ids <- GenerateId(rv.ID$id.custeqn.seed, "customEqn")
-      unique.id <- ids[[2]]
-      rv.ID$id.custeqn.seed <- ids[[1]]
-      idx.to.add <- nrow(rv.ID$id.df) + 1
-      rv.ID$id.df[idx.to.add, ] <- c(unique.id, backend)
-      
-      # Function Description 
-      description <- law.name
-      # Parameter Types
-      param.type <-  rep("Parameter", length(SplitEntry(parameters)))
-      param.type <-  collapseVector(param.type)
-      
-      # Equations Text
-      eqn.builds <- BuildCustomEquationText(reactants,
-                                            products,
-                                            modifiers,
-                                            parameters)
-      eqn.text    <- eqn.builds$text
-      eqn.latex   <- eqn.builds$latex
-      eqn.mathjax <- eqn.builds$mathjax
-      
-      # Rate Law in latex, mathml, mathjax
-      latex.rate    <- NA
-      mathjax.rate  <- NA
-      mathml.rate   <- NA
-      tryCatch(
-        expr = {
-          law.converted <- ConvertRateLaw(string.law)
-          latex.rate    <- law.converted$latex
-          mathjax.rate  <- law.converted$mathjax
-          mathml.rate   <- law.converted$mathml
-        }
-      )
-      
-      
-      # Add Custom Law Data
-      to.list <- list("ID" = unique.id,
-                      "Type" = "Reaction",
-                      "Law.Name" = backend,
-                      "Description" = description,
-                      "Reactants" = reactants,
-                      "Products" = products,
-                      "Modifiers" = modifiers,
-                      "Parameters" = parameters,
-                      "Parameter.Types" = param.type,
-                      "Equation.Text" = eqn.text,
-                      "Equation.Latex" = eqn.latex,
-                      "Equation.Mathjax" = eqn.mathjax,
-                      "String.Rate.Law" = string.law,
-                      "Latex.Rate.Law" = latex.rate,
-                      "MathJax.Rate.Law" = mathjax.rate,
-                      "Rate.MathML" = mathml.rate,
-                      "Reversible" = FALSE)
-      
-      rv.CUSTOM.LAWS$cl.reaction[[unique.id]] <- to.list
-      
-      # Add to reaction laws RV
-      backend.entry <- backend
-      row.to.add <- c(law.name, backend.entry, "custom")
-      rv.REACTIONLAWS$laws <- rbind(rv.REACTIONLAWS$laws, row.to.add)
-      
-      reaction.type <- input$eqnCreate_type_of_equation
-      reaction.law  <- input$eqnCreate_reaction_law
-      
-      if (reaction.type == "All") {
-        option.names <- rv.REACTIONLAWS$laws %>% pull(Name)
-        options      <- rv.REACTIONLAWS$laws %>% pull(BackendName)
-      }  else if (reaction.type == "custom_reaction") {
-        option.names <- rv.REACTIONLAWS$laws %>% 
-          filter(Type == "custom") %>%
-          pull(Name)
-        options      <- rv.REACTIONLAWS$laws %>%
-          filter(Type == "custom") %>%
-          pull(BackendName)
-      }
-      
-      names(options) <- option.names
-      
-      updatePickerInput(
-        session = session, 
-        inputId = "eqnCreate_reaction_law",
-        choices = options,
-        selected = reaction.law
-      )
-    }
-  }
+  tryCatch({
+    sbml_2_biomodme_functions(sbml.model)
+  },
+  error = function(e) {
+    print(paste0("Error: ", e))
+    w_sbml$hide()
+  })
   print(rv.CUSTOM.LAWS$cl.reaction)
   
   ## Unpack SBML Reaction ____--------------------------------------------------
-  # Current Reaction values used by this program
-  # ID                || Specific equation ID
-  # Eqn.Display.Type  || Display name shown on tables
-  # Reaction.Law      || Law that the equation uses
-  # Species           || Species in equations
-  # Reactants         || Reactants in reactions
-  # Products          || Products in reactions
-  # Modifiers          || Species in equations that arent involved in diff eqns
-  # Rate.Constants    || Parameters in equation
-  # Compartment       || Compartment reaction occurs in
-  # Description       || Equation Description
-  # Species.id        || IDs of species in reaction
-  # Reactants.id      || IDs of reactants in reaction
-  # Products.id       || IDs of products in reaction
-  # Modifiers.id      || IDs of modifiers in model
-  # Parameters.id     || IDs of parameters in model
-  # Compartment.id    || ID of compartment eqn is in
-  # Equation.Text     || Text version of equation
-  # Equation.Latex    || Latex text version of equation
-  # Equation.MathJax  || Mathjax text version of equation
-  # String.Rate.Law   || String text for rate law
-  # Latex.Rate.Law    || Latex version of rate law
-  # MathJax.Rate.Law  || MathJax version of rate law
-  # Rate.MathML       || MathMl for rate law
-  # Reversible        || Bool if the equation is reversible or not
-
-
   mes <- "Converting Reactions to BioModME..."
   w_sbml$update(html = waiter_fxn(mes,
                                   spinner, 85))
-
-  reactions <- bind_rows(sbml.model$reactions)
-  # print("reactions")
-  # print(reactions)
-  # Convert ids to names for values in reactions species and pars
-  # Want to look at specific columns to convert
   
-  # For species
-  if (rv.sbml.load.variables$need.species.conversion) {
-    for (i in seq_len(nrow(rv.sbml.load.variables$species.df.conv))) {
-      old <- rv.sbml.load.variables$species.df.conv[i, 1]
-      new <- rv.sbml.load.variables$species.df.conv[i, 2]
-      
-      # Reactants
-      col <- reactions %>% pull(Reactants)
-      reactions$Reactants <- RenameVarInDFColumn(old, new, col)
-      
-      # Products
-      col <- reactions %>% pull(Products)
-      reactions$Products <- RenameVarInDFColumn(old, new, col)
-      
-      # Modifiers
-      col <- reactions %>% pull(Modifiers)
-      reactions$Modifiers <- RenameVarInDFColumn(old, new, col)
-      
-      # Equation.Text
-      col <- reactions %>% pull(Equation.Text)
-      reactions$Equation.Text <- 
-        RenameVarInDFColumn(old, new, col, isMath = TRUE)
-    }
-  }
-  
-  if (rv.sbml.load.variables$need.parameter.conversion) {
-    # For parameters
-    for (i in seq_len(nrow(rv.sbml.load.variables$parameter.df.conv))) {
-      old <- rv.sbml.load.variables$parameter.df.conv[i, 1]
-      new <- rv.sbml.load.variables$parameter.df.conv[i, 2]
-      
-      # Parameters
-      col <- reactions %>% pull(Parameters)
-      reactions$Parameters <- RenameVarInDFColumn(old, new, col)
-      
-      # Equation.Text
-      col <- reactions %>% pull(Equation.Text)
-      reactions$Reactants <- RenameVarInDFColumn(old, new, col, isMath = TRUE)
-    }
-  }
-
-  # For compartments
-  if (rv.sbml.load.variables$need.compartment.conversion) {
-    for (i in seq_len(nrow(rv.sbml.load.variables$comp.df.conv))) {
-      old <- rv.sbml.load.variables$comp.df.conv[i, 1]
-      new <- rv.sbml.load.variables$comp.df.conv[i, 2]
-      # Equation.Text
-      col <- reactions %>% pull(Equation.Text)
-      reactions$Reactants <- RenameVarInDFColumn(old, new, col, isMath = TRUE)
-    }
-  }
-  
-  # print(as.data.frame(reactions))
-
-  print("BEGINNING REACTION TO BIOMODME")
-  for (i in seq_len(nrow(reactions))) {
-    entry <- reactions[i,]
-
-    # Extract Reaction Main Inof
-    ID.to.add   <- entry %>% pull(id)
-    eqn.display <- entry %>% pull(description)
-    
-    # Extract Reactants
-    reactants  <- SplitEntry(entry %>% pull(Reactants))
-    products   <- SplitEntry(entry %>% pull(Products))
-    modifiers  <- SplitEntry(entry %>% pull(Modifiers))
-    parameters <- SplitEntry(entry %>% pull(Parameters))
-    
-    law.display   <- entry %>% pull(Reaction.Law)
-    law.name      <- paste0("user_custom_law_", law.display)
-    law.id        <- FindId(law.name)
-    string.law <- entry %>% pull(Equation.Text)
-    
-    # IDK if this is the best way to really do this but it'll be a bandaid
-    # for now.  Search for compartment names in string.law and replace them
-    # with the volume term this application generated. 
-    vectorized.law <- SplitEquationString(string.law)
-    species.descriptions <- unname(sapply(rv.SPECIES$species,
-                                          get,
-                                          x = "Description"))
-    comp.names <- 
-      unname(
-        sapply(
-          rv.COMPARTMENTS$compartments,
-          get,
-          x = "Name"
-        )
-      )
-    
-    comp.vol.names <- 
-      unname(
-        sapply(
-          rv.COMPARTMENTS$compartments,
-          get,
-          x = "Volume"
-        )
-      )
-    
-    for (j in seq_along(vectorized.law)) {
-      if (vectorized.law[j] %in% comp.names) {
-        # find idx of name and corresponding volume
-        idx <- which(comp.names %in% vectorized.law[j])
-        # replace in vectorized law
-        vectorized.law[j] <- comp.vol.names[idx]
-      }
-    }
-    
-    # Condense vectorized law to new string law
-    string.law <- collapseVector(vectorized.law, delimiter = " ")
-    mathml.law <- entry %>% pull(MathMl.Rate.Law)
-    reversible <- entry %>% pull(reversible)
-
-    # Generate Reaction IDs
-    ID.gen <- GenerateId(rv.ID$id.eqn.seed, "eqn")
-    rv.ID$id.eqn.seed <- rv.ID$id.eqn.seed + 1
-    ID.to.add <- ID.gen[["id"]]
-    idx.to.add <- nrow(rv.ID$id.df) + 1
-    rv.ID$id.df[idx.to.add, ] <- c(ID.to.add, paste0(eqn.display, 
-                                                     " (",
-                                                     string.law,
-                                                     ")"))
-
-    # Find IDs of species, reactants, products, and modifiers in reaction
-    reactants.id <- c()
-    for (j in seq_along(reactants)) {
-      reactants.id[j] <- FindId(reactants[j])
-    }
-
-    products.id <- c()
-    for (j in seq_along(products)) {
-      products.id[j] <- FindId(products[j])
-    }
-
-    modifiers.id <- c()
-    for (j in seq_along(modifiers)) {
-      modifiers.id[j] <- FindId(modifiers[j])
-    }
-
-    parameters.id <- c()
-    for (j in seq_along(parameters)) {
-      parameters.id[j] <- FindId(parameters[j])
-    }
-
-    species    <- RemoveNA(c(reactants, products))
-    species.id <- RemoveNA(c(reactants.id, products.id))
-    
-    # Find which compartment the species are in and assign that
-    compartment    <- rv.SPECIES$species[[species.id[1]]]$Compartment
-    compartment.id <- rv.SPECIES$species[[species.id[1]]]$Compartment.id
-
-    # Build equation text, latex, and mathjax
-    eqn.builds <- BuildCustomEquationText(reactants,
-                                          products,
-                                          modifiers,
-                                          parameters)
-
-    text.eqn    <- eqn.builds$text
-    latex.eqn   <- eqn.builds$latex
-    mathjax.eqn <- eqn.builds$mathjax
-
-    # Build rate laws from string
-    convert.rate.law <- ConvertRateLaw(string.law)
-    p.rate.law       <- NA
-    latex.law        <- convert.rate.law$latex
-    mathjax.law      <- convert.rate.law$mathjax
-    mathml.law       <- katex::katex_mathml(latex.law)
-    content.ml       <- entry %>% pull(MathMl.Rate.Law)
-
-    par.collapsed          <- collapseVector(parameters)
-    par.id.collapsed       <- collapseVector(parameters.id)
-    reactants.collapsed    <- collapseVector(reactants)
-    reactants.id.collapsed <- collapseVector(reactants.id)
-    products.collapsed     <- collapseVector(products)
-    products.id.collapsed  <- collapseVector(products.id)
-    species.collapsed      <- collapseVector(species)
-    species.id.collapsed   <- collapseVector(species.id)
-    modifiers.collapsed    <- collapseVector(modifiers)
-    modifiers.id.collapsed <- collapseVector(modifiers.id)
-
-    # Add overall reaction information
-    reaction.entry <- list(
-      "ID"               = ID.to.add,
-      "Eqn.Display.Type" = law.display,
-      "Reaction.Law"     = law.name,
-      "Backend.Call"     = law.id,
-      "Species"          = species.collapsed,
-      "Reactants"        = reactants.collapsed,
-      "Products"         = products.collapsed,
-      "Modifiers"        = modifiers.collapsed,
-      "Parameters"       = par.collapsed,
-      "Compartment"      = compartment,
-      "Description"      = eqn.display,
-      "Species.id"       = species.id.collapsed,
-      "Reactants.id"     = reactants.id.collapsed,
-      "Products.id"      = products.id.collapsed,
-      "Modifiers.id"      = modifiers.id.collapsed,
-      "Parameters.id"    = par.id.collapsed,
-      "Compartment.id"   = compartment.id,
-      "Equation.Text"    = text.eqn,
-      "Equation.Latex"   = latex.eqn,
-      "Equation.MathJax" = mathjax.eqn,
-      "String.Rate.Law"  = string.law,
-      "Pretty.Rate.Law"  = p.rate.law,
-      "Latex.Rate.Law"   = latex.law,
-      "MathJax.Rate.Law" = mathjax.law,
-      "MathMl.Rate.Law"  = mathml.law,
-      "Content.MathMl"   = content.ml,
-      "Reversible"       = reversible
-    )
-    # print("reaction entry")
-    # print(reaction.entry)
-    rv.REACTIONS$reactions[[ID.to.add]] <- reaction.entry
-    
-    # Add Reaction To Species
-    for (jj in seq_along(species.id)) {
-      if (is.na(rv.SPECIES$species[[species.id[jj]]]$Reaction.ids)) {
-        rv.SPECIES$species[[species.id[jj]]]$Reaction.ids <- ID.to.add
-      } else {
-        items <- 
-          strsplit(
-            rv.SPECIES$species[[species.id[jj]]]$Reaction.ids, ", ")[[1]]
-        items <- c(items, ID.to.add)
-        rv.SPECIES$species[[species.id[jj]]]$Reaction.ids <- 
-          paste0(items, collapse = ", ")
-      }
-    }
-  }
-  print("KELTHE")
-  print(rv.REACTIONS$reactions)
-  print("REACTANTS")
-  for (i in seq_along(rv.REACTIONS$reactions)) {
-    print(rv.REACTIONS$reactions[[i]]$Reactants)
-    print(typeof(rv.REACTIONS$reactions[[i]]$Reactants))
-  }
-  print("PRODUCTS")
-  for (i in seq_along(rv.REACTIONS$reactions)) {
-    print(rv.REACTIONS$reactions[[i]]$Products)
-  }
-  
-  print(do.call(rbind, rv.REACTIONS$reactions))
+  tryCatch({
+    sbml_2_biomodme_reactions(sbml.model)
+  },
+  error = function(e) {
+    print(paste0("Error: ", e))
+    w_sbml$hide()
+  })
   # print(bind_rows(rv.REACTIONS$reactions))
 
   print("MOVING TO RULES")
-  # TODO: Load in custom rules to proper RV
   ## Unpack SBML Rules-------------------------------------------------------
-  # Items in rv.CUSTOM.EQNS$ce.equations:
-  # ID                || Specific equation ID
-  # Equation          || Equation Description
-  # New.Species       || New Species in this equation
-  # New.Species.id    || Corresponding ids to above
-  # New.Parameters    || New Parameters in this equation
-  # New.Parameters.id || Corresponding ids to above
-  # Old.Species       || Old Species in this equation
-  # Old.Species.id    || Corresponding ids to above
-  # Old.Parameters    || Old Parameters in this equation
-  # Old.Parameters.id || Corresponding ids to above
-  # Has.Time.Var      || Boolean if time var exists
+  mes <- "Converting Rules to BioModME..."
+  w_sbml$update(html = waiter_fxn(mes,
+                                  spinner, 95))
   
-  #SBML Rules Reader provides the following:
-  # LHS.var
-  # mathml
-  # str.law
-  
-  # Check if rules exist
-  if (!isTruthy(sbml.model$rules)) {
-    rv.CUSTOM.EQNS$ce.equations <- list()
-  } else {
-
-    rules <- sbml.model$rules
-    print(rules)
-    for (i in seq_along(rules)) {
-      entry <- rules[[i]]
-
-      # Unpack entry
-      lhs.var <- entry$LHS.var
-      rhs.eqn <- entry$str.law
-
-      # Generate Unique ID
-      ids <- GenerateId(rv.ID$id.custeqnaddional.seed, "custEqnAdditional")
-      unique.id <- ids[[2]]
-      rv.ID$id.custeqnaddional.seed <- ids[[1]]
-      idx.to.add <- nrow(rv.ID$id.df) + 1
-      rv.ID$id.df[idx.to.add, ] <- c(unique.id, paste0(lhs.var, "=", rhs.eqn))
-      eqn.id <- unique.id
-
-      # Build Equation from LHS.var and str.law
-
-      eqn.out <- paste0(lhs.var, "=", rhs.eqn)
-      PrintVar(eqn.out)
-
-      # TODO: Split the reaction to extract variables.Determine if they are in
-      # reaction already. If not assign them to parameters (I guess)
-      # If we are loading, we would have to assume that all variables are
-      # somewhere.
-
-      vars.in.eqn <- parse_string_expression(eqn.out)$valid.terms
-      par.names <- unname(sapply(rv.PARAMETERS$parameters,
-                                 get,
-                                 x = "Name"))
-      existing.params <- c()
-      existing.species <- c()
-      par.ids <- c()
-      spec.ids <- c()
-      for (j in seq_along(vars.in.eqn)) {
-        # Search if its in parameter
-        if (vars.in.eqn[j] %in% par.names) {
-          existing.params <- c(existing.params, vars.in.eqn[j])
-          par.ids <- c(par.ids, FindId(vars.in.eqn[j]))
-        } else {
-          # Store in species list
-          existing.species <- c(existing.species, vars.in.eqn[j])
-          spec.ids <- c(spec.ids, FindId(vars.in.eqn[j]))
-        }
-      }
-
-      # TODO: Need to check for time vars
-      time.var.exists <- FALSE
-
-      # Store to Output
-      to.ce.list <- list("ID" = eqn.id,
-                         "Equation" = eqn.out,
-                         "New.Species" = NA,
-                         "New.Species.id" = NA,
-                         "New.Parameters" = NA,
-                         "New.Parameters.id" = NA,
-                         "Old.Species" = collapseVector(existing.species),
-                         "Old.Species.id" = collapseVector(spec.ids),
-                         "Old.Parameters" = collapseVector(existing.params),
-                         "Old.Parameters.id" = collapseVector(par.ids),
-                         "Has.Time.Var" = time.var.exists)
-
-      rv.CUSTOM.EQNS$ce.equations[[eqn.id]] <- to.ce.list
-    }
-
-  }
-  print("FINISHED RULES")
+  tryCatch({
+    sbml_2_biomodme_rules(sbml.model)
+  },
+  error = function(e) {
+    print(paste0("Error: ", e))
+    w_sbml$hide()
+  })
+  sbml_2_biomodme_rules
   print(rv.CUSTOM.EQNS$ce.equations)
 
   # Finish load effects --------------------------------------------------------
