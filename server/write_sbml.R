@@ -225,6 +225,7 @@ createSBML <- function(model) {
     
     # Write Reactions ----------------------------------------------------------
     if (n.reactions > 0) {
+      # browser()
       out <- c(out, "<listOfReactions>")
       for (i in seq_along(reactions)) {
         entry <- reactions[[i]]
@@ -330,7 +331,7 @@ createSBML <- function(model) {
           # Add parameters to reaction
           if (!is.na(entry$parameters)) {
             param.ml <- c()
-            for (i in seq_along(r.parameters)) {
+            for (j in seq_along(r.parameters)) {
               to.add <- paste0("<parameter id=", '"', r.parameters[j], '" ',
                                "name=", '"', r.par.name[j], '" ',
                                "value=", '"', r.par.value[j], '"',
