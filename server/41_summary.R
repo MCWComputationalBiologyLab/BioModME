@@ -133,9 +133,8 @@ output$summary_variable_table <- renderDT({
   colnames(my.table) <- c("Species", "Value", "Unit")
   # If there are rows in the data frame, display the table
   font.size <- paste0(as.character(input$NI_summary_table_font_size), "%")
-  header.size <- 
-    paste0(as.character(input$NI_summary_table_header_font_size), "px")
   overflow.type <- ifelse(input$CI_summary_hide_scrollbars, "hidden", "370px")
+  table.header <- as.character(input$NI_summary_table_header_font_size) 
   
   DT::datatable(
     my.table,
@@ -149,9 +148,10 @@ output$summary_variable_table <- renderDT({
       ordering = FALSE,
       dom = "t",
       scrollY = overflow.type,
-      initComplete = JS(
+      initComplete = JS(paste0(
         "function(settings, json) {",
-        "$(this.api().table().header()).css({'background-color': 'white', 'color': 'black', 'font-size': '20px'});",
+        "$(this.api().table().header()).css({'background-color': 'white', 
+        'color': 'black', 'font-size':'", table.header,  "px'});"),
         "}"
       )
     )
@@ -172,6 +172,7 @@ output$summary_parameter_table <- renderDT({
   
   font.size <- paste0(as.character(input$NI_summary_table_font_size), "%")
   overflow.type <- ifelse(input$CI_summary_hide_scrollbars, "hidden", "370px")
+  table.header <- as.character(input$NI_summary_table_header_font_size) 
   
   DT::datatable(
     my.table,
@@ -186,10 +187,10 @@ output$summary_parameter_table <- renderDT({
       ordering = FALSE,
       dom = "t",
       scrollY = overflow.type,
-      initComplete = JS(
+      initComplete = JS(paste0(
         "function(settings, json) {",
         "$(this.api().table().header()).css({'background-color': 'white', 
-        'color': 'black', 'font-size': '20px'});",
+        'color': 'black', 'font-size':'", table.header,  "px'});"),
         "}"
       )
     )

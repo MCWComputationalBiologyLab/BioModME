@@ -112,7 +112,7 @@ server <- shinyServer(function(input, output, session) {
         numericInput(
           inputId = "NI_summary_box_title_font_size",
           label = "Box Header Font Size(px)",
-          value = 20,
+          value = 17,
           min = 1,
           max = 100,
           step = 1
@@ -144,7 +144,7 @@ server <- shinyServer(function(input, output, session) {
         numericInput(
           inputId = "NI_summary_table_header_font_size",
           label = "Table Header Font Size(px)",
-          value = 25,
+          value = 17,
           min = 5,
           max = 100,
           step = 1
