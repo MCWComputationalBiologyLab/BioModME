@@ -128,7 +128,7 @@ server <- shinyServer(function(input, output, session) {
         numericInput(
           inputId = "TI_summary_de_mathjax_font_size",
           label = "Differential Equation Font Size(%)",
-          value = 100,
+          value = 70,
           step = 1,
           min = 1, 
           max = 300
@@ -136,7 +136,7 @@ server <- shinyServer(function(input, output, session) {
         numericInput(
           inputId = "NI_summary_table_font_size",
           label = "Table Font Size(%)",
-          value = 135,
+          value = 100,
           min = 5,
           max = 200,
           step = 5
