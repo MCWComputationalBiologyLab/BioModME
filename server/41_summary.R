@@ -113,8 +113,6 @@ output$summary_DE_mathjax <- renderUI({
 # Variable Summary -------------------------------------------------------------
 output$summary_variable_ui <- renderUI({
 
-  print(rv.SPECIES$species.df)
-  print(is_empty(rv.SPECIES$species.df))
   if (is_empty(rv.SPECIES$species.df)) {
     # If there are no rows in the data frame, render a message box
     box(
@@ -132,10 +130,11 @@ output$summary_variable_ui <- renderUI({
 output$summary_variable_table <- renderDT({
   my.table <- rv.SPECIES$species.df %>%
     select(Name, Value, Unit)
-  
+  colnames(my.table) <- c("Species", "Value", "Unit")
   # If there are rows in the data frame, display the table
   font.size <- paste0(as.character(input$NI_summary_table_font_size), "%")
-  header.size <- paste0(as.character(input$NI_summary_table_header_font_size), "px")
+  header.size <- 
+    paste0(as.character(input$NI_summary_table_header_font_size), "px")
   overflow.type <- ifelse(input$CI_summary_hide_scrollbars, "hidden", "370px")
   
   DT::datatable(
