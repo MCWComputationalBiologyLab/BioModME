@@ -527,7 +527,6 @@ observeEvent(input$createVar_deleteVarButton, {
 
 # Table Render for Variables ---------------------------------------------------
 output$myVariables_DT <- renderRHandsontable({
-  
   # Table override value
   override <- rv.REFRESH$refresh.species.table 
   
@@ -622,6 +621,7 @@ output$myVariables_DT <- renderRHandsontable({
 
 # Variable Input Rhandsontable: cell Change ------------------------------------
 observeEvent(input$myVariables_DT$changes$changes, {
+  browser()
   xi = input$myVariables_DT$changes$changes[[1]][[1]]
   yi = input$myVariables_DT$changes$changes[[1]][[2]]
   old = input$myVariables_DT$changes$changes[[1]][[3]]
@@ -751,6 +751,7 @@ observeEvent(input$myVariables_DT$changes$changes, {
 })
 
 observeEvent(input$myVariables_DT_select$select$r, {
+  
   req(length(rv.SPECIES$species.names > 0))
   cat("Selected Row", input$myVariables_DT_select$select$r)
   cat('\nSelected Column:',input$myVariables_DT_select$select$c)

@@ -12,7 +12,7 @@ TAB_SUMMARY <-
           width = 8,
           conditionalPanel(
             condition = "input.lineplot_choose_plot_renderer == 'plotly'",
-            jqui_resizable(plotlyOutput("summary_plotly"))),
+            plotlyOutput("summary_plotly")),
           conditionalPanel(
             condition = "input.lineplot_choose_plot_renderer == 'ggplot2'",
             jqui_resizable(plotOutput("summary_plot")))
@@ -25,7 +25,7 @@ TAB_SUMMARY <-
       ),
       column(
         width = 4,
-        DTOutput("summary_variable_table")),
+        uiOutput("summary_variable_ui")),
       column(
         width = 4,
         DTOutput("summary_parameter_table"))

@@ -849,7 +849,6 @@ observeEvent(input$CIO_add_IO, {
     ids <- GenerateId(rv.ID$id.io.seed, "IO")
     IO.id <- ids$id
     rv.ID$id.io.seed <- ids$seed
-    
     par.ids <- c()
     for (i in seq(length(params))) {
       if (params[i] %in% rv.PARAMETERS$parameters.names) {

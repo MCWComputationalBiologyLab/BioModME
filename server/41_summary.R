@@ -21,7 +21,7 @@ output$ReactionEquationsBox <- renderUI({
     title = tags$p("Reactions", style = title.style),
     # title = h3("Reactions", style = "font-size:42px; font-weight:bold"),
     div(
-      style = paste0("height:370px; overflow-y:", overflow.type, ";"),
+      style = paste0("height:350px; overflow-y:", overflow.type, ";"),
       lapply(seq_along(reactions.mj), function(i){
         div(
           style = paste0("overflow-x:", overflow.type, ";"),
@@ -71,6 +71,8 @@ output$DifferentialEquationsBox <- renderUI({
 })
 
 output$summary_DE_mathjax <- renderUI({
+  print("DIFF Equations")
+  print(rv.DE$de.equations.list)
   text.size <- input$TI_summary_de_mathjax_font_size
   overflow.type <- ifelse(input$CI_summary_hide_scrollbars, "hidden", "auto")
   title.style = paste0("font-size:",
@@ -81,17 +83,22 @@ output$summary_DE_mathjax <- renderUI({
     width = 12,
     title = tags$p("Differential Equations", style= title.style),
     # title = HTML("<b>Differential Equations</b></font size>"),
-    lapply(seq(length(rv.DE$de.equations.list)), function(i){
-      div(
-        style = paste0("overflow-x:", overflow.type, ";"),
-        withMathJax(
-          buildMathjaxEqn(rv.DE$de.equations.list[[i]],
-                          i,
-                          rv.DE$de.equations.list[[i]]$Compartment.vol,
-                          TRUE)
+    if (length(rv.DE$de.equations.list) == 0) {
+      "Differential Equations will appear here"
+    } else {
+      lapply(seq(length(rv.DE$de.equations.list)), function(i){
+        div(
+          style = paste0("overflow-x:", overflow.type, ";"),
+          withMathJax(
+            buildMathjaxEqn(rv.DE$de.equations.list[[i]],
+                            i,
+                            rv.DE$de.equations.list[[i]]$Compartment.vol,
+                            TRUE)
+          )
         )
-      )
-    }),
+      })
+    }
+    ,
     tags$head(
       tags$style(
         paste0("#box_summary_diff_eqns .MathJax_Display
@@ -104,17 +111,31 @@ output$summary_DE_mathjax <- renderUI({
 })
 
 # Variable Summary -------------------------------------------------------------
-output$summary_variable_table <- renderDT({ 
-  
-  # Build Variable Table
+output$summary_variable_ui <- renderUI({
+
+  print(rv.SPECIES$species.df)
+  print(is_empty(rv.SPECIES$species.df))
+  if (is_empty(rv.SPECIES$species.df)) {
+    # If there are no rows in the data frame, render a message box
+    box(
+      id = "box_summary_species_placeholder",
+      width = 12,
+      title = "Species",
+      "Species will be displayed here"
+    )
+  } else {
+    # If there are rows in the data frame, render the DTOutput
+    DTOutput("summary_variable_table")
+  }
+})
+
+output$summary_variable_table <- renderDT({
   my.table <- rv.SPECIES$species.df %>%
     select(Name, Value, Unit)
   
-  colnames(my.table) <- c("Species", "Value", "Unit")
-  
+  # If there are rows in the data frame, display the table
   font.size <- paste0(as.character(input$NI_summary_table_font_size), "%")
-  header.size <- paste0(as.character(input$NI_summary_table_header_font_size), 
-                        "px")
+  header.size <- paste0(as.character(input$NI_summary_table_header_font_size), "px")
   overflow.type <- ifelse(input$CI_summary_hide_scrollbars, "hidden", "370px")
   
   DT::datatable(
@@ -124,7 +145,6 @@ output$summary_variable_table <- renderDT({
     editable = TRUE,
     options = list(
       autoWidth = TRUE,
-      # colnames = c("Species", "Value", "Unit"),
       columnDefs = list(list(className = "dt-center", targets = "_all")),
       pageLength = -1,
       ordering = FALSE,
@@ -132,16 +152,16 @@ output$summary_variable_table <- renderDT({
       scrollY = overflow.type,
       initComplete = JS(
         "function(settings, json) {",
-        "$(this.api().table().header()).css({'background-color': 'white',
-        'color': 'black', 'font-size': '20px'});",
+        "$(this.api().table().header()).css({'background-color': 'white', 'color': 'black', 'font-size': '20px'});",
         "}"
       )
-
     )
   ) %>%
-  formatStyle(
-    columns = c("Species", "Value", "Unit"), fontSize = font.size)
-  })
+    formatStyle(
+      columns = c("Species", "Value", "Unit"),
+      fontSize = font.size)
+})
+
 
 # Parameter Summary ------------------------------------------------------------
 output$summary_parameter_table <- renderDT({ 
@@ -182,83 +202,110 @@ output$summary_parameter_table <- renderDT({
 
 # Plot Summary -----------------------------------------------------------------
 output$summary_plot <- renderPlot({
-  to.plot <- CreatePlot(rv.RESULTS$results.model.final,
-                        input$lineplot_yvar,
-                        input$choose_color_palette,
-                        input$line_size_options,
-                        input$line_legend_title,
-                        input$line_show_dots,
-                        input$line_axis_confirm,
-                        input$line_xaxis_min,
-                        input$line_xaxis_max,
-                        input$line_xstep,
-                        input$line_yaxis_min,
-                        input$line_yaxis_max,
-                        input$line_ystep,
-                        input$line_title,
-                        input$line_xlabel,
-                        input$line_xtitle_location,
-                        input$line_axis_text_size,
-                        input$line_axis_title_size,
-                        input$line_ylabel,
-                        input$line_ytitle_location,
-                        input$line_axis_text_size,
-                        input$line_axis_title_size,
-                        input$line_title_text_size,
-                        input$line_title_location,
-                        input$line_legend_position,
-                        input$line_legend_title_size,
-                        input$line_legend_font_size,
-                        input$line_panel_colorPicker_checkbox,
-                        input$line_panel_colorPicker,
-                        input$line_plotBackground_color_change,
-                        input$line_plotBackground_colorPicker,
-                        input$show_overlay_data,
-                        data.scatter(),
-                        input$plot_data_import_x,
-                        input$plot_data_import_y)
+
+  if (nrow(rv.RESULTS$results.model.final) != 0) {
+
+    to.plot <- CreatePlot(rv.RESULTS$results.model.final,
+                          input$lineplot_yvar,
+                          input$choose_color_palette,
+                          input$line_size_options,
+                          input$line_legend_title,
+                          input$line_show_dots,
+                          input$line_axis_confirm,
+                          input$line_xaxis_min,
+                          input$line_xaxis_max,
+                          input$line_xstep,
+                          input$line_yaxis_min,
+                          input$line_yaxis_max,
+                          input$line_ystep,
+                          input$line_title,
+                          input$line_xlabel,
+                          input$line_xtitle_location,
+                          input$line_axis_text_size,
+                          input$line_axis_title_size,
+                          input$line_ylabel,
+                          input$line_ytitle_location,
+                          input$line_axis_text_size,
+                          input$line_axis_title_size,
+                          input$line_title_text_size,
+                          input$line_title_location,
+                          input$line_legend_position,
+                          input$line_legend_title_size,
+                          input$line_legend_font_size,
+                          input$line_panel_colorPicker_checkbox,
+                          input$line_panel_colorPicker,
+                          input$line_plotBackground_color_change,
+                          input$line_plotBackground_colorPicker,
+                          input$show_overlay_data,
+                          data.scatter(),
+                          input$plot_data_import_x,
+                          input$plot_data_import_y)
+  } else {
+    plot(1, 1, type="n", xlab="", ylab="", xaxt='n', yaxt='n')
+    text(1, 1, "Execute Model For Plot.", cex=1.5)
+  }
+
 })
 
 output$summary_plotly <- renderPlotly({
-  to.plot <- CreatePlot(rv.RESULTS$results.model.final,
-                        input$lineplot_yvar,
-                        input$choose_color_palette,
-                        input$line_size_options,
-                        input$line_legend_title,
-                        input$line_show_dots,
-                        input$line_axis_confirm,
-                        input$line_xaxis_min,
-                        input$line_xaxis_max,
-                        input$line_xstep,
-                        input$line_yaxis_min,
-                        input$line_yaxis_max,
-                        input$line_ystep,
-                        input$line_title,
-                        input$line_xlabel,
-                        input$line_xtitle_location,
-                        input$line_axis_text_size,
-                        input$line_axis_title_size,
-                        input$line_ylabel,
-                        input$line_ytitle_location,
-                        input$line_axis_text_size,
-                        input$line_axis_title_size,
-                        input$line_title_text_size,
-                        input$line_title_location,
-                        input$line_legend_position,
-                        input$line_legend_title_size,
-                        input$line_legend_font_size,
-                        input$line_panel_colorPicker_checkbox,
-                        input$line_panel_colorPicker,
-                        input$line_plotBackground_color_change,
-                        input$line_plotBackground_colorPicker,
-                        input$show_overlay_data,
-                        data.scatter(),
-                        input$plot_data_import_x,
-                        input$plot_data_import_y
-  )
-  
-  ggplotly(to.plot, 
-           tooltip = c("x", "y", "colour"))
+
+  if (nrow(rv.RESULTS$results.model.final) != 0) {
+    to.plot <- CreatePlot(rv.RESULTS$results.model.final,
+                          input$lineplot_yvar,
+                          input$choose_color_palette,
+                          input$line_size_options,
+                          input$line_legend_title,
+                          input$line_show_dots,
+                          input$line_axis_confirm,
+                          input$line_xaxis_min,
+                          input$line_xaxis_max,
+                          input$line_xstep,
+                          input$line_yaxis_min,
+                          input$line_yaxis_max,
+                          input$line_ystep,
+                          input$line_title,
+                          input$line_xlabel,
+                          input$line_xtitle_location,
+                          input$line_axis_text_size,
+                          input$line_axis_title_size,
+                          input$line_ylabel,
+                          input$line_ytitle_location,
+                          input$line_axis_text_size,
+                          input$line_axis_title_size,
+                          input$line_title_text_size,
+                          input$line_title_location,
+                          input$line_legend_position,
+                          input$line_legend_title_size,
+                          input$line_legend_font_size,
+                          input$line_panel_colorPicker_checkbox,
+                          input$line_panel_colorPicker,
+                          input$line_plotBackground_color_change,
+                          input$line_plotBackground_colorPicker,
+                          input$show_overlay_data,
+                          data.scatter(),
+                          input$plot_data_import_x,
+                          input$plot_data_import_y
+    )
+
+    ggplotly(to.plot,
+             tooltip = c("x", "y", "colour"))
+  } else {
+    p <- plot_ly() %>%
+      add_trace(
+        x = 1,
+        y = 1,
+        type = 'scatter',
+        mode = 'text',
+        text = "Execute Model For Plot",
+        textfont = list(size = 18)
+      ) %>%
+      layout(
+        xaxis = list(showticklabels = FALSE),
+        yaxis = list(showticklabels = FALSE)
+      )
+    p
+  }
+
 })
 
 
