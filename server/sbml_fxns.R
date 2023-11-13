@@ -954,7 +954,8 @@ ExtractRulesMathFromSBML <- function(doc, assignmentVars) {
   # Inputs: 
   #   doc - parsed xml doc from xmltreeparse
   #   assignmentVars - vars on left hand side of rules (V1)
-
+  message <- NULL
+  
   # Parse to rules section
   rules <- doc$doc$children$sbml[["model"]][["listOfRules"]]
   n.rules <- length(rules)
@@ -964,10 +965,27 @@ ExtractRulesMathFromSBML <- function(doc, assignmentVars) {
   for (i in seq_along(rules)) {
     
     mathml    <- rules[[i]][["math"]][[1]]
-    e <- convertML2R(mathml)
+    e <- NULL
+    tryCatch({
+      e <- convertML2R(mathml)
+    }, error = function(cond) {
+      e <- NULL
+      err.mes <- cond
+    }, warning = function(cond) {
+      e <- NULL
+      err.mes <- cond
+    })
+    
+    if (is.null(e)) {
+      message <- "Something went wrong in parsing the 'Rules' Section. It could 
+                  be possible this file contains conversions we do not yet 
+                  support (including root and degree)."
+      return(list(out = NULL, error = message))
+    }
+    
     e.str.law <- Deriv::Simplify(e)
     e.str.law <- rmp(e)
-    test         <- mathml2R(mathml)
+    # test      <- mathml2R(mathml)
     # e.exp.law <- e[[1]]
     # e.str.law <- gsub(" ","",toString(e[1]))
 
@@ -975,7 +993,8 @@ ExtractRulesMathFromSBML <- function(doc, assignmentVars) {
     rulesList[[i]]$mathml  <- toString(mathml)
     rulesList[[i]]$str.law <- e.str.law
   }
-  return(rulesList)
+  
+  return(list(out = rulesList, error = message))
 }
 
 

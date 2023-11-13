@@ -904,8 +904,9 @@ LoadSBML_show_progress <- function(sbmlFile, w_sbml, spinner) {
   
   # Extract Species_____________________________________________________________
   if (!is.null(modelList$listOfSpecies)) {
+    # Convert species to R structure
     species.df <- Attributes2Tibble(modelList$listOfSpecies)
-    # browser()
+    
     # NA check for fidelity of data
     if (any(is.na(species.df))) {
       error.in.load <- TRUE
@@ -917,12 +918,14 @@ LoadSBML_show_progress <- function(sbmlFile, w_sbml, spinner) {
       return(list(model = NULL, error.message = cs))
     }
     
+    # Finalize species data for application downstream analysis
     species.df <- FinalizeSpeciesData(species.df)
     
     # Error return if species can't be finalized
     if (!is.null(species.df$out)) species.df <- species.df$out
      else return(list(model = NULL, error.message = species.df$error))
     
+    # Store species information to output
     out[["species"]] <- species.df
     exists.listOfSpecies <- TRUE
   }
@@ -939,10 +942,23 @@ LoadSBML_show_progress <- function(sbmlFile, w_sbml, spinner) {
   w_sbml$update(html = waiter_fxn("Extracting Rules", spinner, 35))
   # Extract Rules_______________________________________________________________
   if (!is.null(modelList$listOfRules)) {
+    
     rules.header <- Attributes2Tibble(modelList$listOfRules)
+    # Add error check to avoid pull on non existant columns
+    if (is.null(rules.header$variable)) {
+      error.mes <- "Rules exist but 'variables' do not in SBML file."
+      return(list(model = NULL, error.message = error.mes))
+    }
     rules.assignment.vars <- rules.header %>% pull(variable)
+    
+    # Perform extraction of rules from sbml content MathML
     rules.list <- ExtractRulesMathFromSBML(doc, rules.assignment.vars)
     
+    # Error check if rules extraction failed.
+    if (!is.null(rules.list$out)) rules.list <- rules.list$out
+    else return(list(model = NULL, error.message = rules.list$error))
+    
+    # Store rules to output list
     out[["rules"]] <- rules.list
     exists.listOfRules <- TRUE
   }
