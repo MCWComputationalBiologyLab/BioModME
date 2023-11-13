@@ -286,7 +286,6 @@ output$summary_plotly <- renderPlotly({
                           input$plot_data_import_x,
                           input$plot_data_import_y
     )
-
     ggplotly(to.plot,
              tooltip = c("x", "y", "colour"))
   } else {

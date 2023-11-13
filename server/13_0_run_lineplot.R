@@ -585,85 +585,106 @@ observeEvent(input$execute_run_model, {
 # Renderplots for all plot options --------------------------------------------- 
 
 output$main_lineplot <- renderPlot({
-    
-  to.plot <- CreatePlot(rv.RESULTS$results.model.final,
-                        input$lineplot_yvar,
-                        input$choose_color_palette,
-                        input$line_size_options,
-                        input$line_legend_title,
-                        input$line_show_dots,
-                        input$line_axis_confirm,
-                        input$line_xaxis_min,
-                        input$line_xaxis_max,
-                        input$line_xstep,
-                        input$line_yaxis_min,
-                        input$line_yaxis_max,
-                        input$line_ystep,
-                        input$line_title,
-                        input$line_xlabel,
-                        input$line_xtitle_location,
-                        input$line_axis_text_size,
-                        input$line_axis_title_size,
-                        input$line_ylabel,
-                        input$line_ytitle_location,
-                        input$line_axis_text_size,
-                        input$line_axis_title_size,
-                        input$line_title_text_size,
-                        input$line_title_location,
-                        input$line_legend_position,
-                        input$line_legend_title_size,
-                        input$line_legend_font_size,
-                        input$line_panel_colorPicker_checkbox,
-                        input$line_panel_colorPicker,
-                        input$line_plotBackground_color_change,
-                        input$line_plotBackground_colorPicker,
-                        input$show_overlay_data,
-                        data.scatter(),
-                        input$plot_data_import_x,
-                        input$plot_data_import_y)
+  if (nrow(rv.RESULTS$results.model.final) != 0) {
+    to.plot <- CreatePlot(rv.RESULTS$results.model.final,
+                          input$lineplot_yvar,
+                          input$choose_color_palette,
+                          input$line_size_options,
+                          input$line_legend_title,
+                          input$line_show_dots,
+                          input$line_axis_confirm,
+                          input$line_xaxis_min,
+                          input$line_xaxis_max,
+                          input$line_xstep,
+                          input$line_yaxis_min,
+                          input$line_yaxis_max,
+                          input$line_ystep,
+                          input$line_title,
+                          input$line_xlabel,
+                          input$line_xtitle_location,
+                          input$line_axis_text_size,
+                          input$line_axis_title_size,
+                          input$line_ylabel,
+                          input$line_ytitle_location,
+                          input$line_axis_text_size,
+                          input$line_axis_title_size,
+                          input$line_title_text_size,
+                          input$line_title_location,
+                          input$line_legend_position,
+                          input$line_legend_title_size,
+                          input$line_legend_font_size,
+                          input$line_panel_colorPicker_checkbox,
+                          input$line_panel_colorPicker,
+                          input$line_plotBackground_color_change,
+                          input$line_plotBackground_colorPicker,
+                          input$show_overlay_data,
+                          data.scatter(),
+                          input$plot_data_import_x,
+                          input$plot_data_import_y)
+  } else {
+    plot(1, 1, type="n", xlab="", ylab="", xaxt='n', yaxt='n')
+    text(1, 1, "Execute Model For Plot.", cex=1.5)
+  }
   
 })
 
 output$lineplot_plotly <- renderPlotly({
-  to.plot <- CreatePlot(rv.RESULTS$results.model.final,
-                        input$lineplot_yvar,
-                        input$choose_color_palette,
-                        input$line_size_options,
-                        input$line_legend_title,
-                        input$line_show_dots,
-                        input$line_axis_confirm,
-                        input$line_xaxis_min,
-                        input$line_xaxis_max,
-                        input$line_xstep,
-                        input$line_yaxis_min,
-                        input$line_yaxis_max,
-                        input$line_ystep,
-                        input$line_title,
-                        input$line_xlabel,
-                        input$line_xtitle_location,
-                        input$line_axis_text_size,
-                        input$line_axis_title_size,
-                        input$line_ylabel,
-                        input$line_ytitle_location,
-                        input$line_axis_text_size,
-                        input$line_axis_title_size,
-                        input$line_title_text_size,
-                        input$line_title_location,
-                        input$line_legend_position,
-                        input$line_legend_title_size,
-                        input$line_legend_font_size,
-                        input$line_panel_colorPicker_checkbox,
-                        input$line_panel_colorPicker,
-                        input$line_plotBackground_color_change,
-                        input$line_plotBackground_colorPicker,
-                        input$show_overlay_data,
-                        data.scatter(),
-                        input$plot_data_import_x,
-                        input$plot_data_import_y
-  )
   
-  ggplotly(to.plot, 
-           tooltip = c("x", "y", "colour"))
+  if (nrow(rv.RESULTS$results.model.final) != 0) {
+    to.plot <- CreatePlot(rv.RESULTS$results.model.final,
+                          input$lineplot_yvar,
+                          input$choose_color_palette,
+                          input$line_size_options,
+                          input$line_legend_title,
+                          input$line_show_dots,
+                          input$line_axis_confirm,
+                          input$line_xaxis_min,
+                          input$line_xaxis_max,
+                          input$line_xstep,
+                          input$line_yaxis_min,
+                          input$line_yaxis_max,
+                          input$line_ystep,
+                          input$line_title,
+                          input$line_xlabel,
+                          input$line_xtitle_location,
+                          input$line_axis_text_size,
+                          input$line_axis_title_size,
+                          input$line_ylabel,
+                          input$line_ytitle_location,
+                          input$line_axis_text_size,
+                          input$line_axis_title_size,
+                          input$line_title_text_size,
+                          input$line_title_location,
+                          input$line_legend_position,
+                          input$line_legend_title_size,
+                          input$line_legend_font_size,
+                          input$line_panel_colorPicker_checkbox,
+                          input$line_panel_colorPicker,
+                          input$line_plotBackground_color_change,
+                          input$line_plotBackground_colorPicker,
+                          input$show_overlay_data,
+                          data.scatter(),
+                          input$plot_data_import_x,
+                          input$plot_data_import_y
+    )
+    ggplotly(to.plot,
+             tooltip = c("x", "y", "colour"))
+  } else {
+    p <- plot_ly() %>%
+      add_trace(
+        x = 1,
+        y = 1,
+        type = 'scatter',
+        mode = 'text',
+        text = "Execute Model For Plot",
+        textfont = list(size = 18)
+      ) %>%
+      layout(
+        xaxis = list(showticklabels = FALSE),
+        yaxis = list(showticklabels = FALSE)
+      )
+    p
+  }
 })
   
 output$lineplot_overlay_scatterplot <- renderPlot({
