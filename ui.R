@@ -136,7 +136,7 @@ ui <- dashboardPage(
                  icon = icon("book")),
         menuItem("Repository",
                  tabName = "TAB_MODEL_REPOSITORY",
-                 icon = icon("book")),
+                 icon = icon("database")),
         conditionalPanel(
           condition = "input.CB_showDegbugTab",
           menuItem(
@@ -146,7 +146,8 @@ ui <- dashboardPage(
           )
         ),
         menuItem("Contributions",
-                 tabName = "TAB_CONTRIBUTIONS"),
+                 tabName = "TAB_CONTRIBUTIONS",
+                 icon = icon("clipboard-user")),
         
         absolutePanel(
           "v1.10",
