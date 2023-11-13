@@ -602,11 +602,55 @@ rv.LOADBUTTONS <- reactiveValues(
   LB.count = 1
 )
 
-rv.sbml.load.variables <- reactiveValues(
+rv.sbml.temp <- reactiveValues(
   need.compartment.conversion = FALSE,
   need.species.conversion = FALSE,
   need.parameter.conversion = FALSE,
   comp.df.conv = data.frame(),
   species.df.conv = data.frame(),
-  parameter.df.conv = data.frame()
+  parameter.df.conv = data.frame(),
+  # ID temp variables
+  id.df = 
+    data.frame(
+      matrix(ncol = 2,nrow = 0, dimnames = list(NULL, c("id", "idName")))
+  ),
+  id.comp.seed = 1,
+  id.var.seed = 1,
+  id.param.seed = 1,
+  id.custeqn.seed = 1,
+  id.eqn.seed = 1,
+  id.custeqnaddional.seed = 1,
+  # State Variabels
+  compartments = list(),
+  compartments.df = data.frame(),
+  species = list(),
+  species.df = data.frame(),
+  parameters = list(),
+  parameters.df = data.frame(),
+  cl.reaction = list(),
+  ce.equations = list(),
+  laws = data.frame(
+    Name = c("Mass Action",
+             "Mass Action (Regulated)",
+             "Synthesis",
+             "Degradation (Rate)",
+             "Degradation (Enzyme)",
+             "Michaelis Menten"),
+    BackendName = c("mass_action",
+                    "mass_action_w_reg",
+                    "synthesis",
+                    "degradation_rate",
+                    "degradation_by_enzyme",
+                    "michaelis_menten"), 
+    Type = c("chemical",
+             "chemical",
+             "chemical",
+             "chemical",
+             "chemical",
+             "enzyme")
+  ),
+  reactions = list(),
+  # Refresh Variables 
+  # rv.REFRESH$refresh.species.table = rv.REFRESH$refresh.species.table + 1
+  refresh.species.table = 1
 )

@@ -1,3 +1,15 @@
+FindIdTEMPsbml <- function(varName) {
+  # Searches Id database to find ID corresponding to name
+  if (!(is.na(varName) | is.null(varName))) {
+    idx <- which(rv.sbml.temp$id.df[,2] %in% varName)
+    var.id <- rv.sbml.temp$id.df[idx, 1]
+  } else {
+    var.id <- NA
+  }
+  
+  return(var.id)
+}
+
 waiter_fxn <- function(msg, spinner, bar_value) {
   # hostess <- Hostess$new()
   out <- tagList(eval(parse(text = spinner)),
@@ -49,13 +61,9 @@ sbml_2_biomodme_compartments <- function(sbml.model) {
   
   # sleep.time <- 0.5
   
-  # Bool that is used in reactions. SBML stores compartment id and we want to 
-  # store the name.  If TRUE, we will need to perform a conversion. 
-  rv.sbml.load.variables$need.compartment.conversion <- FALSE
-  
   compartments <- sbml.model$compartments
   n.compartments <- nrow(compartments)
-
+  
   # Compartments have the following columns
   #   id, name, size, constant, spatialDimensions
   
@@ -63,13 +71,12 @@ sbml_2_biomodme_compartments <- function(sbml.model) {
   comp.names <- compartments %>% pull(name)
   
   if (!identical(comp.ids, comp.names)) {
-    rv.sbml.load.variables$need.compartment.conversion <- TRUE
-    rv.sbml.load.variables$comp.df.conv <- data.frame(comp.ids, comp.names)
-    colnames(rv.sbml.load.variables$comp.df.conv) <- c("id", "name")
+    rv.sbml.temp$need.compartment.conversion <- TRUE
+    rv.sbml.temp$comp.df.conv <- data.frame(comp.ids, comp.names)
+    colnames(rv.sbml.temp$comp.df.conv) <- c("id", "name")
   }
   
   comp.values <- compartments %>% pull(size)
-  
   
   # Compartment Volume Names
   # SBML used the comp name for the volume var, which is fine but we want to 
@@ -81,20 +88,20 @@ sbml_2_biomodme_compartments <- function(sbml.model) {
   vol.ids  <- c()
   for (i in seq_len(nrow(compartments))) {
     # Generate Compartment IDs
-    new.id <- GenerateId(rv.ID$id.comp.seed, "compartment")
+    new.id <- GenerateId(rv.sbml.temp$id.comp.seed, "compartment")
     comp.ids <- c(comp.ids, new.id$id)
-    rv.ID$id.comp.seed <- new.id$seed
+    rv.sbml.temp$id.comp.seed <- new.id$seed
     # Store to id db
-    idx.to.add <- nrow(rv.ID$id.df) + 1
-    rv.ID$id.df[idx.to.add, ] <- c(new.id$id, comp.names[i])
+    idx.to.add <- nrow(rv.sbml.temp$id.df) + 1
+    rv.sbml.temp$id.df[idx.to.add, ] <- c(new.id$id, comp.names[i])
     
     # Generate Volume IDs
-    new.id <- GenerateId(rv.ID$id.param.seed, "parameter")
+    new.id <- GenerateId(rv.sbml.temp$id.param.seed, "parameter")
     vol.ids <- c(vol.ids, new.id$id)
-    rv.ID$id.param.seed <- new.id$seed
+    rv.sbml.temp$id.param.seed <- new.id$seed
     # Store id to db
-    idx.to.add <- nrow(rv.ID$id.df) + 1
-    rv.ID$id.df[idx.to.add, ] <- c(new.id$id, comp.vol.names[i])
+    idx.to.add <- nrow(rv.sbml.temp$id.df) + 1
+    rv.sbml.temp$id.df[idx.to.add, ] <- c(new.id$id, comp.vol.names[i])
     
   }
   
@@ -129,8 +136,8 @@ sbml_2_biomodme_compartments <- function(sbml.model) {
   names(comp.list) <- comp.ids
   
   # Assign to RV
-  rv.COMPARTMENTS$compartments <- comp.list
-  rv.COMPARTMENTS$compartments.df <- bind_rows(rv.COMPARTMENTS$compartments)
+  rv.sbml.temp$compartments    <- comp.list
+  rv.sbml.temp$compartments.df <- bind_rows(rv.sbml.temp$compartments)
 }
 
 sbml_2_biomodme_species <- function(sbml.model) {
@@ -147,12 +154,12 @@ sbml_2_biomodme_species <- function(sbml.model) {
   #   Compartment
   #   Compartment ID
   #   boundaryCondition (if true, differential eqn gen is ignored)
+  browser()
+  rv.sbml.temp$need.species.conversion <- FALSE
   
-  rv.sbml.load.variables$need.species.conversion <- FALSE
-
   species <- sbml.model$species
   n.species <- nrow(species)
-
+  
   # Species from SBML have the following columns
   #   id, name, initialConcentration, substanceUnits, compartment, constant,
   #   boundaryCondition
@@ -163,24 +170,24 @@ sbml_2_biomodme_species <- function(sbml.model) {
   species.comp   <- species %>% pull(compartment)
   
   if (!identical(species.id, species.names)) {
-    rv.sbml.load.variables$need.species.conversion <- TRUE
-    rv.sbml.load.variables$species.df.conv <- 
+    rv.sbml.temp$need.species.conversion <- TRUE
+    rv.sbml.temp$species.df.conv <- 
       data.frame(species.id, species.names)
-    colnames(rv.sbml.load.variables$species.df.conv) <- c("id", "name")
+    colnames(rv.sbml.temp$species.df.conv) <- c("id", "name")
   }
   
   # Convert compartments names 
-  if (rv.sbml.load.variables$need.compartment.conversion) {
+  if (rv.sbml.temp$need.compartment.conversion) {
     new.spec <- vector(mode = "character", length = length(species.comp))
     for (i in seq_along(species.comp)) {
-      idx <- which(species.comp[i] %in% rv.sbml.load.variables$comp.df.conv$id)
-      new.spec[i] <- rv.sbml.load.variables$comp.df.conv$name[idx]
+      idx <- which(species.comp[i] %in% rv.sbml.temp$comp.df.conv$id)
+      new.spec[i] <- rv.sbml.temp$comp.df.conv$name[idx]
     }
     species.comp <- new.spec
   }
   
   # Need Compartment Ids
-  species.comp.id <- unname(sapply(species.comp, FindId))
+  species.comp.id <- unname(sapply(species.comp, FindIdTEMPsbml))
   
   # Extract Boundary Condition
   species.bounds <- species %>% pull(boundaryCondition)
@@ -189,11 +196,11 @@ sbml_2_biomodme_species <- function(sbml.model) {
   species.ids <- c()
   for (i in seq_len(nrow(species))) {
     # Generate Compartment IDs
-    new.id <- GenerateId(rv.ID$id.var.seed, "var")
+    new.id <- GenerateId(rv.sbml.temp$id.var.seed, "var")
     species.ids <- c(species.ids, new.id$id)
-    rv.ID$id.var.seed <- new.id$seed
-    idx.to.add <- nrow(rv.ID$id.df) + 1
-    rv.ID$id.df[idx.to.add, ] <- c(new.id$id, species.names[i])
+    rv.sbml.temp$id.var.seed <- new.id$seed
+    idx.to.add <- nrow(rv.sbml.temp$id.df) + 1
+    rv.sbml.temp$id.df[idx.to.add, ] <- c(new.id$id, species.names[i])
   }
   
   species.list     <- vector("list", n.species)
@@ -219,12 +226,12 @@ sbml_2_biomodme_species <- function(sbml.model) {
   names(species.list) <- species.ids
   
   # Assign to RV
-  rv.SPECIES$species <- species.list
-  rv.SPECIES$species.df <- bind_rows(rv.SPECIES$species)
-  var.names <- rv.SPECIES$species.df %>% dplyr::select(Name)
-  rv.SPECIES$species.names <- as.vector(unlist(var.names))
-  rv.REFRESH$refresh.species.table <- rv.REFRESH$refresh.species.table + 1
-
+  rv.sbml.temp$species <- species.list
+  rv.sbml.temp$species.df <- bind_rows(rv.sbml.temp$species)
+  var.names <- rv.sbml.temp$species.df %>% dplyr::select(Name)
+  rv.sbml.temp$species.names <- as.vector(unlist(var.names))
+  rv.sbml.temp$refresh.species.table <- rv.sbml.temp$refresh.species.table + 1
+  
 }
 
 sbml_2_biomodme_parameters <- function(sbml.model) {
@@ -245,8 +252,8 @@ sbml_2_biomodme_parameters <- function(sbml.model) {
   # pars$parameters is constant parameters
   # pars$non.constant.parameters are non constant parameters which need to be 
   #     added to the appropriate RV
-
-  rv.sbml.load.variables$need.parameter.conversion <- FALSE
+  
+  rv.sbml.temp$need.parameter.conversion <- FALSE
   
   pars    <- sbml.model$parameters$Parameters
   nc.pars <- sbml.model$parameters$Variable.Parameters
@@ -260,22 +267,22 @@ sbml_2_biomodme_parameters <- function(sbml.model) {
   par.constant     <- pars %>% dplyr::pull(constant)
   
   if (!identical(parameters.id, parameters.names)) {
-    rv.sbml.load.variables$need.parameter.conversion <- TRUE
-    rv.sbml.load.variables$parameter.df.conv <- 
+    rv.sbml.temp$need.parameter.conversion <- TRUE
+    rv.sbml.temp$parameter.df.conv <- 
       data.frame(parameters.id, parameters.names)
-    colnames(rv.sbml.load.variables$species.df.conv) <- c("id", "name")
+    colnames(rv.sbml.temp$species.df.conv) <- c("id", "name")
   }
   
   # Overwrite Ids
   par.ids  <- vector("character", n.pars)
   for (i in seq_len(nrow(pars))) {
     # Generate Parameter IDs
-    new.id <- GenerateId(rv.ID$id.param.seed, "parameter")
+    new.id <- GenerateId(rv.sbml.temp$id.param.seed, "parameter")
     par.ids[i] <- new.id$id
-    rv.ID$id.param.seed <- new.id$seed
+    rv.sbml.temp$id.param.seed <- new.id$seed
     
-    idx.to.add <- nrow(rv.ID$id.df) + 1
-    rv.ID$id.df[idx.to.add, ] <- c(new.id$id, parameters.names[i])
+    idx.to.add <- nrow(rv.sbml.temp$id.df) + 1
+    rv.sbml.temp$id.df[idx.to.add, ] <- c(new.id$id, parameters.names[i])
   }
   
   par.list <- vector("list", n.pars)
@@ -300,14 +307,14 @@ sbml_2_biomodme_parameters <- function(sbml.model) {
   names(par.list) <- par.ids
   
   # Store information to our parameter tables
-  rv.PARAMETERS$parameters <- par.list
-  rv.PARAMETERS$parameters.df <- bind_rows(rv.PARAMETERS$parameters)
+  rv.sbml.temp$parameters    <- par.list
+  rv.sbml.temp$parameters.df <- bind_rows(rv.sbml.temp$parameters)
   
 }
 
 sbml_2_biomodme_functions <- function(sbml.model) {  
-## Unpack SBML Function-------------------------------------------------------
-  # Items in rv.CUSTOM.LAWS$cl.reaction:
+  ## Unpack SBML Function-------------------------------------------------------
+  # Items in rv.sbml.temp$cl.reaction:
   # ID                || Specific equation ID
   # Type              || Type of custom law (reaction, rate, etc)
   # Law.Name          || Display name shown on tables
@@ -340,7 +347,7 @@ sbml_2_biomodme_functions <- function(sbml.model) {
   reactions <- bind_rows(sbml.model$reactions)
   # Check if Functions Exist
   if (!isTruthy(sbml.model$functions)) {
-    rv.CUSTOM.LAWS$cl.reaction <- list()
+    rv.sbml.temp$cl.reaction <- list()
   } else {
     load.fxns <- sbml.model$functions
     for (i in seq_along(load.fxns)) {
@@ -357,11 +364,11 @@ sbml_2_biomodme_functions <- function(sbml.model) {
       # Build Information not in sbml load
       #-----------------------------------
       # Generate unique reaction ID
-      ids <- GenerateId(rv.ID$id.custeqn.seed, "customEqn")
+      ids <- GenerateId(rv.sbml.temp$id.custeqn.seed, "customEqn")
       unique.id <- ids[[2]]
-      rv.ID$id.custeqn.seed <- ids[[1]]
-      idx.to.add <- nrow(rv.ID$id.df) + 1
-      rv.ID$id.df[idx.to.add, ] <- c(unique.id, backend)
+      rv.sbml.temp$id.custeqn.seed <- ids[[1]]
+      idx.to.add <- nrow(rv.sbml.temp$id.df) + 1
+      rv.sbml.temp$id.df[idx.to.add, ] <- c(unique.id, backend)
       
       # Function Description 
       description <- law.name
@@ -411,24 +418,24 @@ sbml_2_biomodme_functions <- function(sbml.model) {
                       "Rate.MathML" = mathml.rate,
                       "Reversible" = FALSE)
       
-      rv.CUSTOM.LAWS$cl.reaction[[unique.id]] <- to.list
+      rv.sbml.temp$cl.reaction[[unique.id]] <- to.list
       
       # Add to reaction laws RV
       backend.entry <- backend
       row.to.add <- c(law.name, backend.entry, "custom")
-      rv.REACTIONLAWS$laws <- rbind(rv.REACTIONLAWS$laws, row.to.add)
+      rv.sbml.temp$laws <- rbind(rv.sbml.temp$laws, row.to.add)
       
       reaction.type <- input$eqnCreate_type_of_equation
       reaction.law  <- input$eqnCreate_reaction_law
       
       if (reaction.type == "All") {
-        option.names <- rv.REACTIONLAWS$laws %>% pull(Name)
-        options      <- rv.REACTIONLAWS$laws %>% pull(BackendName)
+        option.names <- rv.sbml.temp$laws %>% pull(Name)
+        options      <- rv.sbml.temp$laws %>% pull(BackendName)
       }  else if (reaction.type == "custom_reaction") {
-        option.names <- rv.REACTIONLAWS$laws %>% 
+        option.names <- rv.sbml.temp$laws %>% 
           filter(Type == "custom") %>%
           pull(Name)
-        options      <- rv.REACTIONLAWS$laws %>%
+        options      <- rv.sbml.temp$laws %>%
           filter(Type == "custom") %>%
           pull(BackendName)
       }
@@ -472,15 +479,14 @@ sbml_2_biomodme_reactions <- function(sbml.model) {
   # Reversible        || Bool if the equation is reversible or not
   # browser()
   reactions <- bind_rows(sbml.model$reactions)
-  print(reactions)
   # Convert ids to names for values in reactions species and pars
   # Want to look at specific columns to convert
   
   # For species
-  if (rv.sbml.load.variables$need.species.conversion) {
-    for (i in seq_len(nrow(rv.sbml.load.variables$species.df.conv))) {
-      old <- rv.sbml.load.variables$species.df.conv[i, 1]
-      new <- rv.sbml.load.variables$species.df.conv[i, 2]
+  if (rv.sbml.temp$need.species.conversion) {
+    for (i in seq_len(nrow(rv.sbml.temp$species.df.conv))) {
+      old <- rv.sbml.temp$species.df.conv[i, 1]
+      new <- rv.sbml.temp$species.df.conv[i, 2]
       
       # Reactants
       col <- reactions %>% pull(Reactants)
@@ -501,11 +507,11 @@ sbml_2_biomodme_reactions <- function(sbml.model) {
     }
   }
   
-  if (rv.sbml.load.variables$need.parameter.conversion) {
+  if (rv.sbml.temp$need.parameter.conversion) {
     # For parameters
-    for (i in seq_len(nrow(rv.sbml.load.variables$parameter.df.conv))) {
-      old <- rv.sbml.load.variables$parameter.df.conv[i, 1]
-      new <- rv.sbml.load.variables$parameter.df.conv[i, 2]
+    for (i in seq_len(nrow(rv.sbml.temp$parameter.df.conv))) {
+      old <- rv.sbml.temp$parameter.df.conv[i, 1]
+      new <- rv.sbml.temp$parameter.df.conv[i, 2]
       
       # Parameters
       col <- reactions %>% pull(Parameters)
@@ -514,11 +520,11 @@ sbml_2_biomodme_reactions <- function(sbml.model) {
   }
   
   # For compartments
-  # if (rv.sbml.load.variables$need.compartment.conversion) {
-  #   for (i in seq_len(nrow(rv.sbml.load.variables$comp.df.conv))) {
+  # if (rv.sbml.temp$need.compartment.conversion) {
+  #   for (i in seq_len(nrow(rv.sbml.temp$comp.df.conv))) {
   #     browser()
-  #     old <- rv.sbml.load.variables$comp.df.conv[i, 1]
-  #     new <- rv.sbml.load.variables$comp.df.conv[i, 2]
+  #     old <- rv.sbml.temp$comp.df.conv[i, 1]
+  #     new <- rv.sbml.temp$comp.df.conv[i, 2]
   #   
   #     # Equation.Text
   #     col <- reactions %>% pull(Compartments)
@@ -541,20 +547,20 @@ sbml_2_biomodme_reactions <- function(sbml.model) {
     
     law.display   <- entry %>% pull(Reaction.Law)
     law.name      <- paste0("user_custom_law_", law.display)
-    law.id        <- FindId(law.name)
+    law.id        <- FindIdTEMPsbml(law.name)
     string.law <- entry %>% pull(Equation.Text)
     
     # IDK if this is the best way to really do this but it'll be a bandaid
     # for now.  Search for compartment names in string.law and replace them
     # with the volume term this application generated. 
     vectorized.law <- SplitEquationString(string.law)
-    species.descriptions <- unname(sapply(rv.SPECIES$species,
+    species.descriptions <- unname(sapply(rv.sbml.temp$species,
                                           get,
                                           x = "Description"))
     comp.names <- 
       unname(
         sapply(
-          rv.COMPARTMENTS$compartments,
+          rv.sbml.temp$compartments,
           get,
           x = "Name"
         )
@@ -563,7 +569,7 @@ sbml_2_biomodme_reactions <- function(sbml.model) {
     comp.vol.names <- 
       unname(
         sapply(
-          rv.COMPARTMENTS$compartments,
+          rv.sbml.temp$compartments,
           get,
           x = "Volume"
         )
@@ -584,44 +590,44 @@ sbml_2_biomodme_reactions <- function(sbml.model) {
     reversible <- entry %>% pull(reversible)
     
     # Generate Reaction IDs
-    ID.gen <- GenerateId(rv.ID$id.eqn.seed, "eqn")
-    rv.ID$id.eqn.seed <- rv.ID$id.eqn.seed + 1
+    ID.gen <- GenerateId(rv.sbml.temp$id.eqn.seed, "eqn")
+    rv.sbml.temp$id.eqn.seed <- rv.sbml.temp$id.eqn.seed + 1
     ID.to.add <- ID.gen[["id"]]
-    idx.to.add <- nrow(rv.ID$id.df) + 1
-    rv.ID$id.df[idx.to.add, ] <- c(ID.to.add, paste0(eqn.display, 
-                                                     " (",
-                                                     string.law,
-                                                     ")"))
+    idx.to.add <- nrow(rv.sbml.temp$id.df) + 1
+    rv.sbml.temp$id.df[idx.to.add, ] <- c(ID.to.add, paste0(eqn.display, 
+                                                            " (",
+                                                            string.law,
+                                                            ")"))
     
     # Find IDs of species, reactants, products, and modifiers in reaction
     reactants.id <- c()
     for (j in seq_along(reactants)) {
-      reactants.id[j] <- FindId(reactants[j])
+      reactants.id[j] <- FindIdTEMPsbml(reactants[j])
     }
     
     products.id <- c()
     for (j in seq_along(products)) {
-      products.id[j] <- FindId(products[j])
+      products.id[j] <- FindIdTEMPsbml(products[j])
     }
     
     modifiers.id <- c()
     for (j in seq_along(modifiers)) {
-      modifiers.id[j] <- FindId(modifiers[j])
+      modifiers.id[j] <- FindIdTEMPsbml(modifiers[j])
     }
     
     parameters.id <- c()
     print("Parameters")
     print(parameters)
     for (j in seq_along(parameters)) {
-      parameters.id[j] <- FindId(parameters[j])
+      parameters.id[j] <- FindIdTEMPsbml(parameters[j])
     }
     
     species    <- RemoveNA(c(reactants, products))
     species.id <- RemoveNA(c(reactants.id, products.id))
     
     # Find which compartment the species are in and assign that
-    compartment    <- rv.SPECIES$species[[species.id[1]]]$Compartment
-    compartment.id <- rv.SPECIES$species[[species.id[1]]]$Compartment.id
+    compartment    <- rv.sbml.temp$species[[species.id[1]]]$Compartment
+    compartment.id <- rv.sbml.temp$species[[species.id[1]]]$Compartment.id
     
     # Build equation text, latex, and mathjax
     eqn.builds <- BuildCustomEquationText(reactants,
@@ -682,36 +688,36 @@ sbml_2_biomodme_reactions <- function(sbml.model) {
       "Content.MathMl"   = content.ml,
       "Reversible"       = reversible
     )
-
-    rv.REACTIONS$reactions[[ID.to.add]] <- reaction.entry
+    
+    rv.sbml.temp$reactions[[ID.to.add]] <- reaction.entry
     
     # Add Reaction To Species
     for (jj in seq_along(species.id)) {
-      if (is.na(rv.SPECIES$species[[species.id[jj]]]$Reaction.ids)) {
-        rv.SPECIES$species[[species.id[jj]]]$Reaction.ids <- ID.to.add
+      if (is.na(rv.sbml.temp$species[[species.id[jj]]]$Reaction.ids)) {
+        rv.sbml.temp$species[[species.id[jj]]]$Reaction.ids <- ID.to.add
       } else {
         items <- 
           strsplit(
-            rv.SPECIES$species[[species.id[jj]]]$Reaction.ids, ", ")[[1]]
+            rv.sbml.temp$species[[species.id[jj]]]$Reaction.ids, ", ")[[1]]
         items <- c(items, ID.to.add)
-        rv.SPECIES$species[[species.id[jj]]]$Reaction.ids <- 
+        rv.sbml.temp$species[[species.id[jj]]]$Reaction.ids <- 
           paste0(items, collapse = ", ")
       }
     }
     print("REaction entery**************************")
     print(reaction.entry)
   }
-  print(rbind(rv.REACTIONS$reactions))
-  # for (i in seq_along(rv.REACTIONS$reactions)) {
-  #   print(rv.REACTIONS$reactions[[i]]$Reactants)
-  #   print(typeof(rv.REACTIONS$reactions[[i]]$Reactants))
+  print(rbind(rv.sbml.temp$reactions))
+  # for (i in seq_along(rv.sbml.temp$reactions)) {
+  #   print(rv.sbml.temp$reactions[[i]]$Reactants)
+  #   print(typeof(rv.sbml.temp$reactions[[i]]$Reactants))
   # }
   # 
-  # for (i in seq_along(rv.REACTIONS$reactions)) {
-  #   print(rv.REACTIONS$reactions[[i]]$Products)
+  # for (i in seq_along(rv.sbml.temp$reactions)) {
+  #   print(rv.sbml.temp$reactions[[i]]$Products)
   # }
   # 
-  # print(do.call(rbind, rv.REACTIONS$reactions))
+  # print(do.call(rbind, rv.sbml.temp$reactions))
 }
 
 sbml_2_biomodme_rules <- function(sbml.model) {
@@ -735,7 +741,7 @@ sbml_2_biomodme_rules <- function(sbml.model) {
   
   # Check if rules exist
   if (!isTruthy(sbml.model$rules)) {
-    rv.CUSTOM.EQNS$ce.equations <- list()
+    rv.sbml.temp$ce.equations <- list()
   } else {
     
     rules <- sbml.model$rules
@@ -747,11 +753,11 @@ sbml_2_biomodme_rules <- function(sbml.model) {
       rhs.eqn <- entry$str.law
       
       # Generate Unique ID
-      ids <- GenerateId(rv.ID$id.custeqnaddional.seed, "custEqnAdditional")
+      ids <- GenerateId(rv.sbml.temp$id.custeqnaddional.seed, "custEqnAdditional")
       unique.id <- ids[[2]]
-      rv.ID$id.custeqnaddional.seed <- ids[[1]]
-      idx.to.add <- nrow(rv.ID$id.df) + 1
-      rv.ID$id.df[idx.to.add, ] <- c(unique.id, paste0(lhs.var, "=", rhs.eqn))
+      rv.sbml.temp$id.custeqnaddional.seed <- ids[[1]]
+      idx.to.add <- nrow(rv.sbml.temp$id.df) + 1
+      rv.sbml.temp$id.df[idx.to.add, ] <- c(unique.id, paste0(lhs.var, "=", rhs.eqn))
       eqn.id <- unique.id
       
       # Build Equation from LHS.var and str.law
@@ -764,7 +770,7 @@ sbml_2_biomodme_rules <- function(sbml.model) {
       # somewhere.
       
       vars.in.eqn <- parse_string_expression(eqn.out)$valid.terms
-      par.names <- unname(sapply(rv.PARAMETERS$parameters,
+      par.names <- unname(sapply(rv.sbml.temp$parameters,
                                  get,
                                  x = "Name"))
       existing.params <- c()
@@ -775,11 +781,11 @@ sbml_2_biomodme_rules <- function(sbml.model) {
         # Search if its in parameter
         if (vars.in.eqn[j] %in% par.names) {
           existing.params <- c(existing.params, vars.in.eqn[j])
-          par.ids <- c(par.ids, FindId(vars.in.eqn[j]))
+          par.ids <- c(par.ids, FindIdTEMPsbml(vars.in.eqn[j]))
         } else {
           # Store in species list
           existing.species <- c(existing.species, vars.in.eqn[j])
-          spec.ids <- c(spec.ids, FindId(vars.in.eqn[j]))
+          spec.ids <- c(spec.ids, FindIdTEMPsbml(vars.in.eqn[j]))
         }
       }
       
@@ -799,9 +805,8 @@ sbml_2_biomodme_rules <- function(sbml.model) {
                          "Old.Parameters.id" = collapseVector(par.ids),
                          "Has.Time.Var" = time.var.exists)
       
-      rv.CUSTOM.EQNS$ce.equations[[eqn.id]] <- to.ce.list
+      rv.sbml.temp$ce.equations[[eqn.id]] <- to.ce.list
     }
-    
   }
 }
 
@@ -1119,44 +1124,24 @@ LoadSBML_show_progress <- function(sbmlFile, w_sbml, spinner) {
 observeEvent(input$file_input_load_sbml, {
 
   sleep.time <- 5
+  
+  # Initialize waiter
   spinner <- RandomHTMLSpinner()
   w_sbml <- Waiter$new(
     id = "import_for_waiter",
-    html = waiter_fxn("Loading SBML Model",
-                                         spinner, 
-                                         0))
+    html = waiter_fxn("Loading SBML Model", spinner, 0))
   w_sbml$show()
-  # TODO: Clear All current model information
-  # tryCatch({
-  #   sbml.model <- 
-  #     LoadSBML_show_progress(
-  #       input$file_input_load_sbml$datapath,
-  #       w_sbml,
-  #       spinner
-  #     )
-  #   sbml.model <- loaded.sbml$model
-  #   if (is.null(sbml.model)) {
-  #     sendSweetAlert(
-  #       session = session,
-  #       title = "Error...",
-  #       text = sbml.model$error.message,
-  #       type = "error"
-  #     )
-  #   }
-  # }, 
-  # error = function(e) {
-  #   print(paste0("Error: ", e))
-  #   w_sbml$hide()
-  # })
-  # browser
+
+  # Load SBML to R
   loaded.sbml <- 
     LoadSBML_show_progress(
       input$file_input_load_sbml$datapath,
       w_sbml,
       spinner
     )
-  sbml.model <- loaded.sbml$model
-  if (is.null(sbml.model)) {
+  
+  # Return error if error in loading of sbml file
+  if (is.null(loaded.sbml$model)) {
     w_sbml$hide()
     sendSweetAlert(
       session = session,
@@ -1166,6 +1151,19 @@ observeEvent(input$file_input_load_sbml, {
     )
     return(NULL)
   }
+  
+  # Change variable name, initialize RVs, move forward
+  sbml.model <- loaded.sbml$model
+  # Bool that is used in reactions. SBML stores compartment id and we want to 
+  # store the name.  If TRUE, we will need to perform a conversion. 
+  rv.sbml.temp$need.compartment.conversion <- FALSE
+  rv.sbml.temp$need.species.conversion     <- FALSE
+  rv.sbml.temp$need.parameter.conversion   <- FALSE
+  
+  rv.sbml.temp$comp.df.conv      <- data.frame()
+  rv.sbml.temp$species.df.conv   <- data.frame()
+  rv.sbml.temp$parameter.df.conv <- data.frame()
+  
   ## Unpack SBML Compartments --------------------------------------------------
   
   mes <- "Converting Compartment information to BioModME..."
@@ -1280,8 +1278,31 @@ observeEvent(input$file_input_load_sbml, {
   })
   
   print(rv.CUSTOM.EQNS$ce.equations)
-
+  # browser()
   # Finish load effects --------------------------------------------------------
+  
+  # Convert SBML temp RV to model RVs
+  rv.ID$id.df <- rv.sbml.temp$id.df
+  # Seeds
+  rv.ID$id.comp.seed    <- rv.sbml.temp$idid.comp.seed.df
+  rv.ID$id.var.seed     <- rv.sbml.temp$id.var.seed
+  rv.ID$id.param.seed   <- rv.sbml.temp$id.param.seed
+  rv.ID$id.custeqn.seed <- rv.sbml.temp$id.custeqn.seed
+  rv.ID$id.eqn.seed     <- rv.sbml.temp$id.eqn.seed
+  rv.ID$id.custeqnaddional.seed <- rv.sbml.temp$id.custeqnaddional.seed
+  # State Variables
+  rv.COMPARTMENTS$compartments    <- rv.sbml.temp$compartments
+  rv.COMPARTMENTS$compartments.df <- rv.sbml.temp$compartments.df
+  rv.SPECIES$species    <- rv.sbml.temp$species
+  rv.SPECIES$species.df <- rv.sbml.temp$species.df
+  rv.PARAMETERS$parameters <- rv.sbml.temp$parameters
+  rv.PARAMETERS$parameters.df <- rv.sbml.temp$parameters.df
+  rv.CUSTOM.LAWS$cl.reaction <- rv.sbml.temp$cl.reaction
+  rv.CUSTOM.EQNS$ce.equations <- rv.sbml.temp$ce.equations
+  rv.REACTIONLAWS$laws <- rv.sbml.temp$laws
+  rv.REACTIONS$reactions <- rv.sbml.temp$reactions
+  # Refresh vars
+  rv.REFRESH$refresh.species.table <- rv.sbml.temp$refresh.species.table
   
   # Generate Differential Equations
   solveForDiffEqs()
