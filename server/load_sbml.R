@@ -809,6 +809,9 @@ LoadSBML_show_progress <- function(sbmlFile, w_sbml, spinner) {
   # This function is the same as LoadSBML but it is designed to show the 
   # progress bar screesn
   sleep.time <- 0.5
+  error.in.load <- FALSE
+  message.out <- "No ERROR"
+  error.message <- "TEST: error in parsing sbml"
   
   out <- list()
   # Set initializers and bools
@@ -845,23 +848,61 @@ LoadSBML_show_progress <- function(sbmlFile, w_sbml, spinner) {
   sbmlList <- read_xml(sbmlFile) %>% as_list()
   modelList <- sbmlList$sbml$model
   out[["model"]] <- modelList
-  
-  # Extract Compartments
+
+  # Extract Compartments________________________________________________________
   if (!is.null(modelList$listOfCompartments)) {
     mes <- "Extracting Compartments"
     compartment.df <- Attributes2Tibble(modelList$listOfCompartments)
+
+    # NA check for fidelity of data
+    if (any(is.na(compartment.df))) {
+      error.in.load <- TRUE
+      
+      rows_with_na <- which(apply(is.na(compartment.df), 1, any))
+      
+      concatenated_string <- 
+        apply(compartment.df[rows_with_na, ], 
+              1, 
+              function(row) paste(row, collapse = " "))
+      concatenated_string <- 
+        paste0(
+          "Error loading following compartement lines: ", 
+          paste0(concatenated_string, collapse = ", ")
+        )
+      
+      # return(list(model = NULL, error.message = error.message))
+      return(list(model = NULL, error.message = concatenated_string))
+    }
+    
+    # Polish Compartment Data
     compartment.df <- FinalizeCompartmentData(compartment.df)
+    
+    # Error return if compartment can't be finalized
+    if (!is.null(compartment.df$out)) {
+      compartment.df <- compartment.df$out
+    } else {
+      return(list(model = NULL, error.message = compartment.df$error))
+    }
+    
+    # Store compartment information to model output
     out[["compartments"]] <- compartment.df
     exists.listOfCompartments <- TRUE
-  } else {mes <- "No Compartments to Extract"}
+  } else {
+    # Return error if sbml contains no compartments
+    message <- "We currently do not support loading of models with no 
+                compartment information."
+    return(list(model = NULL, error.message = message))
+  }
+  
+  # Update waiter to end compartment messages
   message.log <- c(message.log, mes)
   w_sbml$update(html = waiter_fxn(paste0(message.log, collapse = "/n"),
                                   spinner, 
                                   10))
   Sys.sleep(sleep.time)
-  
   w_sbml$update(html = waiter_fxn("Extracting Species", spinner, 20))
-  # Extract Species
+  
+  # Extract Species_____________________________________________________________
   if (!is.null(modelList$listOfSpecies)) {
     species.df <- Attributes2Tibble(modelList$listOfSpecies)
     species.df <- FinalizeSpeciesData(species.df)
@@ -869,9 +910,9 @@ LoadSBML_show_progress <- function(sbmlFile, w_sbml, spinner) {
     exists.listOfSpecies <- TRUE
   }
   Sys.sleep(sleep.time)
-  
   w_sbml$update(html = waiter_fxn("Extracting Parameters", spinner, 30))
-  # Extract Parameters
+  
+  # Extract Parameters__________________________________________________________
   if (!is.null(modelList$listOfParameters)) {
     listOfParameters <- Attributes2Tibble(modelList$listOfParameters)
     exists.listOfParameters <- TRUE
@@ -879,7 +920,7 @@ LoadSBML_show_progress <- function(sbmlFile, w_sbml, spinner) {
   Sys.sleep(sleep.time)
   
   w_sbml$update(html = waiter_fxn("Extracting Rules", spinner, 35))
-  # Extract Rules
+  # Extract Rules_______________________________________________________________
   if (!is.null(modelList$listOfRules)) {
     rules.header <- Attributes2Tibble(modelList$listOfRules)
     rules.assignment.vars <- rules.header %>% pull(variable)
@@ -892,7 +933,7 @@ LoadSBML_show_progress <- function(sbmlFile, w_sbml, spinner) {
   
   w_sbml$update(html = waiter_fxn("Extracting Function Definitions", 
                                   spinner, 40))
-  # Extract Function Definitions
+  # Extract Function Definitions________________________________________________
   if (!is.null(modelList$listOfFunctionDefinitions)) {
     func.info <- Attributes2Tibble(modelList$listOfFunctionDefinitions)
     function.definitions <- ExtractFunctionDefFromSBML(doc, func.info)
@@ -902,10 +943,9 @@ LoadSBML_show_progress <- function(sbmlFile, w_sbml, spinner) {
     out[["functions"]] <- function.definitions
   }
   Sys.sleep(sleep.time)
-  
   w_sbml$update(html = waiter_fxn("Extracting Reactions", 
                                   spinner, 50))
-  # Extract Reactions
+  # Extract Reactions___________________________________________________________
   if (!is.null(modelList$listOfReactions)) {
     # browser()
     exists.listOfReactions <- TRUE
@@ -976,9 +1016,15 @@ LoadSBML_show_progress <- function(sbmlFile, w_sbml, spinner) {
                                                rules.list)
   out[["parameters"]] <- final.parameters.df
   
-  Sys.sleep(sleep.time)
+  if (error.in.load) {
+    out <- NULL
+    message.out <- error.message
+  }
   
-  return(out)
+  Sys.sleep(sleep.time)
+  to.return <- list(model = out, 
+                    error.message = message.out)
+  return(to.return)
 }
 
 # Load from sbml file (xml)
@@ -993,19 +1039,45 @@ observeEvent(input$file_input_load_sbml, {
                                          0))
   w_sbml$show()
   # TODO: Clear All current model information
-  tryCatch({
-    sbml.model <- 
-      LoadSBML_show_progress(
-        input$file_input_load_sbml$datapath,
-        w_sbml,
-        spinner
-      )
-  }, 
-  error = function(e) {
-    print(paste0("Error: ", e))
+  # tryCatch({
+  #   sbml.model <- 
+  #     LoadSBML_show_progress(
+  #       input$file_input_load_sbml$datapath,
+  #       w_sbml,
+  #       spinner
+  #     )
+  #   sbml.model <- loaded.sbml$model
+  #   if (is.null(sbml.model)) {
+  #     sendSweetAlert(
+  #       session = session,
+  #       title = "Error...",
+  #       text = sbml.model$error.message,
+  #       type = "error"
+  #     )
+  #   }
+  # }, 
+  # error = function(e) {
+  #   print(paste0("Error: ", e))
+  #   w_sbml$hide()
+  # })
+  # browser
+  loaded.sbml <- 
+    LoadSBML_show_progress(
+      input$file_input_load_sbml$datapath,
+      w_sbml,
+      spinner
+    )
+  sbml.model <- loaded.sbml$model
+  if (is.null(sbml.model)) {
     w_sbml$hide()
-  })
-
+    sendSweetAlert(
+      session = session,
+      title = "Error...",
+      text = loaded.sbml$error.message,
+      type = "error"
+    )
+    return(NULL)
+  }
   ## Unpack SBML Compartments --------------------------------------------------
   
   mes <- "Converting Compartment information to BioModME..."

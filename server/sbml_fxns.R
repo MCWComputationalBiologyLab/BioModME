@@ -264,6 +264,8 @@ FinalizeCompartmentData <- function(compartmentsFromSBML) {
   #   @compartmentsFromSBML - Main load from sbml listOfCompartments
   # Outputs: 
   #   (tibble) id, name, size, units, constant
+  out <- NULL
+  message <- NULL
   
   # Throw error if compartments don't exist
   if (isTruthy(compartmentsFromSBML)) {
@@ -279,6 +281,10 @@ FinalizeCompartmentData <- function(compartmentsFromSBML) {
   
   # Need to check that all outputs exist, otherwise add them with standards
   
+  if (!isTruthy(out$id)) {
+    message <- "SBML doesn't contain compartment id information."
+    return(list(out = NULL, error = message))
+  }
   # Most sbmls seem to have size and id so I will ignore those
   if (!isTruthy(compartmentsFromSBML$name)) {
     name <- out %>% pull(id)
@@ -309,7 +315,7 @@ FinalizeCompartmentData <- function(compartmentsFromSBML) {
   out <- out %>% select(column.order)
   
   # Return Output
-  return(out)
+  return(list(out = NULL, error = message))
 }
 
 FinalizeParameterData <- function(parsFromSBMLMain,
@@ -514,7 +520,7 @@ ExtractReactionMathFromSBML <- function(doc,
   
   # xmlDoc - parsed xml doc from xmltreeparse
   # reactionList - list of reactions to update
-  
+  # browser()
   # Check to see if function definitions exist
   functions.exist <- FALSE
   if (isTruthy(functionList)) {
@@ -567,8 +573,8 @@ ExtractReactionMathFromSBML <- function(doc,
           
           # Check to see if reaction parameters were already extracted and if
           # not then extract them
-          if (!is.na(reactionList[[i]]$Parameters.name)) {
-            parameters <- SplitEntry(reactionList[[i]]$Parameters.name)
+          if (!is.na(reactionList[[i]]$Parameters)) {
+            parameters <- SplitEntry(reactionList[[i]]$Parameters)
           } else {
             species <- c(reactants, products, modifiers)
             species <- RemoveNA(species)
