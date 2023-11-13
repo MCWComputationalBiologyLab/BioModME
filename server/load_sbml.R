@@ -968,11 +968,32 @@ LoadSBML_show_progress <- function(sbmlFile, w_sbml, spinner) {
                                   spinner, 40))
   # Extract Function Definitions________________________________________________
   if (!is.null(modelList$listOfFunctionDefinitions)) {
+    
     func.info <- Attributes2Tibble(modelList$listOfFunctionDefinitions)
-    function.definitions <- ExtractFunctionDefFromSBML(doc, func.info)
-    function.definitions <- FindFunctionDefInformation(doc,
-                                                       function.definitions,
-                                                       sbmlList)
+    
+    # NA check for fidelity of data
+    if (any(is.na(func.info))) {
+      error.in.load <- TRUE
+      rows_with_na <- which(apply(is.na(func.info), 1, any))
+      cs <- apply(func.info[rows_with_na, ], 1, 
+                  function(row) paste(row, collapse = " "))
+      cs <-paste0("Error loading following species lines: ", 
+                  paste0(cs, collapse = ", "))
+      return(list(model = NULL, error.message = cs))
+    }
+    function.definitions <- NULL
+    tryCatch({
+      function.definitions <- ExtractFunctionDefFromSBML(doc, func.info)
+      function.definitions <- FindFunctionDefInformation(doc,
+                                                         function.definitions,
+                                                         sbmlList)
+    })
+    if(is.null(function.definitions)) {
+      err.mes <- "Something went extracting SBML function definitions."
+      return(list(model = NULL, error.message = err.mes))
+    }
+    
+    # Storing function definitions to model
     out[["functions"]] <- function.definitions
   }
   Sys.sleep(sleep.time)

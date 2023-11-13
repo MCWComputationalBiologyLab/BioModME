@@ -966,6 +966,8 @@ ExtractRulesMathFromSBML <- function(doc, assignmentVars) {
     
     mathml    <- rules[[i]][["math"]][[1]]
     e <- NULL
+    # The converter is the most likely point of this process to fail. 
+    # We are missing some mathml keywords (ex root, degree)
     tryCatch({
       e <- convertML2R(mathml)
     }, error = function(cond) {
