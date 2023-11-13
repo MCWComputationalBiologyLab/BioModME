@@ -621,6 +621,7 @@ output$main_lineplot <- renderPlot({
                           data.scatter(),
                           input$plot_data_import_x,
                           input$plot_data_import_y)
+    return(to.plot)
   } else {
     plot(1, 1, type="n", xlab="", ylab="", xaxt='n', yaxt='n')
     text(1, 1, "Execute Model For Plot.", cex=1.5)

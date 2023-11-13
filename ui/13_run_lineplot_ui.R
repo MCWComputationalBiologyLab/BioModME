@@ -7,22 +7,12 @@ js2 <- paste0(c(
 
 TAB_RUN_LINEPLOT <- tabItem(
   tabName = "TAB_RUN_LINEPLOT",
-  # fluidRow(
-  #   column(
-  #     width = 3,
-  #     
-  #   ),
-  #   column(
-  #     width = 2,
-  # 
-  #   )
-  # ),  
   br(),
   fluidRow(
     column(
       width = 3,
       style = "padding: 0px;",
-      # Variable Dropdown Button -----------------------------------------------------
+      # Variable Dropdown Button -----------------------------------------------
       dropdownButton(
         inputId = "lineplot_variable_dropdown_button",
         label = "Variables",
