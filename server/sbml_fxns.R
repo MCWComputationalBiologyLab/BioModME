@@ -183,7 +183,9 @@ FinalizeSpeciesData <- function(speciesFromSBML) {
   #   (tibble) id, name, initialConcentration, substanceUnits, compartment, 
   #            constant, boundaryCondition
   
-  # Throw error if compartments don't exist
+  message <- NULL
+  
+  # Throw error if species don't exist
   if (isTruthy(speciesFromSBML)) {
     if (nrow(speciesFromSBML) == 0) {
       stop("SBML file contains no species")
@@ -203,6 +205,11 @@ FinalizeSpeciesData <- function(speciesFromSBML) {
   # constant
   # boundaryCondition
   # initialConcentration
+  
+  if (!isTruthy(out$id)) {
+    message <- "SBML doesn't contain species id information."
+    return(list(out = NULL, error = message))
+  }
   
   # Check for name
   if (!isTruthy(speciesFromSBML$name)) {
@@ -255,7 +262,7 @@ FinalizeSpeciesData <- function(speciesFromSBML) {
   out <- out %>% select(column.order)
   
   # Return Output
-  return(out)
+  return(list(out = out, error = message))
 }
 
 FinalizeCompartmentData <- function(compartmentsFromSBML) {
@@ -264,7 +271,6 @@ FinalizeCompartmentData <- function(compartmentsFromSBML) {
   #   @compartmentsFromSBML - Main load from sbml listOfCompartments
   # Outputs: 
   #   (tibble) id, name, size, units, constant
-  out <- NULL
   message <- NULL
   
   # Throw error if compartments don't exist
@@ -315,7 +321,7 @@ FinalizeCompartmentData <- function(compartmentsFromSBML) {
   out <- out %>% select(column.order)
   
   # Return Output
-  return(list(out = NULL, error = message))
+  return(list(out = out, error = message))
 }
 
 FinalizeParameterData <- function(parsFromSBMLMain,

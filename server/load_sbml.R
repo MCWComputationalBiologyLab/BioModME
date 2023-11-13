@@ -905,7 +905,24 @@ LoadSBML_show_progress <- function(sbmlFile, w_sbml, spinner) {
   # Extract Species_____________________________________________________________
   if (!is.null(modelList$listOfSpecies)) {
     species.df <- Attributes2Tibble(modelList$listOfSpecies)
+    # browser()
+    # NA check for fidelity of data
+    if (any(is.na(species.df))) {
+      error.in.load <- TRUE
+      rows_with_na <- which(apply(is.na(species.df), 1, any))
+      cs <- apply(species.df[rows_with_na, ], 1, 
+                  function(row) paste(row, collapse = " "))
+      cs <-paste0("Error loading following species lines: ", 
+                  paste0(cs, collapse = ", "))
+      return(list(model = NULL, error.message = cs))
+    }
+    
     species.df <- FinalizeSpeciesData(species.df)
+    
+    # Error return if species can't be finalized
+    if (!is.null(species.df$out)) species.df <- species.df$out
+     else return(list(model = NULL, error.message = species.df$error))
+    
     out[["species"]] <- species.df
     exists.listOfSpecies <- TRUE
   }
