@@ -654,3 +654,5 @@ rv.sbml.temp <- reactiveValues(
   # rv.REFRESH$refresh.species.table = rv.REFRESH$refresh.species.table + 1
   refresh.species.table = 1
 )
+
+rv <- reactiveValues(error.in.conversion = FALSE)

@@ -154,7 +154,6 @@ sbml_2_biomodme_species <- function(sbml.model) {
   #   Compartment
   #   Compartment ID
   #   boundaryCondition (if true, differential eqn gen is ignored)
-  browser()
   rv.sbml.temp$need.species.conversion <- FALSE
   
   species <- sbml.model$species
@@ -477,7 +476,7 @@ sbml_2_biomodme_reactions <- function(sbml.model) {
   # MathJax.Rate.Law  || MathJax version of rate law
   # Rate.MathML       || MathMl for rate law
   # Reversible        || Bool if the equation is reversible or not
-  # browser()
+  
   reactions <- bind_rows(sbml.model$reactions)
   # Convert ids to names for values in reactions species and pars
   # Want to look at specific columns to convert
@@ -704,20 +703,7 @@ sbml_2_biomodme_reactions <- function(sbml.model) {
           paste0(items, collapse = ", ")
       }
     }
-    print("REaction entery**************************")
-    print(reaction.entry)
   }
-  print(rbind(rv.sbml.temp$reactions))
-  # for (i in seq_along(rv.sbml.temp$reactions)) {
-  #   print(rv.sbml.temp$reactions[[i]]$Reactants)
-  #   print(typeof(rv.sbml.temp$reactions[[i]]$Reactants))
-  # }
-  # 
-  # for (i in seq_along(rv.sbml.temp$reactions)) {
-  #   print(rv.sbml.temp$reactions[[i]]$Products)
-  # }
-  # 
-  # print(do.call(rbind, rv.sbml.temp$reactions))
 }
 
 sbml_2_biomodme_rules <- function(sbml.model) {
@@ -1008,9 +994,8 @@ LoadSBML_show_progress <- function(sbmlFile, w_sbml, spinner) {
                                   spinner, 50))
   # Extract Reactions___________________________________________________________
   if (!is.null(modelList$listOfReactions)) {
-    # browser()
     exists.listOfReactions <- TRUE
-    # browser()
+    
     # Pull Reaction Tags
     reaction.tags <- ExtractionReactionTagFromSBML(modelList$listOfReactions)
     reaction.ids  <- reaction.tags %>% pull(id)
@@ -1164,22 +1149,31 @@ observeEvent(input$file_input_load_sbml, {
   rv.sbml.temp$species.df.conv   <- data.frame()
   rv.sbml.temp$parameter.df.conv <- data.frame()
   
+  error.in.conversion <- FALSE
+  rv.error.in.conversion <- FALSE
   ## Unpack SBML Compartments --------------------------------------------------
-  
   mes <- "Converting Compartment information to BioModME..."
   w_sbml$update(html = waiter_fxn(mes,
                                   spinner, 65))
-  Sys.sleep(sleep.time)
+  # Sys.sleep(sleep.time)
   
-  tryCatch({
+  err <- tryCatch({
     sbml_2_biomodme_compartments(sbml.model)
+    err <- FALSE
   },
   error = function(e) {
-    print(paste0("Error: ", e))
     w_sbml$hide()
+    sendSweetAlert(
+      session = session,
+      title = "Error...",
+      text = e,
+      type = "error"
+    )
+    err <- TRUE
   })
   
-  print(rv.COMPARTMENTS$compartments.df)
+  if (err) return(NULL)
+  
   ## Unpack SBML Species --------------------------------------------------
   
   mes <- "Converting Species information to BioModME..."
@@ -1191,15 +1185,23 @@ observeEvent(input$file_input_load_sbml, {
     )
   )
   
-  tryCatch({
+  err <- tryCatch({
     sbml_2_biomodme_species(sbml.model)
+    err <- FALSE
   }, 
   error = function(e) {
-    print(paste0("Error: ", e))
     w_sbml$hide()
+    sendSweetAlert(
+      session = session,
+      title = "Error...",
+      text = e,
+      type = "error"
+    )
+    err <- TRUE
   })
-
-  print(rv.SPECIES$species.df)
+  
+  if (err) return(NULL)
+  
 
   ## Unpack SBML Params --------------------------------------------------------
   mes <- "Converting Parameter information to BioModME..."
@@ -1211,18 +1213,24 @@ observeEvent(input$file_input_load_sbml, {
     )
   )
   
-  tryCatch({
+  err <- tryCatch({
     sbml_2_biomodme_parameters(sbml.model)
+    err <- FALSE
   },
   error = function(e) {
-    print(paste0("Error: ", e))
     w_sbml$hide()
+    sendSweetAlert(
+      session = session,
+      title = "Error...",
+      text = e,
+      type = "error"
+    )
+    err <- TRUE
   })
   
-  print(rv.PARAMETERS$parameters.df)
+  if (err) return(NULL)
   
   ## Unpack SBML Functions -----------------------------------------------------
- 
   
   mes <- "Converting Functions to BioModME..."
   w_sbml$update(
@@ -1233,52 +1241,64 @@ observeEvent(input$file_input_load_sbml, {
     )
   )
   
-  tryCatch({
+  err <- tryCatch({
     sbml_2_biomodme_functions(sbml.model)
+    err <- FALSE
   },
   error = function(e) {
-    print(paste0("Error: ", e))
     w_sbml$hide()
+    sendSweetAlert(
+      session = session,
+      title = "Error...",
+      text = e,
+      type = "error"
+    )
+    err <- TRUE
   })
-  print(rv.CUSTOM.LAWS$cl.reaction)
-  
+  if (err) return(NULL)
+
   ## Unpack SBML Reaction ____--------------------------------------------------
   mes <- "Converting Reactions to BioModME..."
   w_sbml$update(html = waiter_fxn(mes,
                                   spinner, 85))
   
-  tryCatch({
+  err <- tryCatch({
     sbml_2_biomodme_reactions(sbml.model)
+    err <- FALSE
   },
   error = function(e) {
-    print(paste0("Error: ", e))
     w_sbml$hide()
+    sendSweetAlert(
+      session = session,
+      title = "Error...",
+      text = e,
+      type = "error"
+    )
+    err <- TRUE
   })
-  # browser()
-  # print("reactions finished")
-  # for (i in seq_along(rv.REACTIONS$reactions)) {
-  #   print(rv.REACTIONS$reactions[[i]]$Modifiers)
-  #   print(typeof(rv.REACTIONS$reactions[[i]]$Modifiers))
-  # }
-  print(as_tibble(
-    do.call(rbind, rv.REACTIONS$reactions)))
-  print("done bind_rows")
+  if (err) return(NULL)
 
   ## Unpack SBML Rules-------------------------------------------------------
   mes <- "Converting Rules to BioModME..."
   w_sbml$update(html = waiter_fxn(mes,
                                   spinner, 95))
   
-  tryCatch({
+  err <- tryCatch({
     sbml_2_biomodme_rules(sbml.model)
+    err <- FALSE
   },
   error = function(e) {
-    print(paste0("Error: ", e))
     w_sbml$hide()
+    sendSweetAlert(
+      session = session,
+      title = "Error...",
+      text = e,
+      type = "error"
+    )
+    err <- TRUE
   })
+  if (err) return(NULL)
   
-  print(rv.CUSTOM.EQNS$ce.equations)
-  # browser()
   # Finish load effects --------------------------------------------------------
   
   # Convert SBML temp RV to model RVs
@@ -1306,7 +1326,6 @@ observeEvent(input$file_input_load_sbml, {
   
   # Generate Differential Equations
   solveForDiffEqs()
-  print("finish solving diffeqs")
   # End UI Trigger Events
   w_sbml$hide()
   
