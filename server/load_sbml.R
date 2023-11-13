@@ -981,7 +981,9 @@ LoadSBML_show_progress <- function(sbmlFile, w_sbml, spinner) {
                   paste0(cs, collapse = ", "))
       return(list(model = NULL, error.message = cs))
     }
+    
     function.definitions <- NULL
+    print(func.info)
     tryCatch({
       function.definitions <- ExtractFunctionDefFromSBML(doc, func.info)
       function.definitions <- FindFunctionDefInformation(doc,
@@ -1003,7 +1005,7 @@ LoadSBML_show_progress <- function(sbmlFile, w_sbml, spinner) {
   if (!is.null(modelList$listOfReactions)) {
     # browser()
     exists.listOfReactions <- TRUE
-    
+    # browser()
     # Pull Reaction Tags
     reaction.tags <- ExtractionReactionTagFromSBML(modelList$listOfReactions)
     reaction.ids  <- reaction.tags %>% pull(id)
@@ -1015,6 +1017,17 @@ LoadSBML_show_progress <- function(sbmlFile, w_sbml, spinner) {
       reaction.list[[i]] <- ExtractReactionBaseFromSBML(current.reaction)
       names(reaction.list)[i] <- reaction.ids[i]
     }
+    
+    # This has NAs in it so not really a good check
+    # if (any(is.na(reaction.list))) {
+    #   error.in.load <- TRUE
+    #   rows_with_na <- which(apply(is.na(reaction.list), 1, any))
+    #   cs <- apply(reaction.list[rows_with_na, ], 1, 
+    #               function(row) paste(row, collapse = " "))
+    #   cs <-paste0("Error loading following species lines: ", 
+    #               paste0(cs, collapse = ", "))
+    #   return(list(model = NULL, error.message = cs))
+    # }
     
     # Check if Reaction Parameters Exist
     if (!is.na(reaction.list[[1]]$Parameter.Values)) {
@@ -1047,27 +1060,48 @@ LoadSBML_show_progress <- function(sbmlFile, w_sbml, spinner) {
                                            constant)
       colnames(reaction.parameters.df) <- c("id", "name", "value", "constant")
     }
-    print(reaction.list)
-    # Add math to reactions list
-    reaction.list <- ExtractReactionMathFromSBML(doc, 
-                                                 reaction.list,
-                                                 function.definitions)
-    print(reaction.list)
-    # Combine Tags With Reaction Math
-    reaction.list <- CombineReactionTagsWReactions(reaction.tags,
-                                                   reaction.list)
     
-    out[["reactions"]] <- reaction.list
+    reaction.list.results <- NULL
+    tryCatch({
+      # Add math to reactions list (searches for function definitions) if not
+      # then then will straight parse mathml
+      reaction.list.results <- ExtractReactionMathFromSBML(doc, 
+                                                           reaction.list,
+                                                           function.definitions)
+      
+      # Combine Tags With Reaction Math
+      reaction.list.results <- 
+        CombineReactionTagsWReactions(reaction.tags, reaction.list.results)
+    })
     
+    if (is.null(reaction.list.results)) {
+      err.mes <- "A problem occured in converting reaction SBML to equations."
+      return(list(model = NULL, error.message = err.mes))
+    }
+    
+    # Store reaction information to output
+    out[["reactions"]] <- reaction.list.results
   }
+  
   Sys.sleep(sleep.time)
+  # Bind Parameter lists if they both exist (equations/parameters)
   w_sbml$update(html = waiter_fxn("Combining Parameter Information", 
-                                  spinner, 60))  # Bind Parameter lists if they both exist
+                                  spinner, 60))  
   
   # Finalize Data Outputs to Normalize Output
-  final.parameters.df <- FinalizeParameterData(listOfParameters,
-                                               reaction.parameters.df,
-                                               rules.list)
+  final.parameters.df <- NULL
+  tryCatch({
+    final.parameters.df <- FinalizeParameterData(listOfParameters,
+                                                 reaction.parameters.df,
+                                                 rules.list)
+  })
+  if (is.null(final.parameters.df)) {
+    err.mes <- "There was an error merging parameters found in SBML parameters 
+                and parameters from SBML reactions."
+    return(list(model = NULL, error.message = err.mes))
+  }
+  
+  # Store final parameters to output
   out[["parameters"]] <- final.parameters.df
   
   if (error.in.load) {
