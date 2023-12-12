@@ -621,7 +621,7 @@ output$myVariables_DT <- renderRHandsontable({
 
 # Variable Input Rhandsontable: cell Change ------------------------------------
 observeEvent(input$myVariables_DT$changes$changes, {
-  browser()
+  # browser()
   xi = input$myVariables_DT$changes$changes[[1]][[1]]
   yi = input$myVariables_DT$changes$changes[[1]][[2]]
   old = input$myVariables_DT$changes$changes[[1]][[3]]

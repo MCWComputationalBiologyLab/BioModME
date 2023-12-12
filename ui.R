@@ -75,6 +75,7 @@ ui <- dashboardPage(
   header = dashboardHeader(
     title = dashboardBrand(
       title = "BioModME",
+      image = "icon.svg"
       #color = "primary",
     ),
     downloadButton(
