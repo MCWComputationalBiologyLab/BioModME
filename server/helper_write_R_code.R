@@ -5,7 +5,7 @@ BuildParameterStatement <- function(parameters, parameterValues){
   for (i in seq(length(parameters))) {
     out <- paste0(out, parameters[i])
     if (i != length(parameters)) {
-      out <- paste0(out, " = ", parameterValues[i], ", ")
+      out <- paste0(out, " = ", parameterValues[i], ", \n")
     }else{
       out <- paste0(out, " = ", parameterValues[i], ")\n")
     } #end else
@@ -20,7 +20,7 @@ BuildStateStatement <- function(ICvars, ICvals){
   for (i in seq(length(ICvars))) {
     out <- paste0(out, ICvars[i])
     if (i != length(ICvars)) {
-      out <- paste0(out, " = ", ICvals[i], ", ")
+      out <- paste0(out, " = ", ICvals[i], ", \n")
     }else{
       out <- paste0(out, " = ", ICvals[i], ")\n")
     } #end else
@@ -40,7 +40,9 @@ CreateRModel <- function(variables, parameters, parameterValues, ICsValues,
                            " with(as.list(c(state, parameters)), {\n")                         
   
   parameters <- BuildParameterStatement(parameters, parameterValues)
+  print(parameters)
   state <- BuildStateStatement(variables, ICsValues)
+  print(state)
   times <- paste0("times <- seq(", timeStart, ", ", timeEnd, ", by = ",
                   timeStep, ")\n")
   
