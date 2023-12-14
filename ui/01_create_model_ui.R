@@ -192,6 +192,15 @@ TAB_VAR_CREATE <-
                 )
               )
             )
+            # sidebar = boxSidebar(
+            #   id = "diffeq_sidebar",
+            #   icon = icon("bars", lib = "font-awesome"),
+            #   width = 25,
+            #   fileInput(
+            #     inputId = "FI_createVar_import_species",
+            #     label = "Load Species"
+            #   )
+            # )
           )
         )
       ),

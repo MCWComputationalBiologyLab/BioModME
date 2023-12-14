@@ -417,7 +417,7 @@ observeEvent(input$modal_createVariable_cancel_button, {
 
 # Event: Confirm Delete from Modal----------------------------------------------
 observeEvent(input$button_modal_delete_species, {
-  
+  # browser()
   # Set booleans
   varUsedInModel <- FALSE
   varUsedInEqns  <- FALSE
@@ -485,7 +485,10 @@ observeEvent(input$button_modal_delete_species, {
   } else {
     # If not remove variable from variable data structures.
     rv.SPECIES$species[[var.id]] <- NULL
-
+    
+    # Remove from id structure
+    rv.ID$id.df <- rv.ID$id.df[rv.ID$id.df$id != var.id, ]
+    
     # Notify User of Successful Removal 
     sendSweetAlert(
       session = session, 
