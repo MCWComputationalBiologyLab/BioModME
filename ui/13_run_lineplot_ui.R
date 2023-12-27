@@ -136,6 +136,16 @@ TAB_RUN_LINEPLOT <- tabItem(
                         "Standard (ggplot2)" = "ggplot2")
           )
         )
+      ),
+      div(
+        style = "display:inline-block; 
+                 text_align:right;
+                 padding-right: 0px;
+                 padding-left: 0px",
+        actionButton(
+          inputId = "execute_run_model_on_viz_tab",
+          label = "Resolve Model"
+        )
       )
     )
   ),#end FluidRow
@@ -507,80 +517,96 @@ TAB_RUN_LINEPLOT <- tabItem(
   ),
   br(),
 # Model Variables Box ----------------------------------------------------------
-  # fluidRow(
-  #   column(
-  #     width = 12,
-  #     style = "padding: 0px;",
-  #     box(
-  #       id = "plot_box_change_vars",
-  #       width = 12,
-  #       title = "Model Variables",
-  #       collapsible = TRUE,
-  #       collapsed = TRUE,
-  #       fluidRow(
-  #         column(
-  #           width = 12,
-  #           div(
-  #             style = "background-color:#F9F9F9;
-  #                  border: 1px solid #c5c5c5;
-  #                  border-radius: 12px;
-  #                  padding: 10px 10px 10px 10px;",
-  #             fluidRow(
-  #               column(
-  #                 width = 9,
-  #                 fluidRow(
-  #                   textInput(
-  #                     inputId = "plot_execute_time_start",
-  #                     label = "Starting Time",
-  #                     value = "0"), 
-  #                   textInput(
-  #                     inputId = "plot_execute_time_end",
-  #                     label = "End Time",
-  #                     value = "10"), 
-  #                   textInput(
-  #                     inputId = "plot_execute_time_step",
-  #                     label = "Time Step",
-  #                     value = "0.1"), 
-  #                   pickerInput(
-  #                     inputId = "plot_execute_time_unit",
-  #                     label = "Unit",
-  #                     choices = measurements::conv_unit_options$duration
-  #                   )
-  #                 )
-  #               ),
-  #               column(
-  #                 offset = 1,
-  #                 width = 2,
-  #                 align = "right",
-  #                 div(style = "padding-top: 33px",
-  #                     actionButton(
-  #                       inputId = "plot_execute_refresh_plot",
-  #                       label = "Refresh Plot")
-  #                 )
-  #               )
-  #             )
-  #           )
-  #         )
-  #       ),
-  #       br(),
-  #       fluidRow(
-  #         column(
-  #           width = 12,
-  #           h5(shiny::tags$u("Change Model Parameters")),
-  #           rHandsontableOutput(outputId = "plot_param_table")
-  #         )
-  #       ),
-  #       br(),
-  #       fluidRow(
-  #         column(
-  #           width = 12,
-  #           h5(shiny::tags$u("Change Initial Conditions")),
-  #           rHandsontableOutput(outputId = "plot_var_table")
-  #         )
-  #       )
-  #     )
-  #   )
-  # ),
+  fluidRow(
+    column(
+      width = 12,
+      style = "padding: 0px;",
+      box(
+        id = "plot_box_change_vars",
+        width = 12,
+        title = "Model Variables",
+        collapsible = TRUE,
+        collapsed = TRUE,
+        prettyRadioButtons(
+          inputId = "RB_plot_change_variables_options",
+          label = "Edit:",
+          choices = c("Initial Conditions" = "ICs",
+                      "Parameter Values" = "parameters",
+                      "Time" = "time"),
+          inline = TRUE,
+          status = "primary",
+          fill = TRUE
+        ),
+        conditionalPanel(
+          condition = "input.RB_plot_change_variables_options == 'parameters'",
+          fluidRow(
+            column(
+              width = 12,
+              h5(shiny::tags$u("Change Model Parameters")),
+              rHandsontableOutput(outputId = "plot_param_table")
+            )
+          )
+        ),
+        conditionalPanel(
+          condition = "input.RB_plot_change_variables_options == 'time'",
+          fluidRow(
+            column(
+              width = 12,
+              div(
+                style = "background-color:#F9F9F9;
+                   border: 1px solid #c5c5c5;
+                   border-radius: 12px;
+                   padding: 10px 10px 10px 10px;",
+                fluidRow(
+                  column(
+                    width = 9,
+                    fluidRow(
+                      textInput(
+                        inputId = "plot_execute_time_start",
+                        label = "Starting Time",
+                        value = "0"),
+                      textInput(
+                        inputId = "plot_execute_time_end",
+                        label = "End Time",
+                        value = "10"),
+                      textInput(
+                        inputId = "plot_execute_time_step",
+                        label = "Time Step",
+                        value = "0.1"),
+                      pickerInput(
+                        inputId = "plot_execute_time_unit",
+                        label = "Unit",
+                        choices = measurements::conv_unit_options$duration
+                      )
+                    )
+                  ),
+                  column(
+                    offset = 1,
+                    width = 2,
+                    align = "right",
+                    div(style = "padding-top: 33px",
+                        actionButton(
+                          inputId = "plot_execute_refresh_plot",
+                          label = "Refresh Plot")
+                    )
+                  )
+                )
+              )
+            )
+          )
+        ),
+        conditionalPanel(
+          condition = "input.RB_plot_change_variables_options == 'ICs'",
+          fluidRow(
+            column(
+              width = 12,
+              rHandsontableOutput(outputId = "plot_var_table")
+            )
+          )
+        )
+      )
+    )
+  ),
 # Import Data Box --------------------------------------------------------------
   fluidRow(
     column(

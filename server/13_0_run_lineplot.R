@@ -737,6 +737,9 @@ output$plot_param_table <- renderRHandsontable({
     hot_validate_numeric(col = 2, min = 0)
 })
 
+# This table should mirror the table on the main page of the app
+# In the future we should create a module for it but for now we will
+# do a copy and paste.
 output$plot_var_table <- renderRHandsontable({
   req(length(rv.SPECIES$species) > 0)
   
@@ -746,6 +749,17 @@ output$plot_var_table <- renderRHandsontable({
                        Unit, 
                        Compartment, 
                        Description)
+  
+  df.by.comp <- as.data.frame(df.by.comp)
+  
+  colnames(df.by.comp) <- c("Name",
+                            "Value",
+                            "Unit",
+                            "Compartment",
+                            "Description"
+  )
+  
+  rv.SPECIES$plotted.var.table <- df.by.comp
   
   rhandsontable(
     df.by.comp,
@@ -770,11 +784,141 @@ output$plot_var_table <- renderRHandsontable({
               td.style.background = 'white';
              };
            }") %>%
-    #hot_col("Variable Name", readOnly = TRUE) %>%
+    hot_col(c("Name", "Compartment"), readOnly = TRUE) %>%
     hot_rows(rowHeights = 30) %>%
     hot_context_menu(allowRowEdit = FALSE,
                      allowColEdit = FALSE
     )
+})
+
+observeEvent(input$plot_var_table$changes$changes, {
+  # browser()
+  xi = input$plot_var_table$changes$changes[[1]][[1]]
+  yi = input$plot_var_table$changes$changes[[1]][[2]]
+  old = input$plot_var_table$changes$changes[[1]][[3]]
+  new = input$plot_var_table$changes$changes[[1]][[4]]
+  
+  # Find which variable is being changed
+  var.name  <- rv.SPECIES$plotted.var.table[xi+1, 1]
+  search.id <- FindId(var.name)
+  # If Name changed
+  if (yi == 0) {
+    # SPECIES NAME CHANNGE
+    
+    # Check if name change is a valid new name
+    
+    # Find id of variable name 
+    # Find variable id and change corresponding name 
+    idx.for.id <- which(rv.ID$id.df[, 2] %in% old)
+    var.id <- rv.ID$id.df[idx.for.id, 1]
+    rv.ID$id.df[idx.for.id, 2] <- new
+    
+    # Search Other Areas Affected by Var Name Change
+    # Steps: 
+    #  Search eqn df for id.
+    # Rename Parameters Found in Reaction Lists
+    # rv.REACTIONS <- replace_word_recursive(rv.REACTIONS, old, new)
+    # browser()
+    names.list <- names(rv.REACTIONS)
+    for (name in names.list) {
+      rv.REACTIONS[[name]] <- 
+        replace_word_recursive(rv.REACTIONS[[name]], old, new)
+      
+      rv.REACTIONS[[name]] <- 
+        replace_latex_variable_recursive(rv.REACTIONS[[name]], 
+                                         Var2Latex(old), 
+                                         Var2Latex(new))
+    }
+    
+    names.list <- names(rv.IO)
+    for (name in names.list) {
+      rv.IO[[name]] <- 
+        replace_word_recursive(rv.IO[[name]], old, new)
+      rv.IO[[name]] <- 
+        replace_latex_variable_recursive(rv.IO[[name]],
+                                         Var2Latex(old), 
+                                         Var2Latex(new))
+    }
+    
+    # Change name in species list
+    rv.SPECIES$species[[search.id]]$Name <- new
+    
+    
+    # Reset differential equations with new name
+    solveForDiffEqs()
+    
+  } else if (yi == 1) {
+    # CHANGE SPECIES VALUE
+    rv.SPECIES$species[[search.id]]$Value <- new
+    
+    # Change the base value of the value if needed.
+    select.unit <- rv.SPECIES$species[[search.id]]$Unit
+    base.unit   <- rv.SPECIES$species[[search.id]]$BaseUnit
+    if (select.unit != base.unit) {
+      # Perform Unit Conversion
+      descriptor <- rv.SPECIES$species[[search.id]]$UnitDescription
+      converted.value <- UnitConversion(descriptor,
+                                        select.unit,
+                                        base.unit,
+                                        as.numeric(new))
+      rv.SPECIES$species[[search.id]]$BaseValue <- converted.value
+    } else {
+      # Simply Overwrite BaseValue
+      rv.SPECIES$species[[search.id]]$BaseValue <- new
+    }
+  } else if (yi == 2) {
+    # CHANGE SPECIES UNIT
+    descriptor <- rv.SPECIES$species[[search.id]]$UnitDescription
+    
+    # Check to make sure units entered are the right ones
+    comparison <- UnitCompare(descriptor,
+                              new,
+                              rv.UNITS$units.choices)
+    
+    if (comparison$is.match) {
+      new <- Unit_Dict_Convert(UNIT_MAPPING, new)
+      rv.REFRESH$refresh.species.table <- rv.REFRESH$refresh.species.table + 1
+      # Change units
+      rv.SPECIES$species[[search.id]]$Unit  <- new
+      
+      # Change base value of variable concentration if needed
+      from.unit <- rv.SPECIES$species[[search.id]]$Unit
+      to.unit   <- rv.SPECIES$species[[search.id]]$BaseUnit
+      from.val  <- as.numeric(rv.SPECIES$species[[search.id]]$Value)
+      
+      if (from.unit != to.unit) {
+        # Perform Unit Conversion
+        new.value <- UnitConversion(descriptor,
+                                    from.unit, 
+                                    to.unit,
+                                    from.val)
+        
+        rv.SPECIES$species[[search.id]]$BaseValue <- new.value
+      } else {
+        rv.SPECIES$species[[search.id]]$BaseValue <- from.val
+      }
+      
+    } else {
+      rv.SPECIES$species[[search.id]]$Unit  <- old
+      rv.REFRESH$refresh.species.table <- rv.REFRESH$refresh.species.table + 1
+      sendSweetAlert(
+        session = session,
+        title = "Error...",
+        text = comparison$message,
+        type = "error"
+      )
+    }
+    
+  } else if (yi == 3) {
+    # CHANGE SPECIES COMPARTMENT
+    rv.SPECIES$species[[search.id]]$Compartment <- new
+  } else if (yi == 4) {
+    # CHANGE SPECIES DESCRIPTION
+    rv.SPECIES$species[[search.id]]$Description <- new
+  }
+  
+  rv.SPECIES$species.df <- bind_rows(rv.SPECIES$species)
+  
 })
 
 
