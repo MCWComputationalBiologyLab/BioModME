@@ -34,6 +34,7 @@ library(katex)
 library(reshape2)
 library(clipr)
 library(jsonlite)
+library(mathml)
 
 UNIT_MAPPING <- c(
   nsec = "ns",

@@ -11,13 +11,22 @@ shinyBS::bsModal(
         inputId = "PI_dde_choose_download_type",
         label = "Download as:",
         choices = c("PlainText" = "txt",
-                    "mathML" = "mathml", 
+                    "Content MathML" = "c_mathml",
+                    "Presentation MathML" = "p_mathml",
                     "Latex" = "latex")
       ),
       conditionalPanel(
-        condition = "input.PI_dde_choose_download_type == 'mathml'",
+        condition = "input.PI_dde_choose_download_type == 'c_mathml'",
         pickerInput(
-          inputId = "PI_dde_mathml_selection",
+          inputId = "PI_dde_c_mathml_selection",
+          label = "Select equation:",
+          choices = c()
+        )
+      ),
+      conditionalPanel(
+        condition = "input.PI_dde_choose_download_type == 'p_mathml'",
+        pickerInput(
+          inputId = "PI_dde_p_mathml_selection",
           label = "Select equation:",
           choices = c()
         )
@@ -32,9 +41,15 @@ shinyBS::bsModal(
         )
       ),
       conditionalPanel(
-        condition = "input.PI_dde_choose_download_type == 'mathml'",
+        condition = "input.PI_dde_choose_download_type == 'c_mathml'",
         div(class = "scrollable-output",
-          verbatimTextOutput("vTO_displayEquations_mathml")
+            verbatimTextOutput("vTO_displayEquations_c_mathml")
+        )
+      ),
+      conditionalPanel(
+        condition = "input.PI_dde_choose_download_type == 'p_mathml'",
+        div(class = "scrollable-output",
+            verbatimTextOutput("vTO_displayEquations_p_mathml")
         )
       ),
       conditionalPanel(
