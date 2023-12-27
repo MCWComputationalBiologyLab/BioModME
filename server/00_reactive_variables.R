@@ -656,3 +656,10 @@ rv.sbml.temp <- reactiveValues(
 )
 
 rv <- reactiveValues(error.in.conversion = FALSE)
+
+rv.TIMELINK <- reactiveValues(
+  start = 0,
+  end = 10,
+  step = 1,
+  unit = "mol"
+)

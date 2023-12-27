@@ -1233,3 +1233,89 @@ output$lineplot_download_plots <- downloadHandler(
     )
   }
 )
+
+# TIME LINK: Link execute to visualization time --------------------------------
+observe({
+  
+  updateTextInput(
+    session, 
+    "execute_time_start", 
+    value = rv.TIMELINK$start
+  )
+  
+  updateTextInput(
+    session, 
+    "plot_execute_time_start", 
+    value = rv.TIMELINK$start
+  )
+  
+  updateTextInput(
+    session, 
+    "execute_time_end", 
+    value = rv.TIMELINK$end
+  )
+  
+  updateTextInput(
+    session, 
+    "plot_execute_time_end",
+    value = rv.TIMELINK$end
+  )
+  
+  updateTextInput(
+    session, 
+    "execute_time_step", 
+    value = rv.TIMELINK$step
+  )
+  
+  updateTextInput(
+    session, 
+    "plot_execute_time_step", 
+    value = rv.TIMELINK$step
+  )
+  
+  updatePickerInput(
+    session, 
+    "execute_time_unit", 
+    selected = rv.TIMELINK$unit
+  )
+  
+  updatePickerInput(
+    session, 
+    "plot_execute_time_unit", 
+    selected = rv.TIMELINK$unit
+  )
+  
+})
+
+# Update reactive values when inputs change
+observeEvent(input$execute_time_start, {
+  rv.TIMELINK$start <- as.numeric(input$execute_time_start)
+})
+
+observeEvent(input$execute_time_end, {
+  rv.TIMELINK$end <- as.numeric(input$execute_time_end)
+})
+
+observeEvent(input$execute_time_step, {
+  rv.TIMELINK$step <- as.numeric(input$execute_time_step)
+})
+
+observeEvent(input$execute_time_unit, {
+  rv.TIMELINK$unit <- input$execute_time_unit
+})
+
+observeEvent(input$plot_execute_time_start, {
+  rv.TIMELINK$start <- as.numeric(input$plot_execute_time_start)
+})
+
+observeEvent(input$plot_execute_time_end, {
+  rv.TIMELINK$end <- as.numeric(input$plot_execute_time_end)
+})
+
+observeEvent(input$plot_execute_time_step, {
+  rv.TIMELINK$step <- as.numeric(input$plot_execute_time_step)
+})
+
+observeEvent(input$plot_execute_time_unit, {
+  rv.TIMELINK$unit <- input$plot_execute_time_unit
+})

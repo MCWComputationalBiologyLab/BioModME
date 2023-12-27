@@ -559,7 +559,7 @@ TAB_RUN_LINEPLOT <- tabItem(
                    padding: 10px 10px 10px 10px;",
                 fluidRow(
                   column(
-                    width = 9,
+                    width = 12,
                     fluidRow(
                       textInput(
                         inputId = "plot_execute_time_start",
@@ -578,16 +578,6 @@ TAB_RUN_LINEPLOT <- tabItem(
                         label = "Unit",
                         choices = measurements::conv_unit_options$duration
                       )
-                    )
-                  ),
-                  column(
-                    offset = 1,
-                    width = 2,
-                    align = "right",
-                    div(style = "padding-top: 33px",
-                        actionButton(
-                          inputId = "plot_execute_refresh_plot",
-                          label = "Refresh Plot")
                     )
                   )
                 )
