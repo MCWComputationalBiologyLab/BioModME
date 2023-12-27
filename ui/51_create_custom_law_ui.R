@@ -57,9 +57,7 @@ TAB_CREATE_CUSTOM_LAW <-
           hr(),
           fluidRow(
             column(
-              width = 3,
-              offset = 9,
-              align = "right",
+              width = 12,
               actionButton(
                 inputId = "bttn_store_custom_reaction",
                 label = "Store"

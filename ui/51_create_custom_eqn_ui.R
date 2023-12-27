@@ -49,7 +49,6 @@ TAB_CREATE_CUSTOM_EQN <-
           fluidRow(
             column(
               width = 12,
-              align = "right", 
               actionButton(
                 inputId = "bttn_custom_eqn_enter",
                 label = "Add Equation"

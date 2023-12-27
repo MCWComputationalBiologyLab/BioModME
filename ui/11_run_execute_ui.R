@@ -38,30 +38,30 @@ TAB_RUN_EXECUTE <-
               )
             )
           ),
+          hr(),
           fluidRow(
-            # column(
-            #   width = 3,
-            #   offset = 9,
-            #   align = "right",
-            #   actionButton(
-            #     inputId = "execute_run_model",
-            #     label = "Run Solver",
-            #     width = "145px")
-            # )
             column(
               width = 12,
-              align = "right",
-              # actionButton(
-              #   inputId = "execute_run_model",
-              #   label = "Run Solver",
-              #   width = "100%")
-              actionBttn(
+              align = "left",
+              actionButton(
                 inputId = "execute_run_model",
-                label = "Run Solver", 
-                style = "material-flat",
-                color = "primary"
-              )
+                label = "Run Solver",
+                width = "145px")
             )
+            # column(
+            #   width = 12,
+            #   align = "right",
+            #   # actionButton(
+            #   #   inputId = "execute_run_model",
+            #   #   label = "Run Solver",
+            #   #   width = "100%")
+            #   actionBttn(
+            #     inputId = "execute_run_model",
+            #     label = "Run Solver", 
+            #     style = "material-flat",
+            #     color = "primary"
+            #   )
+            # )
           )
         ),
         tabPanel(
