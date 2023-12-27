@@ -3,6 +3,7 @@
 # Waiters ----------------------------------------------------------------------
 # create our watier
 w_execute <- Waiter$new(id = "box3")
+w_plot_execute <- Waiter$new(id = "lineplot_plotly")
 
 # Functions --------------------------------------------------------------------
 ModelFxn <- function(t, 
@@ -55,7 +56,12 @@ observeEvent(rv.UNITS$units.selected$Count, {
 })
 
 # Store Model Options ----------------------------------------------------------
-observeEvent(input$execute_run_model, {
+observeEvent(c(input$execute_run_model, 
+               input$execute_run_model_on_viz_tab), {
+              
+ if (input$execute_run_model_on_viz_tab == 0 &&
+     input$execute_run_model == 0) {return(NULL)}
+                 
   rv.SOLVER.OPTIONS$time.start       <- input$execute_time_start
   rv.SOLVER.OPTIONS$time.end         <- input$execute_time_end
   rv.SOLVER.OPTIONS$time.step        <- input$execute_time_step
@@ -64,15 +70,16 @@ observeEvent(input$execute_run_model, {
   rv.SOLVER.OPTIONS$ode.solver.type  <- input$execute_ode_solver_type
 })
 
+observeEvent(c(input$execute_run_model, 
+               input$execute_run_model_on_viz_tab), {
 
-# Event: Solve Model -----------------------------------------------------------
-model_output <- eventReactive(input$execute_run_model, {
-  # browser()
-  # Resolve for newest version if differential equations (prob not needed)
+  if (input$execute_run_model_on_viz_tab == 0 &&
+      input$execute_run_model == 0) {return(NULL)}
+                 
   solveForDiffEqs()
-  
   # Error Checks for button
   w_execute$show()
+  w_plot_execute$show()
   # browser()
   #set up time for solver
   error.found   <- FALSE
@@ -82,17 +89,17 @@ model_output <- eventReactive(input$execute_run_model, {
   time_in   <- as.numeric(input$execute_time_start)
   time_out  <- as.numeric(input$execute_time_end)
   time_step <- as.numeric(input$execute_time_step)
-  
+
   # Error Checking Time Values
   if (is.na(time_in) | is.na(time_out) | is.na(time_step)) {
     error.found <- TRUE
     error.time <- TRUE
-    error.message <- paste0(error.message, 
+    error.message <- paste0(error.message,
                             "Time values are not numerical values. ")
   } else if (time_out < time_in) {
     error.found <- TRUE
     error.time <- TRUE
-    error.message <- paste0(error.message, 
+    error.message <- paste0(error.message,
                             "Time out is a lower value than time in. ")
   }
   if (!error.time) {
@@ -117,28 +124,28 @@ model_output <- eventReactive(input$execute_run_model, {
     }
     if (length(times) < 10) {
       error.found <- TRUE
-      error.message <- paste0(error.message, 
-                              "Step size not small enough. 
+      error.message <- paste0(error.message,
+                              "Step size not small enough.
                               Must have at least 10 units of time. ")
     }
   }
-  
+
   # Preping Terms for ODE Solver
   #initialize parameters
   parameters <- output_param_for_ode_solver(rv.PARAMETERS$parameters)
-  
+
   #initialize initial conditions
   state <- output_ICs_for_ode_solver(rv.SPECIES$species)
 
   #Extract diffeqs from solver
   diff.eqns.vector <- rv.DE$de.eqns.for.solver
-  
+
   #set up differential equations input string form
-  diff_eqns <- diffeq_to_text(diff.eqns.vector, 
+  diff_eqns <- diffeq_to_text(diff.eqns.vector,
                               names(rv.SPECIES$species))
 
   d_of_var <- output_var_for_ode_solver(names(rv.SPECIES$species))
-  
+
   custom.eqns <- CustomEqnsToText(rv.CUSTOM.EQNS$ce.equations)
 
   if (input$execute_turnOn_time_scale_var) {
@@ -153,19 +160,19 @@ model_output <- eventReactive(input$execute_run_model, {
   # print(state)
   # print(diff_eqns)
   # print(d_of_var)
-  
+
   # Solve ODEs
 
-  out <- ode(y = state, 
-             times = times, 
-             func =   ModelFxn, 
+  out <- ode(y = state,
+             times = times,
+             func =   ModelFxn,
              parms = parameters,
              extraEqns = custom.eqns,
              differentialEqns = diff_eqns,
              vars = d_of_var
              #,method = input$execute_ode_solver_type
   )
-  
+
   if (converted.time) {
     result.time <- out[,1]
     conv.time.in <- UnitConversion("time",
@@ -175,14 +182,14 @@ model_output <- eventReactive(input$execute_run_model, {
     out[,1] <- conv.time.in
   }
 
-  
+
   # Save Results to Appropriate Places
   rv.RESULTS$results.model <- out #store model to reactive var
   rv.RESULTS$results.model.final <- out
   rv.RESULTS$results.model.has.been.solved <- TRUE
   rv.RESULTS$results.model.units.view <- out
-  
-  # Generate viewing table 
+
+  # Generate viewing table
   # u1 <- units$base.units$Count
   # u2 <- input$execute_results_unit
   # sub.df <- data.frame(rv.RESULTS$results.model[,2:ncol(rv.RESULTS$results.model)])
@@ -192,22 +199,22 @@ model_output <- eventReactive(input$execute_run_model, {
   # colnames(rv.RESULTS$results.model.units.view) <- colnames(rv.RESULTS$results.model)
   # if (input$execute_results_unit != units$base.units$Count) {
   #   # Perform conversion on results dataframe
-  # 
+  #
   #   # Remove first column of df
   #   u1 <- units$base.units$Count
   #   u2 <- input$execute_results_unit
   #   sub.df <- data.frame(out[,2:ncol(out)])
   #   unit.convert <- data.frame(lapply(sub.df, measurements::conv_unit, u1, u2))
   #   converted.df <- cbind(out[1,], unit.convert)
-  #   
+  #
   #   colnames(converted.df) <- colnames(out)
   #   rv.RESULTS$results.model.units.view <- converted.df
-  #   
+  #
   # } else {
   #   rv.RESULTS$results.model.units.view <- out
   # }
-  
-  
+
+
   # Initialize other plotting modes with this model
   # rv.PLOT.LOOP$loop.model.results <- out
   # compareModel$model.1 <- out
@@ -221,11 +228,12 @@ model_output <- eventReactive(input$execute_run_model, {
   if (is.null(rv.RESULTS$results.pp.vars)) rv.RESULTS$results.pp.vars = vector()
   if (is.null(rv.RESULTS$results.pp.model)) rv.RESULTS$results.pp.model = data.frame()
   if (is.null(rv.RESULTS$results.pp.eqns.col)) rv.RESULTS$results.pp.eqns.col = vector()
-  
+
   w_execute$hide()
-  
-  return(out)
+  w_plot_execute$hide()
 })
+
+# Event: Solve Model -----------------------------------------------------------
 
 observeEvent(input$execute_results_unit, {
   req(rv.RESULTS$results.model.has.been.solved)

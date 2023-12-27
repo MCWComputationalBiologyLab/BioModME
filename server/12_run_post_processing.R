@@ -2,16 +2,16 @@
 
 #update picker inputs on model run
 observeEvent(input$execute_run_model, {
-  n.rows <- length(colnames(model_output()))
+  n.rows <- length(colnames(rv.RESULTS$results.model.final))
   updatePickerInput(session
                     ,"pp_add_vars"
-                    ,choices = colnames(model_output())[2:n.rows]
+                    ,choices = colnames(rv.RESULTS$results.model.final)[2:n.rows]
   )
 
 
   updatePickerInput(session
                     ,"pp_sub_vars"
-                    ,choices = colnames(model_output())[2:n.rows]
+                    ,choices = colnames(rv.RESULTS$results.model.final)[2:n.rows]
   )
 })
 
@@ -57,7 +57,7 @@ ppEqnToAdd <- function(){
 
 ppEqnToAddColumn <- function(){
   
-  model <- "model_output()"
+  model <- "rv.RESULTS$results.model.final"
   out.eqn <- paste0(input$pp_new_var, " = ")
   VAR.ADDED <- FALSE
   if (length(input$pp_add_vars > 0)) {
@@ -126,15 +126,15 @@ observeEvent(input$pp_submit_new_var, {
   
   rv.RESULTS$results.is.pp = TRUE
   
-  n.rows <- length(colnames(model_output()))
+  n.rows <- length(colnames(rv.RESULTS$results.model.final))
   updatePickerInput(session
                     ,"pp_add_vars"
-                    ,choices = colnames(model_output())[2:n.rows]
+                    ,choices = colnames(rv.RESULTS$results.model.final)[2:n.rows]
   )
   
   updatePickerInput(session
                     ,"pp_sub_vars"
-                    ,choices = colnames(model_output())[2:n.rows]
+                    ,choices = colnames(rv.RESULTS$results.model.final)[2:n.rows]
   )
   
   updateTextInput(session,
