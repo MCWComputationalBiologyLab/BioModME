@@ -298,7 +298,7 @@ createSBML <- function(model) {
           for (j in seq_along(r.modifiers)) {
             m <- r.modifiers[j]
             out <- c(out, 
-                     paste0("<modifierSpeciesReference species=", '"', p, '"',
+                     paste0("<modifierSpeciesReference species=", '"', m, '"',
                             "/>"))
           }
           
