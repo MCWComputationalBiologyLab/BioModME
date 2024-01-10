@@ -156,11 +156,9 @@ LoadSBML <- function(sbmlFile) {
     reaction.list <- ExtractReactionMathFromSBML(doc, 
                                                  reaction.list,
                                                  function.definitions)
-    
     # Combine Tags With Reaction Math
     reaction.list <- CombineReactionTagsWReactions(reaction.tags,
                                                    reaction.list)
-    
     out[["reactions"]] <- reaction.list
     
   }
@@ -459,7 +457,7 @@ ExtractReactionBaseFromSBML <- function(reactionEntry) {
   # reaction entries but some don't and instead list that information in a 
   # XML node "listOfParameters" on the base level with all parameters. So,
   # we need to check for that. Some seem to have both.
-  
+  # browser()
   out.list <- list("Reactants"  = NA,
                    "Products"   = NA,
                    "Modifiers"  = NA,

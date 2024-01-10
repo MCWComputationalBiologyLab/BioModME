@@ -615,8 +615,8 @@ sbml_2_biomodme_reactions <- function(sbml.model) {
     }
     
     parameters.id <- c()
-    print("Parameters")
-    print(parameters)
+    # print("Parameters")
+    # print(parameters)
     for (j in seq_along(parameters)) {
       parameters.id[j] <- FindIdTEMPsbml(parameters[j])
     }
@@ -974,7 +974,7 @@ LoadSBML_show_progress <- function(sbmlFile, w_sbml, spinner) {
     }
     
     function.definitions <- NULL
-    print(func.info)
+    # print(func.info)
     tryCatch({
       function.definitions <- ExtractFunctionDefFromSBML(doc, func.info)
       function.definitions <- FindFunctionDefInformation(doc,

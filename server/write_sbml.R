@@ -309,9 +309,6 @@ createSBML <- function(model) {
         # Determine if law used function in function
         write.raw.mathml <- TRUE
         if (n.functions > 0) {
-          print("FUCNIOT REACTION SUTFF")
-          print(func.used)
-          print(function.names)
           if (func.used %in% function.names) {
             write.raw.mathml <- FALSE
             fxn.to.write <- function.names[match(func.used, function.names)]
@@ -424,6 +421,5 @@ createSBML <- function(model) {
   out <- c(out, "</sbml>")
 
   out <- paste0(out, collapse = "\n")
-  print(out)
   return(out)
 }
