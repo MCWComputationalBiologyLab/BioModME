@@ -1,4 +1,9 @@
 
+observeEvent(input$bttn_debug_reset_vars, {
+  print("Reseting all variables in model")
+  reset_all_storage_variables()
+})
+
 # View Variables ---------------------------------------------------------------
 observeEvent(input$debug_view_variables, {
 
