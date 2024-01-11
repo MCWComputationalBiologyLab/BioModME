@@ -35,7 +35,7 @@ library(reshape2)
 library(clipr)
 library(jsonlite)
 #Recently Added ------
-# library(mathml)
+library(mathml)
 
 UNIT_MAPPING <- c(
   nsec = "ns",
