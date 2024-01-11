@@ -1,7 +1,11 @@
 FindIdTEMPsbml <- function(varName) {
   # Searches Id database to find ID corresponding to name
   if (!(is.na(varName) | is.null(varName))) {
+    print("id df-.-.-.-.-.-.-.-.-")
+    print(rv.sbml.temp$id.df[,2])
+    print(varName)
     idx <- which(rv.sbml.temp$id.df[,2] %in% varName)
+    print(idx)
     var.id <- rv.sbml.temp$id.df[idx, 1]
   } else {
     var.id <- NA
@@ -1109,6 +1113,8 @@ LoadSBML_show_progress <- function(sbmlFile, w_sbml, spinner) {
 observeEvent(input$file_input_load_sbml, {
 
   sleep.time <- 5
+  # Reset all storage structures for new input
+  # reset_all_storage_variables()
   
   # Initialize waiter
   spinner <- RandomHTMLSpinner()
@@ -1301,6 +1307,10 @@ observeEvent(input$file_input_load_sbml, {
   
   # Finish load effects --------------------------------------------------------
   
+  
+  # Clean and reset variables ....
+  reset_all_storage_variables
+  
   # Convert SBML temp RV to model RVs
   rv.ID$id.df <- rv.sbml.temp$id.df
   # Seeds
@@ -1321,9 +1331,54 @@ observeEvent(input$file_input_load_sbml, {
   rv.CUSTOM.EQNS$ce.equations <- rv.sbml.temp$ce.equations
   rv.REACTIONLAWS$laws <- rv.sbml.temp$laws
   rv.REACTIONS$reactions <- rv.sbml.temp$reactions
-  # Refresh vars
-  rv.REFRESH$refresh.species.table <- rv.sbml.temp$refresh.species.table
   
+  # Refresh vars
+  rv.REFRESH$refresh.compartment.table <- 
+    rv.REFRESH$refresh.compartment.table + 1
+  
+  rv.REFRESH$refresh.species.table <- 
+    rv.REFRESH$refresh.species.table + 1
+  
+  rv.REFRESH$refresh.param.table <- 
+    rv.REFRESH$refresh.param.table + 1
+  
+  rv.REFRESH$refresh.eqn.table <- 
+    rv.REFRESH$refresh.eqn.table + 1
+  
+  
+  # Reset Temp Variables ---------------------------------------
+  rv.sbml.temp$need.compartment.conversion = FALSE
+  rv.sbml.temp$need.species.conversion = FALSE
+  rv.sbml.temp$need.parameter.conversion = FALSE
+  rv.sbml.temp$comp.df.conv = data.frame()
+  rv.sbml.temp$species.df.conv = data.frame()
+  rv.sbml.temp$parameter.df.conv = data.frame()
+  rv.sbml.temp$id.df = data.frame(matrix(ncol = 2, nrow = 0, dimnames = list(NULL, c("id", "idName"))))
+  rv.sbml.temp$id.comp.seed = 1
+  rv.sbml.temp$id.var.seed = 1
+  rv.sbml.temp$id.param.seed = 1
+  rv.sbml.temp$id.custeqn.seed = 1
+  rv.sbml.temp$id.eqn.seed = 1
+  rv.sbml.temp$id.custeqnaddional.seed = 1
+  rv.sbml.temp$compartments = list()
+  rv.sbml.temp$compartments.df = data.frame()
+  rv.sbml.temp$species = list()
+  rv.sbml.temp$species.df = data.frame()
+  rv.sbml.temp$parameters = list()
+  rv.sbml.temp$parameters.df = data.frame()
+  rv.sbml.temp$cl.reaction = list()
+  rv.sbml.temp$ce.equations = list()
+  rv.sbml.temp$laws = data.frame(
+    Name = c("Mass Action", "Mass Action (Regulated)", "Synthesis", "Degradation (Rate)", "Degradation (Enzyme)", "Michaelis Menten"),
+    BackendName = c("mass_action", "mass_action_w_reg", "synthesis", "degradation_rate", "degradation_by_enzyme", "michaelis_menten"), 
+    Type = c("chemical", "chemical", "chemical", "chemical", "chemical", "enzyme")
+  )
+  rv.sbml.temp$reactions = list()
+  rv.sbml.temp$refresh.species.table = 1
+  
+  print("SKDLFJDSLKFSL****************************************************")
+  print(rv.sbml.temp)
+  print(rv.sbml.temp$id.df)
   # Generate Differential Equations
   solveForDiffEqs()
   # End UI Trigger Events
