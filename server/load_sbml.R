@@ -1,11 +1,7 @@
 FindIdTEMPsbml <- function(varName) {
   # Searches Id database to find ID corresponding to name
   if (!(is.na(varName) | is.null(varName))) {
-    print("id df-.-.-.-.-.-.-.-.-")
-    print(rv.sbml.temp$id.df[,2])
-    print(varName)
     idx <- which(rv.sbml.temp$id.df[,2] %in% varName)
-    print(idx)
     var.id <- rv.sbml.temp$id.df[idx, 1]
   } else {
     var.id <- NA

@@ -1,10 +1,22 @@
 
+FindIdName <- function(Id, id_df) {
+  # Searches Id database to find ID corresponding to name
+  if (!(is.na(Id) | is.null(Id))) {
+    idx <- which(id_df[,1] %in% Id)
+    var.name <- id_df[idx, 2]
+  } else {
+    var.name <- NA
+  }
+  
+  return(var.name)
+}
 
 
-
-createSBML <- function(model) {
+createSBML <- function(model, id_df) {
   # Takes model object of class SBML and converts it to filename.xml
   
+  
+
   # Open file connection
   # f.id <- file(filename, "w")
   
@@ -114,7 +126,7 @@ createSBML <- function(model) {
         name       <- entry$name
         init.conc  <- entry$initialConcentration
         sub.units  <- entry$substanceUnits
-        compart    <- entry$compartment
+        compart    <- FindIdName(entry$compartment, id_df)
         cont       <- entry$constant
         bc         <- entry$boundaryCondition
         
@@ -195,7 +207,7 @@ createSBML <- function(model) {
           out <- c(out, "<listOfReactants>")
           # reactants <- strsplit(entry$reactants, ", ")[[1]]
           for (j in seq_along(r.reactants)) {
-            r <- r.reactants[j]
+            r <- FindIdName(r.reactants[j], id_df)
             s <- 1
             out <- c(out, 
                      paste0("<speciesReference species=", '"', r, '" ',
@@ -211,7 +223,7 @@ createSBML <- function(model) {
           out <- c(out, "<listOfProducts>")
           # products <- strsplit(entry$products, ", ")[[1]]
           for (j in seq_along(r.products)) {
-            p <- r.products[j]
+            p <- FindIdName(r.products[j], id_df)
             s <- 1
             out <- c(out, 
                      paste0("<speciesReference species=", '"', p, '" ',
@@ -227,7 +239,7 @@ createSBML <- function(model) {
           out <- c(out, "<listOfModifiers>")
           # modifiers <- strsplit(entry$modifiers, ", ")[[1]]
           for (j in seq_along(r.modifiers)) {
-            m <- r.modifiers[j]
+            m <- FindIdName(r.modifiers[j], id_df)
             out <- c(out, 
                      paste0("<modifierSpeciesReference species=", '"', m, '"',
                             "/>"))
@@ -260,7 +272,7 @@ createSBML <- function(model) {
           if (!is.na(entry$parameters)) {
             param.ml <- c()
             for (j in seq_along(r.parameters)) {
-              to.add <- paste0("<parameter id=", '"', r.parameters[j], '" ',
+              to.add <- paste0("<parameter id=", '"', r.par.name[j], '" ',
                                "name=", '"', r.par.name[j], '" ',
                                "value=", '"', r.par.value[j], '"',
                                "/>")

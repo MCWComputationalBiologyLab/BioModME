@@ -32,7 +32,7 @@ rv.COMPARTMENTS <- reactiveValues(
   #   ID
   #   Value
   #   Volume (volume variable: V1, V2 etc)
-  #   par.Id (id associated with volume)
+  #   par.id (id associated with volume)
   #   Unit
   #   UnitDescription
   #   BaseUnit  

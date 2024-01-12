@@ -268,6 +268,7 @@ FindId <- function(varName) {
   return(var.id)
 }
 
+
 # UI Render --------------------------------------------------------------------
 output$createVar_species_compartment_options <- renderUI({
   if (length(rv.COMPARTMENTS$compartments) > 1) {

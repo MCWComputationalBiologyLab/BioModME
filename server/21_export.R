@@ -104,7 +104,9 @@ output$export_save_as_sbml <- downloadHandler(
     species      <- createSBMLSpeciesExport(rv.SPECIES$species)
     parameters   <- createSBMLParameterExport(rv.PARAMETERS$parameters)
     reactions    <- createSBMLReactionExport(rv.REACTIONS$reactions,
-                                             rv.PARAMETERS$parameters)
+                                             rv.PARAMETERS$parameters,
+                                             rv.COMPARTMENTS$compartments,
+                                             rv.ID$id.df)
     functions    <- createSBMLFunctionExport(rv.CUSTOM.LAWS$cl.reaction)
     rules        <- createSBMLRulesExport(rv.CUSTOM.EQNS$ce.equations)
     # Build SBML Output Model
@@ -118,7 +120,7 @@ output$export_save_as_sbml <- downloadHandler(
     f.name <- paste(input$export_model_file_name, ".xml", sep = "")
 
     # Write SBML
-    sbml.model <- createSBML(model)
+    sbml.model <- createSBML(model, rv.ID$id.df)
     xml.model  <- xmlParse(sbml.model)
     XML::saveXML(xml.model, file)
   }
@@ -217,7 +219,10 @@ createSBMLFunctionExport <- function(customLawsRV) {
   return(functions)
 }
 
-createSBMLReactionExport <- function(reactionRV, parameterRV) {
+createSBMLReactionExport <- function(reactionRV, 
+                                     parameterRV, 
+                                     compartmentRV, 
+                                     idRV) {
   # Converts reaction reactive variable to sbml exportable form
   # @reactionRV - (list) of list of parameters (rv.REACTIONS$reactions)
   reactions <- vector(mode = "list", length = length(reactionRV))
@@ -250,9 +255,31 @@ createSBMLReactionExport <- function(reactionRV, parameterRV) {
     }
     
     par.vals <- collapseVector(par.vals)
+    # browser()
+    # I want to replace volumes here with compartment names to match typical 
+    # sbml format.
+    # Grab vector of compartment volume names
+    # result_vector <- sapply(input_vector, function(x) findVarId(x, id.dict))
+    comp.vol.names <- unname(sapply(compartmentRV, get, x = "par.id"))
+    comp.vol.names <- 
+      unname(
+        sapply(
+          comp.vol.names, 
+          function(x) FindIdName(x, idRV)
+        )
+      )
+    comp.names <- unname(sapply(compartmentRV, get, x = "Name"))
     
+    # Break string law into components.  
+    # Check if components match volume terms
+    # Do proper replacing and storing.
     string.law  <- reactionRV[[i]]$String.Rate.Law
-    
+    for (j in seq_along(comp.vol.names)) {
+      string.law <- 
+        SubstituteSingleRateLawTerm(string.law, 
+                                    comp.vol.names[j], 
+                                    comp.names[j])
+    }
     
     # Store to list entry
     entry <- list(id = id,
