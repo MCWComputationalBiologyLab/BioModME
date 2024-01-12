@@ -102,7 +102,9 @@ output$export_save_as_sbml <- downloadHandler(
     # Functions to create SBML model
     compartments <- createSBMLCompartmentExport(rv.COMPARTMENTS$compartments)
     species      <- createSBMLSpeciesExport(rv.SPECIES$species)
-    parameters   <- createSBMLParameterExport(rv.PARAMETERS$parameters)
+    parameters   <- createSBMLParameterExport(rv.PARAMETERS$parameters,
+                                              rv.COMPARTMENTS$compartments,
+                                              rv.ID$id.df)
     reactions    <- createSBMLReactionExport(rv.REACTIONS$reactions,
                                              rv.PARAMETERS$parameters,
                                              rv.COMPARTMENTS$compartments,
@@ -302,13 +304,18 @@ createSBMLReactionExport <- function(reactionRV,
   return(reactions)
 }
 
-createSBMLParameterExport <- function(parameterRV) {
+createSBMLParameterExport <- function(parameterRV,
+                                      compartmentRV,
+                                      idRV) {
   # Converts parameter reactive variable to sbml exportable form
   # @parameterRV - (list) of list of parameters (rv.PARAMETERS$parameters)
   
   parameters <- vector(mode = "list", length = length(parameterRV))
+  comp.vol.names <- unname(sapply(compartmentRV, get, x = "par.id"))
+  idx.to.remove <- c()
   
   for (i in seq_along(parameterRV)) {
+    
     # Grab items from RV that correspond to SBML structure
     id      <- parameterRV[[i]]$ID
     name    <- parameterRV[[i]]$Name
@@ -320,10 +327,14 @@ createSBMLParameterExport <- function(parameterRV) {
                   name = name,
                   value = value,
                   constant = cont)
-    
     parameters[[i]] <- entry
+    
+    if (id %in% comp.vol.names) {
+      idx.to.remove <- c(idx.to.remove, i)
+    }
   }
   
+  parameters <- parameters[-idx.to.remove]
   return(parameters)
 }
 
