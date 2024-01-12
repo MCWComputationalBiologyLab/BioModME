@@ -172,7 +172,6 @@ createSBML <- function(model, id_df) {
       out <- c(out, "<listOfReactions>")
       for (i in seq_along(reactions)) {
         entry <- reactions[[i]]
-        print(entry)
         # Create initial meta-tag (id, name, reversible, fast)
         id         <- entry$id
         name       <- entry$name
