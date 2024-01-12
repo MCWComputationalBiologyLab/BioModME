@@ -535,14 +535,14 @@ output$export_latex_document <- downloadHandler(
 output$table_species_export <- renderDT({
   for.table <- rv.SPECIES$species.df %>%
     select("Name", "Value", "Unit", "Compartment", "Description")
-  
+
   DT::datatable(
     for.table,
     rownames = FALSE,
-    editable = TRUE,
     class = "cell-border stripe",
     extensions = c('Buttons', "RowReorder", "ColReorder"),
     options = list(
+      pageLength = -1,
       # autoWidth = TRUE,
       # ordering = TRUE,
       # order = list(c(0 , 'asc')),
