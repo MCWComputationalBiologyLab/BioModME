@@ -623,6 +623,7 @@ rv.sbml.temp <- reactiveValues(
   # State Variabels
   compartments = list(),
   compartments.df = data.frame(),
+  compartment.vol = vector(), # store volume parameter to transfer to parameters
   species = list(),
   species.df = data.frame(),
   parameters = list(),

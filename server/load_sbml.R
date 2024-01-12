@@ -102,7 +102,6 @@ sbml_2_biomodme_compartments <- function(sbml.model) {
     # Store id to db
     idx.to.add <- nrow(rv.sbml.temp$id.df) + 1
     rv.sbml.temp$id.df[idx.to.add, ] <- c(new.id$id, comp.vol.names[i])
-    
   }
   
   comp.list     <- vector("list", n.compartments)
@@ -123,19 +122,23 @@ sbml_2_biomodme_compartments <- function(sbml.model) {
     
     comp.vol.list[[i]]$Name            <- comp.vol.names[i]
     comp.vol.list[[i]]$ID              <- vol.ids[i]
-    comp.vol.list[[i]]$Value           <- comp.values[i]
+    comp.vol.list[[i]]$Value           <- as.numeric(comp.values[i])
     comp.vol.list[[i]]$Unit            <- rv.UNITS$units.base$Volume
     comp.vol.list[[i]]$UnitDescription <- "volume"
     comp.vol.list[[i]]$BaseUnit        <- rv.UNITS$units.base$Volume
-    comp.vol.list[[i]]$BaseValue       <- comp.values[i]
+    comp.vol.list[[i]]$BaseValue       <- as.numeric(comp.values[i])
     comp.vol.list[[i]]$Description     <- ""
     comp.vol.list[[i]]$Type            <- "Compartment"
     comp.vol.list[[i]]$Type.note       <- "Volume"
   }
-  # TODO: Store compartment volume to  parameters
+  
+  # Store compartment volume infomation for load in parameters
+  rv.sbml.temp$compartment.vol <- comp.vol.list
+  
+  # Apply names to comp list
   names(comp.list) <- comp.ids
   
-  # Assign to RV
+  # Assign compartments to  temporary RV
   rv.sbml.temp$compartments    <- comp.list
   rv.sbml.temp$compartments.df <- bind_rows(rv.sbml.temp$compartments)
 }
@@ -305,6 +308,13 @@ sbml_2_biomodme_parameters <- function(sbml.model) {
   
   names(par.list) <- par.ids
   
+  # Pull/package compartment packages for addition to parameters
+  comp.vols <- rv.sbml.temp$compartment.vol 
+  names(comp.vols) <-  unname(sapply(comp.vols, get, x = "ID"))
+
+  # Combine compartment volumes with parameters
+  par.list <- c(comp.vols, par.list)
+
   # Store information to our parameter tables
   rv.sbml.temp$parameters    <- par.list
   rv.sbml.temp$parameters.df <- bind_rows(rv.sbml.temp$parameters)
