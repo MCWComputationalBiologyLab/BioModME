@@ -130,8 +130,11 @@ sbml_2_biomodme_compartments <- function(sbml.model) {
     comp.vol.list[[i]]$Description     <- ""
     comp.vol.list[[i]]$Type            <- "Compartment"
     comp.vol.list[[i]]$Type.note       <- "Volume"
+    comp.vol.list[[i]]$Used.In         <- NA
+    comp.vol.list[[i]]$Custom          <- FALSE
+    comp.vol.list[[i]]$ConstantValue   <- TRUE
   }
-  
+
   # Store compartment volume infomation for load in parameters
   rv.sbml.temp$compartment.vol <- comp.vol.list
   
@@ -1368,6 +1371,7 @@ observeEvent(input$file_input_load_sbml, {
   rv.sbml.temp$id.custeqnaddional.seed = 1
   rv.sbml.temp$compartments = list()
   rv.sbml.temp$compartments.df = data.frame()
+  rv.sbml.temp$compartment.vol = vector()
   rv.sbml.temp$species = list()
   rv.sbml.temp$species.df = data.frame()
   rv.sbml.temp$parameters = list()
@@ -1382,9 +1386,6 @@ observeEvent(input$file_input_load_sbml, {
   rv.sbml.temp$reactions = list()
   rv.sbml.temp$refresh.species.table = 1
   
-  print("SKDLFJDSLKFSL****************************************************")
-  print(rv.sbml.temp)
-  print(rv.sbml.temp$id.df)
   # Generate Differential Equations
   solveForDiffEqs()
   # End UI Trigger Events
