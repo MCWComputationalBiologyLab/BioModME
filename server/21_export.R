@@ -239,6 +239,7 @@ createSBMLReactionExport <- function(reactionRV,
     products   <- reactionRV[[i]]$Products.id
     modifiers  <- reactionRV[[i]]$Modifiers.id
     parameters <- reactionRV[[i]]$Parameters.id
+    eqn.text   <- reactionRV[[i]]$Equation.Text
     func.name  <- reactionRV[[i]]$Reaction.Law
     func.id    <- reactionRV[[i]]$Backend.Call
     if (!isTruthy(func.id)) {
@@ -294,6 +295,7 @@ createSBMLReactionExport <- function(reactionRV,
                   parameters = parameters,
                   parameter.names = parameter.names,
                   parameter.values = par.vals,
+                  eqn.text = eqn.text,
                   string.law = string.law,
                   function.name = func.name,
                   function.id = func.id)

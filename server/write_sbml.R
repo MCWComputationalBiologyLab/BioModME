@@ -15,8 +15,6 @@ FindIdName <- function(Id, id_df) {
 createSBML <- function(model, id_df) {
   # Takes model object of class SBML and converts it to filename.xml
   
-  
-
   # Open file connection
   # f.id <- file(filename, "w")
   
@@ -201,19 +199,24 @@ createSBML <- function(model, id_df) {
                               r.modifiers, 
                               r.parameters))
         
+        # Determine stoich coefficients
+        # browser()
+        stoich.coef <- extract_coefficients(entry$eqn.text)
+        stoic.reactant <- stoich.coef$reactants
+        stoic.products <- stoich.coef$products
+        
         # Build <listOfSpecies>
         if (!is.na(entry$reactants)) {
           out <- c(out, "<listOfReactants>")
           # reactants <- strsplit(entry$reactants, ", ")[[1]]
           for (j in seq_along(r.reactants)) {
             r <- FindIdName(r.reactants[j], id_df)
-            s <- 1
+            s <- stoic.reactant[j]
             out <- c(out, 
                      paste0("<speciesReference species=", '"', r, '" ',
                             "stoichiometry=", '"', s, '"',
                             "/>"))
           }
-          
           out <- c(out, "</listOfReactants>")
         }
         
@@ -223,7 +226,7 @@ createSBML <- function(model, id_df) {
           # products <- strsplit(entry$products, ", ")[[1]]
           for (j in seq_along(r.products)) {
             p <- FindIdName(r.products[j], id_df)
-            s <- 1
+            s <- stoic.products[j]
             out <- c(out, 
                      paste0("<speciesReference species=", '"', p, '" ',
                             "stoichiometry=", '"', s, '"',
@@ -259,7 +262,10 @@ createSBML <- function(model, id_df) {
         
         if (write.raw.mathml) {
           # Write rate law in mathml version
-          
+          print(paste0("<kineticLaw>",
+                       "<math xmlns=\"http://www.w3.org/1998/Math/MathML\">",
+                       string2mathml(str.law),
+                       "</math>"))
           out <- c(out, 
                    paste0("<kineticLaw>",
                           "<math xmlns=\"http://www.w3.org/1998/Math/MathML\">",
