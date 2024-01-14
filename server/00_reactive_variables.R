@@ -494,7 +494,7 @@ rv.UNITS <- reactiveValues(
                      "Flow" = "l_per_min",
                      "Count" = "mol",
                      "For.Var" = "mol"),
-  units.choices = list("Duration" = measurements::conv_unit_options$duration,
+  units.choices = list("Duration" = DURATION_CHOICES,
                         "Energy" =  measurements::conv_unit_options$energy,
                         "Length" =  measurements::conv_unit_options$length,
                         "Mass" =    measurements::conv_unit_options$mass,
