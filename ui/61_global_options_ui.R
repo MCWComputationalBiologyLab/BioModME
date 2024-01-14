@@ -15,8 +15,8 @@ TAB_GLOBAL_OPTIONS <-
             pickerInput(
               inputId = "GO_base_duration",
               label = "Duration",
-              choices = DURATION_CHOICES,
-              selected = DURATION_CHOICES[5]
+              choices = c("s", "min"),
+              selected = "min"
             ),
             pickerInput(
               inputId = "GO_base_energy",

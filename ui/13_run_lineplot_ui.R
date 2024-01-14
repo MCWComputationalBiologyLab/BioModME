@@ -576,7 +576,8 @@ TAB_RUN_LINEPLOT <- tabItem(
                       pickerInput(
                         inputId = "plot_execute_time_unit",
                         label = "Unit",
-                        choices = measurements::conv_unit_options$duration
+                        choices = DURATION_CHOICES,
+                        selected = "min"
                       )
                     )
                   )
