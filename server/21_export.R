@@ -649,9 +649,9 @@ output$table_reactions_export <- renderDT({
       lengthMenu = list(c(-1), c("All")),
       buttons = list(
         "copy",
-        list(extend = "csv",   filename = "DifferentialEquations"),
-        list(extend = "excel", filename = "DifferentialEquations"),
-        list(extend = "pdf",   filename = "DifferentialEquations"),
+        list(extend = "csv",   filename = "Reactions"),
+        list(extend = "excel", filename = "Reactions"),
+        list(extend = "pdf",   filename = "Reactions"),
         "print"
       )
     )
