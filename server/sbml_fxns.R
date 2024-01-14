@@ -608,6 +608,7 @@ ExtractReactionMathFromSBML <- function(doc,
     # Extraction of reaction information if not function based
     if (!equation.uses.function) {
       reaction.law <- "CUSTOM"
+
       # Convert mathml to string rate law for r
       string.rate.law <- rmp(gsub(" ", "", convertML2R(mathml.exp)))
       
@@ -714,6 +715,8 @@ FindFunctionDefInformation <- function(doc, functionDefList, sbmlList) {
       
       # Extract mathml expression and make string
       mathml.exp <- reactions[[j]][["kineticLaw"]][["math"]][[1]]
+      print("TEST LOAD YUYUUUUUUUUUUUUUUUUUUUUUUUUUUUUU")
+      print(mathml.exp)
       mathml.exp.string <- toString(reactions[[j]][["kineticLaw"]][["math"]])
       # Search if the function id exists in the mathml string
       if (grepl(function.id, mathml.exp.string, fixed = TRUE)) {
@@ -1134,7 +1137,11 @@ FindIDReactionStructure <- function(structure2Search) {
 
 # Resulting in following result: 
 # "C*V1p*(C+K6)^-1"
-
+#
+# Test example for my refernece:
+# test <- xmlTreeParse(eqn, ignoreBlanks = TRUE)
+# print(test[[1]][[1]])
+# convertML2R(test[[1]][[1]])
 
 convertML2R <- function(node) {
   UseMethod("convertML2R", node)
