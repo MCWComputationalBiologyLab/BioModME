@@ -176,7 +176,43 @@ rename_variables <- function(lst, old_names, new_names) {
 }
 
 createSBMLRulesExport <- function(customEqnsRV) {
+  # Our rules would need to extract the following: 
+  # varName    <- entry$variable
+  # mathml.law <- entry$mathml.eqn
+  # 
+  # The relevant structure of customEQNSRV is list item: Equation
+  # "varName = mathml.law"
+  # ex. varProd = Var1 + Var2/Var3
   
+  # It would appear we need to break our equation and separate varName 
+  # vs mathml.law.
+  # We would have to convert the equation split to content mathml. 
+  
+  rules <- vector(mode = "list", length = length(customEqnsRV))
+  
+  for (i in seq_along(customEqnsRV)) {
+    entry <- customEqnsRV[[i]]
+    
+    # Build Variables
+    eqn <- strsplit(entry$Equation, "=")[[1]]
+    print(eqn)
+    varName <- gsub(" ", "", eqn[1])
+    string.law <- gsub(" ", "", eqn[2])
+    print(varName)
+    print(string.law)
+    # Convert to mathml 
+    mathml.law <- string2mathml(string.law)
+    mathml.law <- 
+      paste0('<math xmlns=\"http://www.w3.org/1998/Math/MathML\">',
+             mathml.law,
+             "</math>")
+    out <- list(variable = varName,
+                mathml.eqn = mathml.law)
+    
+    rules[[i]] <- out
+  }
+  print(rules)
+  return(rules)
 }
 
 createSBMLFunctionExport <- function(customLawsRV) {
