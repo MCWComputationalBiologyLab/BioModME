@@ -475,6 +475,8 @@ ExtractReactionBaseFromSBML <- function(reactionEntry) {
       # Grab the species from tibble, collapse, add to output
       out.list$Reactants <- collapseVector(node.reactants %>% pull(species),
                                            convertBlank = TRUE)
+      out.list$Reactants.Stoich <- 
+        collapseVector(node.reactants %>% pull(stoichiometry))
     } else if (node.name == "listOfProducts") {
       # Convert node to Tibble
       node.products <- Attributes2Tibble(current.node$listOfProducts)
@@ -482,6 +484,8 @@ ExtractReactionBaseFromSBML <- function(reactionEntry) {
       # Grab the species from tibble, collapse, add to output
       out.list$Products <- collapseVector(node.products %>% pull(species),
                                           convertBlank = TRUE)
+      out.list$Products.Stoich <- 
+        collapseVector(node.products %>% pull(stoichiometry))
     } else if (node.name == "listOfModifiers") {
       # Convert node to Tibble
       node.modifiers <- Attributes2Tibble(current.node$listOfModifiers)
@@ -511,6 +515,8 @@ ExtractReactionBaseFromSBML <- function(reactionEntry) {
       } 
     } 
   }
+  print("outlist")
+  print(out.list)
   return(out.list)
 }
 
@@ -637,7 +643,9 @@ ExtractReactionMathFromSBML <- function(doc,
     reactionList[[i]] <- list(
       "Reaction.Law"     = reaction.law,
       "Reactants"        = reactants.collapsed,
-      "Products"         = products.collapsed, 
+      "Products"         = products.collapsed,
+      "Reactants.Stoich" = reactionList[[i]]$Reactants.Stoich,
+      "Products.Stoich"  = reactionList[[i]]$Products.Stoich,
       "Modifiers"        = modifiers.collapsed,
       "Parameters"       = par.collapsed,
       "Equation.Text"    = string.rate.law,
