@@ -546,7 +546,7 @@ sbml_2_biomodme_reactions <- function(sbml.model) {
   
   for (i in seq_len(nrow(reactions))) {
     entry <- reactions[i,]
-    
+    print(entry)
     # Extract Reaction Main Inof
     ID.to.add   <- entry %>% pull(id)
     eqn.display <- entry %>% pull(description)
@@ -560,7 +560,8 @@ sbml_2_biomodme_reactions <- function(sbml.model) {
     law.display   <- entry %>% pull(Reaction.Law)
     law.name      <- paste0("user_custom_law_", law.display)
     law.id        <- FindIdTEMPsbml(law.name)
-    string.law <- entry %>% pull(Equation.Text)
+    string.law    <- entry %>% pull(Equation.Text)
+    is.reversible <- entry %>% pull(reversible)
     
     # IDK if this is the best way to really do this but it'll be a bandaid
     # for now.  Search for compartment names in string.law and replace them
@@ -641,11 +642,18 @@ sbml_2_biomodme_reactions <- function(sbml.model) {
     compartment    <- rv.sbml.temp$species[[species.id[1]]]$Compartment
     compartment.id <- rv.sbml.temp$species[[species.id[1]]]$Compartment.id
     
+    # Grab Stoichiometry terms
+    stoich.react <- SplitEntry(entry %>% pull(Reactants.Stoich))
+    stoich.prod  <- SplitEntry(entry %>% pull(Products.Stoich))
+    
     # Build equation text, latex, and mathjax
-    eqn.builds <- BuildCustomEquationText(reactants,
-                                          products,
-                                          modifiers,
-                                          parameters)
+    eqn.builds <- BuildStringEquation(reactants,
+                                      products,
+                                      modifiers,
+                                      parameters,
+                                      stoich.react,
+                                      stoich.prod,
+                                      reversible = is.reversible)
     
     text.eqn    <- eqn.builds$text
     latex.eqn   <- eqn.builds$latex
@@ -944,9 +952,10 @@ LoadSBML_show_progress <- function(sbmlFile, w_sbml, spinner) {
   Sys.sleep(sleep.time)
   
   w_sbml$update(html = waiter_fxn("Extracting Rules", spinner, 35))
+  
   # Extract Rules_______________________________________________________________
   if (!is.null(modelList$listOfRules)) {
-    
+    browser()
     rules.header <- Attributes2Tibble(modelList$listOfRules)
     # Add error check to avoid pull on non existant columns
     if (is.null(rules.header$variable)) {
