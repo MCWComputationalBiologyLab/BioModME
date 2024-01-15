@@ -15,7 +15,7 @@
 #' @export
 extract_coefficients <- function(equation) {
   # Split the equation into reactants and products
-  parts <- strsplit(equation, "\\+|<->|->")[[1]]
+  parts <- strsplit(equation, "\\+|<->|->|-->")[[1]]
 
   # Remove terms in brackets or parentheses
   cleaned_parts <- str_replace_all(parts, "\\([^\\)]+\\)|\\[[^\\]]+\\]", "")
@@ -27,7 +27,7 @@ extract_coefficients <- function(equation) {
   coefficients <- unlist(coefficients)
   
   # Calculate the number of reactants and products
-  eqn_split <- gsub("\\s", "", strsplit(equation, "\\<->|->")[[1]])
+  eqn_split <- gsub("\\s", "", strsplit(equation, "\\<->|->|-->")[[1]])
   search.parts <- gsub("\\s", "", cleaned_parts)
   found.in.reactant <- 
     sapply(search.parts, 
