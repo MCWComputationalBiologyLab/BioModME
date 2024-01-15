@@ -515,8 +515,6 @@ ExtractReactionBaseFromSBML <- function(reactionEntry) {
       } 
     } 
   }
-  print("outlist")
-  print(out.list)
   return(out.list)
 }
 
@@ -723,8 +721,6 @@ FindFunctionDefInformation <- function(doc, functionDefList, sbmlList) {
       
       # Extract mathml expression and make string
       mathml.exp <- reactions[[j]][["kineticLaw"]][["math"]][[1]]
-      print("TEST LOAD YUYUUUUUUUUUUUUUUUUUUUUUUUUUUUUU")
-      print(mathml.exp)
       mathml.exp.string <- toString(reactions[[j]][["kineticLaw"]][["math"]])
       # Search if the function id exists in the mathml string
       if (grepl(function.id, mathml.exp.string, fixed = TRUE)) {

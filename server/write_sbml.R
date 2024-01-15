@@ -262,10 +262,6 @@ createSBML <- function(model, id_df) {
         
         if (write.raw.mathml) {
           # Write rate law in mathml version
-          print(paste0("<kineticLaw>",
-                       "<math xmlns=\"http://www.w3.org/1998/Math/MathML\">",
-                       string2mathml(str.law),
-                       "</math>"))
           out <- c(out, 
                    paste0("<kineticLaw>",
                           "<math xmlns=\"http://www.w3.org/1998/Math/MathML\">",

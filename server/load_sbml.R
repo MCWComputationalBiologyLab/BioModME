@@ -546,7 +546,6 @@ sbml_2_biomodme_reactions <- function(sbml.model) {
   
   for (i in seq_len(nrow(reactions))) {
     entry <- reactions[i,]
-    print(entry)
     # Extract Reaction Main Inof
     ID.to.add   <- entry %>% pull(id)
     eqn.display <- entry %>% pull(description)
@@ -629,8 +628,6 @@ sbml_2_biomodme_reactions <- function(sbml.model) {
     }
     
     parameters.id <- c()
-    # print("Parameters")
-    # print(parameters)
     for (j in seq_along(parameters)) {
       parameters.id[j] <- FindIdTEMPsbml(parameters[j])
     }
@@ -955,7 +952,6 @@ LoadSBML_show_progress <- function(sbmlFile, w_sbml, spinner) {
   
   # Extract Rules_______________________________________________________________
   if (!is.null(modelList$listOfRules)) {
-    browser()
     rules.header <- Attributes2Tibble(modelList$listOfRules)
     # Add error check to avoid pull on non existant columns
     if (is.null(rules.header$variable)) {
@@ -996,7 +992,6 @@ LoadSBML_show_progress <- function(sbmlFile, w_sbml, spinner) {
     }
     
     function.definitions <- NULL
-    # print(func.info)
     tryCatch({
       function.definitions <- ExtractFunctionDefFromSBML(doc, func.info)
       function.definitions <- FindFunctionDefInformation(doc,

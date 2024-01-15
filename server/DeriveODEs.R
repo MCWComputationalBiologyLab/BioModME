@@ -196,9 +196,6 @@ DeriveEquationBasedODEs <- function(species.list.entry,
       } else {
         inReactant <- FALSE
       }
-      print("law")
-      print(eqn)
-      print(law)
       # Check for mass action reaction, then check stoich for modifiers
       if (law == "mass_action" || law == "mass_action_w_reg") {
         #if in mass action, search mass action df
@@ -207,7 +204,6 @@ DeriveEquationBasedODEs <- function(species.list.entry,
         } else if (law == "mass_action_w_reg") {
           ma.list <- reactions.rv$massActionwReg[[eqn.id]]
         }
-        print(ma.list)
         # check for stoich modifier
         if (inReactant) {
           # Determine which index
@@ -222,9 +218,6 @@ DeriveEquationBasedODEs <- function(species.list.entry,
           product.names <- strsplit(ma.list$Products, ", ")[[1]]
           idx <- which(product.names %in% name)
           stoich <- strsplit(ma.list$p.stoichiometry, ", ")[[1]]
-          print(product.names)
-          print(idx)
-          print(stoich)
           if (stoich[idx] != "1") {
             applyMultiple <- TRUE
             multiple <- stoich[idx]

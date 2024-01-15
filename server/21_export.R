@@ -195,11 +195,8 @@ createSBMLRulesExport <- function(customEqnsRV) {
     
     # Build Variables
     eqn <- strsplit(entry$Equation, "=")[[1]]
-    print(eqn)
     varName <- gsub(" ", "", eqn[1])
     string.law <- gsub(" ", "", eqn[2])
-    print(varName)
-    print(string.law)
     # Convert to mathml 
     mathml.law <- string2mathml(string.law)
     mathml.law <- 
@@ -211,7 +208,6 @@ createSBMLRulesExport <- function(customEqnsRV) {
     
     rules[[i]] <- out
   }
-  print(rules)
   return(rules)
 }
 
