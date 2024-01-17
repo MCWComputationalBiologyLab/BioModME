@@ -7,13 +7,13 @@ onStart <- observe({
   
   # Grab file names from base_models
   base.models <- list.files(file.path("base_models"))
-  
+
   updateSelectInput(
     session = session,
     inputId = "SI_repos_base_choices",
     choices = base.models
   )
-  
+
   shinyjs::hide("GO_species_unit_choice")
   
   
@@ -46,7 +46,8 @@ onStart <- observe({
   #     placement = "bottom"
   #   )
   # )
-  
+  # print("DDFJDF")
+  # print(DURATION_CHOICES)
   # Remove this observer after first iteration
   onStart$destroy()
 })

@@ -32,7 +32,7 @@ rv.COMPARTMENTS <- reactiveValues(
   #   ID
   #   Value
   #   Volume (volume variable: V1, V2 etc)
-  #   par.Id (id associated with volume)
+  #   par.id (id associated with volume)
   #   Unit
   #   UnitDescription
   #   BaseUnit  
@@ -494,7 +494,7 @@ rv.UNITS <- reactiveValues(
                      "Flow" = "l_per_min",
                      "Count" = "mol",
                      "For.Var" = "mol"),
-  units.choices = list("Duration" = measurements::conv_unit_options$duration,
+  units.choices = list("Duration" = DURATION_CHOICES,
                         "Energy" =  measurements::conv_unit_options$energy,
                         "Length" =  measurements::conv_unit_options$length,
                         "Mass" =    measurements::conv_unit_options$mass,
@@ -623,6 +623,7 @@ rv.sbml.temp <- reactiveValues(
   # State Variabels
   compartments = list(),
   compartments.df = data.frame(),
+  compartment.vol = vector(), # store volume parameter to transfer to parameters
   species = list(),
   species.df = data.frame(),
   parameters = list(),

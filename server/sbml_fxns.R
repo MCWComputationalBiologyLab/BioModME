@@ -156,11 +156,9 @@ LoadSBML <- function(sbmlFile) {
     reaction.list <- ExtractReactionMathFromSBML(doc, 
                                                  reaction.list,
                                                  function.definitions)
-    
     # Combine Tags With Reaction Math
     reaction.list <- CombineReactionTagsWReactions(reaction.tags,
                                                    reaction.list)
-    
     out[["reactions"]] <- reaction.list
     
   }
@@ -459,7 +457,7 @@ ExtractReactionBaseFromSBML <- function(reactionEntry) {
   # reaction entries but some don't and instead list that information in a 
   # XML node "listOfParameters" on the base level with all parameters. So,
   # we need to check for that. Some seem to have both.
-  
+  # browser()
   out.list <- list("Reactants"  = NA,
                    "Products"   = NA,
                    "Modifiers"  = NA,
@@ -477,6 +475,8 @@ ExtractReactionBaseFromSBML <- function(reactionEntry) {
       # Grab the species from tibble, collapse, add to output
       out.list$Reactants <- collapseVector(node.reactants %>% pull(species),
                                            convertBlank = TRUE)
+      out.list$Reactants.Stoich <- 
+        collapseVector(node.reactants %>% pull(stoichiometry))
     } else if (node.name == "listOfProducts") {
       # Convert node to Tibble
       node.products <- Attributes2Tibble(current.node$listOfProducts)
@@ -484,6 +484,8 @@ ExtractReactionBaseFromSBML <- function(reactionEntry) {
       # Grab the species from tibble, collapse, add to output
       out.list$Products <- collapseVector(node.products %>% pull(species),
                                           convertBlank = TRUE)
+      out.list$Products.Stoich <- 
+        collapseVector(node.products %>% pull(stoichiometry))
     } else if (node.name == "listOfModifiers") {
       # Convert node to Tibble
       node.modifiers <- Attributes2Tibble(current.node$listOfModifiers)
@@ -610,6 +612,7 @@ ExtractReactionMathFromSBML <- function(doc,
     # Extraction of reaction information if not function based
     if (!equation.uses.function) {
       reaction.law <- "CUSTOM"
+
       # Convert mathml to string rate law for r
       string.rate.law <- rmp(gsub(" ", "", convertML2R(mathml.exp)))
       
@@ -638,7 +641,9 @@ ExtractReactionMathFromSBML <- function(doc,
     reactionList[[i]] <- list(
       "Reaction.Law"     = reaction.law,
       "Reactants"        = reactants.collapsed,
-      "Products"         = products.collapsed, 
+      "Products"         = products.collapsed,
+      "Reactants.Stoich" = reactionList[[i]]$Reactants.Stoich,
+      "Products.Stoich"  = reactionList[[i]]$Products.Stoich,
       "Modifiers"        = modifiers.collapsed,
       "Parameters"       = par.collapsed,
       "Equation.Text"    = string.rate.law,
@@ -1136,7 +1141,11 @@ FindIDReactionStructure <- function(structure2Search) {
 
 # Resulting in following result: 
 # "C*V1p*(C+K6)^-1"
-
+#
+# Test example for my refernece:
+# test <- xmlTreeParse(eqn, ignoreBlanks = TRUE)
+# print(test[[1]][[1]])
+# convertML2R(test[[1]][[1]])
 
 convertML2R <- function(node) {
   UseMethod("convertML2R", node)

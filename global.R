@@ -33,8 +33,6 @@ library(xml2)
 library(katex)
 library(reshape2)
 library(clipr)
-library(jsonlite)
-#Recently Added ------
 library(mathml)
 
 UNIT_MAPPING <- c(

@@ -22,6 +22,7 @@ w.test <- Waiter$new(
   ),
   color = transparent(0.7)
 )
+
 CheckParametersForErrors <- function(parameter, 
                                      speciesList,
                                      parameterList,
@@ -488,7 +489,7 @@ observeEvent(input$eqnCreate_addEqnToVector, {
   #   Edit scripts: modal, solver, textBuilder
   #   Parameter table change, need to add RV storages for new equations
   
-  
+  # browser()
   
   #waiter.rv.REACTIONS$show()
   w.test$show()
@@ -569,7 +570,6 @@ observeEvent(input$eqnCreate_addEqnToVector, {
 
     # Rate Constant Values
     kf.val <- input$TI_mass_action_forward_k_value
-
     # Build Rate Constant Units
     kf.unit <- DetermineRateConstantUnits(
       r.stoich,
@@ -580,12 +580,11 @@ observeEvent(input$eqnCreate_addEqnToVector, {
       rv.UNITS$units.selected$Volume,
       rv.UNITS$units.selected$Duration
     )
-    
     # Convert rate constant units if necessary
     if (kf.unit$unit != kf.unit$unit.base) {
       kf.base.val <- UnitConversion(kf.unit$unit.description,
                                     kf.unit$unit,
-                                    kf.unit$base.unit,
+                                    kf.unit$unit.base,
                                     as.numeric(kf.val))
     } else {
       kf.base.val <- kf.val
@@ -628,7 +627,7 @@ observeEvent(input$eqnCreate_addEqnToVector, {
       if (kr.unit$unit != kr.unit$unit.base) {
         kr.base.val <- UnitConversion(kr.unit$unit.description,
                                       kr.unit$unit,
-                                      kr.unit$base.unit,
+                                      kr.unit$unit.base,
                                       as.numeric(kr.val))
       } else {
         kr.base.val <- kr.val
@@ -773,7 +772,7 @@ observeEvent(input$eqnCreate_addEqnToVector, {
         if (u$unit != u$unit.base) {
           base.val <- UnitConversion(u$unit.d,
                                      u$unit,
-                                     u$base.unit,
+                                     u$unit.base,
                                      as.numeric(FM.vals[i]))
         } else {
           base.val <- FM.vals[i]
@@ -813,7 +812,7 @@ observeEvent(input$eqnCreate_addEqnToVector, {
       if (kf.unit$unit != kf.unit$unit.base) {
         kf.base.val <- UnitConversion(kf.unit$unit.description,
                                       kf.unit$unit,
-                                      kf.unit$base.unit,
+                                      kf.unit$unit.base,
                                       as.numeric(kf.val))
       } else {
         kf.base.val <- kf.val
@@ -873,7 +872,7 @@ observeEvent(input$eqnCreate_addEqnToVector, {
           if (u$unit != u$unit.base) {
             base.val <- UnitConversion(u$unit.d,
                                        u$unit,
-                                       u$base.unit,
+                                       u$unit.base,
                                        as.numeric(RM.vals[i]))
           } else {
             base.val <- RM.vals[i]
@@ -907,7 +906,7 @@ observeEvent(input$eqnCreate_addEqnToVector, {
         if (kr.unit$unit != kr.unit$unit.base) {
           kr.base.val <- UnitConversion(kr.unit$unit.description,
                                         kr.unit$unit,
-                                        kr.unit$base.unit,
+                                        kr.unit$unit.base,
                                         as.numeric(kr.val))
         } else {
           kr.base.val <- kr.val

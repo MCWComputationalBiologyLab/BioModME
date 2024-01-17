@@ -59,6 +59,16 @@ TAB_DEBUG <-
         
       )
     ),
+    hr(),
+    tags$h3("Reset all variables"),
+    actionButton(
+      inputId = "bttn_debug_reset_vars",
+      label = "Reset Variables"
+    ),
+    actionButton(
+      inputId = "bttn_debug_display_units",
+      label = "Print Units"
+    ),
     hr(), hr(), hr(),
     fluidRow(
       column(

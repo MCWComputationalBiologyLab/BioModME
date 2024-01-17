@@ -102,7 +102,6 @@ sbml_2_biomodme_compartments <- function(sbml.model) {
     # Store id to db
     idx.to.add <- nrow(rv.sbml.temp$id.df) + 1
     rv.sbml.temp$id.df[idx.to.add, ] <- c(new.id$id, comp.vol.names[i])
-    
   }
   
   comp.list     <- vector("list", n.compartments)
@@ -123,19 +122,26 @@ sbml_2_biomodme_compartments <- function(sbml.model) {
     
     comp.vol.list[[i]]$Name            <- comp.vol.names[i]
     comp.vol.list[[i]]$ID              <- vol.ids[i]
-    comp.vol.list[[i]]$Value           <- comp.values[i]
+    comp.vol.list[[i]]$Value           <- as.numeric(comp.values[i])
     comp.vol.list[[i]]$Unit            <- rv.UNITS$units.base$Volume
     comp.vol.list[[i]]$UnitDescription <- "volume"
     comp.vol.list[[i]]$BaseUnit        <- rv.UNITS$units.base$Volume
-    comp.vol.list[[i]]$BaseValue       <- comp.values[i]
+    comp.vol.list[[i]]$BaseValue       <- as.numeric(comp.values[i])
     comp.vol.list[[i]]$Description     <- ""
     comp.vol.list[[i]]$Type            <- "Compartment"
     comp.vol.list[[i]]$Type.note       <- "Volume"
+    comp.vol.list[[i]]$Used.In         <- NA
+    comp.vol.list[[i]]$Custom          <- FALSE
+    comp.vol.list[[i]]$ConstantValue   <- TRUE
   }
-  # TODO: Store compartment volume to  parameters
+
+  # Store compartment volume infomation for load in parameters
+  rv.sbml.temp$compartment.vol <- comp.vol.list
+  
+  # Apply names to comp list
   names(comp.list) <- comp.ids
   
-  # Assign to RV
+  # Assign compartments to  temporary RV
   rv.sbml.temp$compartments    <- comp.list
   rv.sbml.temp$compartments.df <- bind_rows(rv.sbml.temp$compartments)
 }
@@ -305,6 +311,13 @@ sbml_2_biomodme_parameters <- function(sbml.model) {
   
   names(par.list) <- par.ids
   
+  # Pull/package compartment packages for addition to parameters
+  comp.vols <- rv.sbml.temp$compartment.vol 
+  names(comp.vols) <-  unname(sapply(comp.vols, get, x = "ID"))
+
+  # Combine compartment volumes with parameters
+  par.list <- c(comp.vols, par.list)
+
   # Store information to our parameter tables
   rv.sbml.temp$parameters    <- par.list
   rv.sbml.temp$parameters.df <- bind_rows(rv.sbml.temp$parameters)
@@ -533,7 +546,6 @@ sbml_2_biomodme_reactions <- function(sbml.model) {
   
   for (i in seq_len(nrow(reactions))) {
     entry <- reactions[i,]
-    
     # Extract Reaction Main Inof
     ID.to.add   <- entry %>% pull(id)
     eqn.display <- entry %>% pull(description)
@@ -547,7 +559,8 @@ sbml_2_biomodme_reactions <- function(sbml.model) {
     law.display   <- entry %>% pull(Reaction.Law)
     law.name      <- paste0("user_custom_law_", law.display)
     law.id        <- FindIdTEMPsbml(law.name)
-    string.law <- entry %>% pull(Equation.Text)
+    string.law    <- entry %>% pull(Equation.Text)
+    is.reversible <- entry %>% pull(reversible)
     
     # IDK if this is the best way to really do this but it'll be a bandaid
     # for now.  Search for compartment names in string.law and replace them
@@ -615,8 +628,6 @@ sbml_2_biomodme_reactions <- function(sbml.model) {
     }
     
     parameters.id <- c()
-    print("Parameters")
-    print(parameters)
     for (j in seq_along(parameters)) {
       parameters.id[j] <- FindIdTEMPsbml(parameters[j])
     }
@@ -628,11 +639,18 @@ sbml_2_biomodme_reactions <- function(sbml.model) {
     compartment    <- rv.sbml.temp$species[[species.id[1]]]$Compartment
     compartment.id <- rv.sbml.temp$species[[species.id[1]]]$Compartment.id
     
+    # Grab Stoichiometry terms
+    stoich.react <- SplitEntry(entry %>% pull(Reactants.Stoich))
+    stoich.prod  <- SplitEntry(entry %>% pull(Products.Stoich))
+    
     # Build equation text, latex, and mathjax
-    eqn.builds <- BuildCustomEquationText(reactants,
-                                          products,
-                                          modifiers,
-                                          parameters)
+    eqn.builds <- BuildStringEquation(reactants,
+                                      products,
+                                      modifiers,
+                                      parameters,
+                                      stoich.react,
+                                      stoich.prod,
+                                      reversible = is.reversible)
     
     text.eqn    <- eqn.builds$text
     latex.eqn   <- eqn.builds$latex
@@ -931,9 +949,9 @@ LoadSBML_show_progress <- function(sbmlFile, w_sbml, spinner) {
   Sys.sleep(sleep.time)
   
   w_sbml$update(html = waiter_fxn("Extracting Rules", spinner, 35))
+  
   # Extract Rules_______________________________________________________________
   if (!is.null(modelList$listOfRules)) {
-    
     rules.header <- Attributes2Tibble(modelList$listOfRules)
     # Add error check to avoid pull on non existant columns
     if (is.null(rules.header$variable)) {
@@ -974,7 +992,6 @@ LoadSBML_show_progress <- function(sbmlFile, w_sbml, spinner) {
     }
     
     function.definitions <- NULL
-    print(func.info)
     tryCatch({
       function.definitions <- ExtractFunctionDefFromSBML(doc, func.info)
       function.definitions <- FindFunctionDefInformation(doc,
@@ -1109,6 +1126,8 @@ LoadSBML_show_progress <- function(sbmlFile, w_sbml, spinner) {
 observeEvent(input$file_input_load_sbml, {
 
   sleep.time <- 5
+  # Reset all storage structures for new input
+  # reset_all_storage_variables()
   
   # Initialize waiter
   spinner <- RandomHTMLSpinner()
@@ -1301,6 +1320,10 @@ observeEvent(input$file_input_load_sbml, {
   
   # Finish load effects --------------------------------------------------------
   
+  
+  # Clean and reset variables ....
+  reset_all_storage_variables
+  
   # Convert SBML temp RV to model RVs
   rv.ID$id.df <- rv.sbml.temp$id.df
   # Seeds
@@ -1321,8 +1344,51 @@ observeEvent(input$file_input_load_sbml, {
   rv.CUSTOM.EQNS$ce.equations <- rv.sbml.temp$ce.equations
   rv.REACTIONLAWS$laws <- rv.sbml.temp$laws
   rv.REACTIONS$reactions <- rv.sbml.temp$reactions
+  
   # Refresh vars
-  rv.REFRESH$refresh.species.table <- rv.sbml.temp$refresh.species.table
+  rv.REFRESH$refresh.compartment.table <- 
+    rv.REFRESH$refresh.compartment.table + 1
+  
+  rv.REFRESH$refresh.species.table <- 
+    rv.REFRESH$refresh.species.table + 1
+  
+  rv.REFRESH$refresh.param.table <- 
+    rv.REFRESH$refresh.param.table + 1
+  
+  rv.REFRESH$refresh.eqn.table <- 
+    rv.REFRESH$refresh.eqn.table + 1
+  
+  
+  # Reset Temp Variables ---------------------------------------
+  rv.sbml.temp$need.compartment.conversion = FALSE
+  rv.sbml.temp$need.species.conversion = FALSE
+  rv.sbml.temp$need.parameter.conversion = FALSE
+  rv.sbml.temp$comp.df.conv = data.frame()
+  rv.sbml.temp$species.df.conv = data.frame()
+  rv.sbml.temp$parameter.df.conv = data.frame()
+  rv.sbml.temp$id.df = data.frame(matrix(ncol = 2, nrow = 0, dimnames = list(NULL, c("id", "idName"))))
+  rv.sbml.temp$id.comp.seed = 1
+  rv.sbml.temp$id.var.seed = 1
+  rv.sbml.temp$id.param.seed = 1
+  rv.sbml.temp$id.custeqn.seed = 1
+  rv.sbml.temp$id.eqn.seed = 1
+  rv.sbml.temp$id.custeqnaddional.seed = 1
+  rv.sbml.temp$compartments = list()
+  rv.sbml.temp$compartments.df = data.frame()
+  rv.sbml.temp$compartment.vol = vector()
+  rv.sbml.temp$species = list()
+  rv.sbml.temp$species.df = data.frame()
+  rv.sbml.temp$parameters = list()
+  rv.sbml.temp$parameters.df = data.frame()
+  rv.sbml.temp$cl.reaction = list()
+  rv.sbml.temp$ce.equations = list()
+  rv.sbml.temp$laws = data.frame(
+    Name = c("Mass Action", "Mass Action (Regulated)", "Synthesis", "Degradation (Rate)", "Degradation (Enzyme)", "Michaelis Menten"),
+    BackendName = c("mass_action", "mass_action_w_reg", "synthesis", "degradation_rate", "degradation_by_enzyme", "michaelis_menten"), 
+    Type = c("chemical", "chemical", "chemical", "chemical", "chemical", "enzyme")
+  )
+  rv.sbml.temp$reactions = list()
+  rv.sbml.temp$refresh.species.table = 1
   
   # Generate Differential Equations
   solveForDiffEqs()

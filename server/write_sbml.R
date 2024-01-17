@@ -1,77 +1,18 @@
 
-
-writeSBML <- function(model, filename) {
-  # Takes model object of class SBML and converts it to filename.xml
-  # for now we will keep copying the out vector, this is inefficient
-  # in future: preallocate large vector and add and increment.
+FindIdName <- function(Id, id_df) {
+  # Searches Id database to find ID corresponding to name
+  if (!(is.na(Id) | is.null(Id))) {
+    idx <- which(id_df[,1] %in% Id)
+    var.name <- id_df[idx, 2]
+  } else {
+    var.name <- NA
+  }
   
-  # Open file connection
-  f.id <- file(filename, "w")
-  
-  # Grab Components of Model
-  # sbml=model[["sbml"]]
-  # id=model[["id"]]
-  # notes=model[["notes"]]
-  # htmlNotes=model[["htmlNotes"]]
-  compartments <- model[["compartments"]]
-  species      <- model[["species"]]
-  parameters   <- model[["parameters"]]
-  rules        <- model[["rules"]]
-  reactions    <- model[["reactions"]]
-  functions    <- model[["functions"]]
-  # units        <- model[["units"]]
-  
-  # Find lengths
-  n.compartments <- length(compartments)
-  n.species      <- length(species)
-  n.parameters   <- length(parameters)
-  n.rules        <- length(rules)
-  n.reactions    <- length(reactions)
-  n.functions    <- length(functions)
-  
-  
-  # Build SBML Beginning Text --------------------------------------
-  cat("<?xml version=\"1.0\" encoding=\"UTF-8\"?>", 
-      file=f.id, sep="\n")
-  cat("<sbml xmlns=\"http://www.sbml.org/sbml/level2/version5\" level=\"2\" 
-      version=\"5\">", 
-      file=f.id, sep="\n")
-  cat(sprintf("<model id=\"%s\">", "TESTNAME"), file=f.id, sep="\n")
-  
-  tryCatch(expr = {
-    if (n.compartments>0) {
-      cat("<listOfCompartments>", file=f.id, sep="\n")
-      for (i in seq_along(compartments)) {
-        entry <- compartments[[i]]
-        id    <- entry$id
-        name  <- entry$name
-        size  <- entry$size
-        cont  <- ifelse(entry$constant, "true", "false")
-        s.dim <- entry$spatialDimensions
-        
-        cat(
-          sprintf(
-            "   <compartment id=\'%s\'  size=\'%g\'  name=\'%s\'  constant=\'%s\'  spatialDimensions\'%g\'  />",
-            id,
-            size,
-            name,
-            cont,
-            s.dim), 
-          file=f.id, 
-          sep="\n")
-      }
-      
-      cat("</listOfCompartments>", file=f.id, sep="\n")
-    }
-    cat("</model>", file=f.id, sep="\n")
-    cat("</sbml>", file=f.id, sep="\n")
-  })
-  # Store Compartments
-  
-  close(f.id)
+  return(var.name)
 }
 
-createSBML <- function(model) {
+
+createSBML <- function(model, id_df) {
   # Takes model object of class SBML and converts it to filename.xml
   
   # Open file connection
@@ -155,14 +96,14 @@ createSBML <- function(model) {
       out <- c(out, "<listOfCompartments>")
       for (i in seq_along(compartments)) {
         entry <- compartments[[i]]
-        id    <- entry$id
+        id    <- entry$name
         name  <- entry$name
         size  <- entry$size
         cont  <- entry$constant
         s.dim <- entry$spatialDimensions
         
         out <- c(out,
-                 paste0("<compartment id=", '"', id, '" ',
+                 paste0("<compartment id=", '"', name, '" ',
                         "size=", '"', size, '" ',
                         "name=", '"', name, '" ',
                         "constant=", '"', cont, '" ',
@@ -179,16 +120,16 @@ createSBML <- function(model) {
       for (i in seq_along(species)) {
         entry      <- species[[i]]
         
-        id         <- entry$id
+        id         <- entry$name
         name       <- entry$name
         init.conc  <- entry$initialConcentration
         sub.units  <- entry$substanceUnits
-        compart    <- entry$compartment
+        compart    <- FindIdName(entry$compartment, id_df)
         cont       <- entry$constant
         bc         <- entry$boundaryCondition
         
         out <- c(out,
-                 paste0("<species id=", '"', id, '" ',
+                 paste0("<species id=", '"', name, '" ',
                         "name=", '"', name, '" ',
                         "initialConcentration=", '"', init.conc, '" ',
                         #"substanceUnits=", '"', sub.units, '" ',
@@ -207,13 +148,13 @@ createSBML <- function(model) {
       for (i in seq_along(parameters)) {
         entry      <- parameters[[i]]
         
-        id         <- entry$id
+        id         <- entry$name
         name       <- entry$name
         value      <- entry$value
         cont       <- entry$constant
         
         out <- c(out,
-                 paste0("<parameter id=", '"', id, '" ',
+                 paste0("<parameter id=", '"', name, '" ',
                         "name=", '"', name, '" ',
                         "value=", '"', value, '" ',
                         "constant=", '"', cont, '" ',
@@ -229,7 +170,6 @@ createSBML <- function(model) {
       out <- c(out, "<listOfReactions>")
       for (i in seq_along(reactions)) {
         entry <- reactions[[i]]
-        print(entry)
         # Create initial meta-tag (id, name, reversible, fast)
         id         <- entry$id
         name       <- entry$name
@@ -259,19 +199,24 @@ createSBML <- function(model) {
                               r.modifiers, 
                               r.parameters))
         
+        # Determine stoich coefficients
+        # browser()
+        stoich.coef <- extract_coefficients(entry$eqn.text)
+        stoic.reactant <- stoich.coef$reactants
+        stoic.products <- stoich.coef$products
+        
         # Build <listOfSpecies>
         if (!is.na(entry$reactants)) {
           out <- c(out, "<listOfReactants>")
           # reactants <- strsplit(entry$reactants, ", ")[[1]]
           for (j in seq_along(r.reactants)) {
-            r <- r.reactants[j]
-            s <- 1
+            r <- FindIdName(r.reactants[j], id_df)
+            s <- stoic.reactant[j]
             out <- c(out, 
                      paste0("<speciesReference species=", '"', r, '" ',
                             "stoichiometry=", '"', s, '"',
                             "/>"))
           }
-          
           out <- c(out, "</listOfReactants>")
         }
         
@@ -280,8 +225,8 @@ createSBML <- function(model) {
           out <- c(out, "<listOfProducts>")
           # products <- strsplit(entry$products, ", ")[[1]]
           for (j in seq_along(r.products)) {
-            p <- r.products[j]
-            s <- 1
+            p <- FindIdName(r.products[j], id_df)
+            s <- stoic.products[j]
             out <- c(out, 
                      paste0("<speciesReference species=", '"', p, '" ',
                             "stoichiometry=", '"', s, '"',
@@ -296,9 +241,9 @@ createSBML <- function(model) {
           out <- c(out, "<listOfModifiers>")
           # modifiers <- strsplit(entry$modifiers, ", ")[[1]]
           for (j in seq_along(r.modifiers)) {
-            m <- r.modifiers[j]
+            m <- FindIdName(r.modifiers[j], id_df)
             out <- c(out, 
-                     paste0("<modifierSpeciesReference species=", '"', p, '"',
+                     paste0("<modifierSpeciesReference species=", '"', m, '"',
                             "/>"))
           }
           
@@ -309,9 +254,6 @@ createSBML <- function(model) {
         # Determine if law used function in function
         write.raw.mathml <- TRUE
         if (n.functions > 0) {
-          print("FUCNIOT REACTION SUTFF")
-          print(func.used)
-          print(function.names)
           if (func.used %in% function.names) {
             write.raw.mathml <- FALSE
             fxn.to.write <- function.names[match(func.used, function.names)]
@@ -320,7 +262,6 @@ createSBML <- function(model) {
         
         if (write.raw.mathml) {
           # Write rate law in mathml version
-          
           out <- c(out, 
                    paste0("<kineticLaw>",
                           "<math xmlns=\"http://www.w3.org/1998/Math/MathML\">",
@@ -332,7 +273,7 @@ createSBML <- function(model) {
           if (!is.na(entry$parameters)) {
             param.ml <- c()
             for (j in seq_along(r.parameters)) {
-              to.add <- paste0("<parameter id=", '"', r.parameters[j], '" ',
+              to.add <- paste0("<parameter id=", '"', r.par.name[j], '" ',
                                "name=", '"', r.par.name[j], '" ',
                                "value=", '"', r.par.value[j], '"',
                                "/>")
@@ -424,6 +365,5 @@ createSBML <- function(model) {
   out <- c(out, "</sbml>")
 
   out <- paste0(out, collapse = "\n")
-  print(out)
   return(out)
 }

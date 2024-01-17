@@ -354,7 +354,6 @@ UnitConversion <- function(unitDescriptor,
                            previousUnits,
                            newUnits,
                            unitValue) {
-  
   # Take in unit descriptor, break it down and make sure it matches new input
   # Input: 
   #   unitDescriptor - word break down of units (num <div> time)
