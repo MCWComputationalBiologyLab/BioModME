@@ -166,9 +166,11 @@ createSBML <- function(model, id_df) {
     
     # Write Reactions ----------------------------------------------------------
     if (n.reactions > 0) {
-      # browser()
+      browser()
       out <- c(out, "<listOfReactions>")
       for (i in seq_along(reactions)) {
+        print("Cycling Reactions")
+        print(reactions[[i]])
         entry <- reactions[[i]]
         # Create initial meta-tag (id, name, reversible, fast)
         id         <- entry$id
@@ -201,10 +203,17 @@ createSBML <- function(model, id_df) {
         
         # Determine stoich coefficients
         # browser()
-        stoich.coef <- extract_coefficients(entry$eqn.text)
-        stoic.reactant <- stoich.coef$reactants
-        stoic.products <- stoich.coef$products
-        
+        if (!is.na(entry$eqn.text)) {
+          stoich.coef <- extract_coefficients(entry$eqn.text)
+          stoic.reactant <- stoich.coef$reactants
+          stoic.products <- stoich.coef$products
+        } else {
+          # Input outputs don't have an eqn text 
+          # Find num react/prod and create vect
+          stoic.reactant <- rep(1, length(r.reactants))
+          stoic.products <- rep(1, length(r.products))
+        }
+
         # Build <listOfSpecies>
         if (!is.na(entry$reactants)) {
           out <- c(out, "<listOfReactants>")
@@ -334,6 +343,7 @@ createSBML <- function(model, id_df) {
       }
       out <- c(out, "</listOfReactions>")
     }
+    print("end writing reactions")
     # Write Rules --------------------------------------------------------------
     if (n.rules > 0) {
       out <- c(out, "<listOfRules>")
