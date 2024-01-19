@@ -166,17 +166,19 @@ createSBML <- function(model, id_df) {
     
     # Write Reactions ----------------------------------------------------------
     if (n.reactions > 0) {
-      browser()
+      # browser()
       out <- c(out, "<listOfReactions>")
       for (i in seq_along(reactions)) {
-        print("Cycling Reactions")
-        print(reactions[[i]])
+        # print("Cycling Reactions")
+        # print(reactions[[i]])
         entry <- reactions[[i]]
         # Create initial meta-tag (id, name, reversible, fast)
+        # added tolower because of instances of FALSE slipping through and 
+        # this is just a good catch all to have. 
         id         <- entry$id
         name       <- entry$name
-        reversible <- entry$reversible
-        fast       <- entry$fast
+        reversible <- tolower(entry$reversible)
+        fast       <- tolower(entry$fast)
         func.used  <- entry$function.id
         str.law    <- entry$string.law
         

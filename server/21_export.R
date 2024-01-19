@@ -121,6 +121,8 @@ output$export_save_as_sbml <- downloadHandler(
     # print(length(reactions))
     # print(length(IOs))
     # print(c(reactions, IOs))
+    print(reactions[[1]])
+    print(IOs[[1]])
     reactions <- c(reactions, IOs)
     # Once IO is working properly, we should merge reactions and IOs
     functions    <- createSBMLFunctionExport(rv.CUSTOM.LAWS$cl.reaction)
@@ -409,10 +411,8 @@ createInputOutputExport <- function(IORV,
   
   total_entries <- 0
   for (i in seq_along(IORV)) {
-    print(IORV[[i]]$Type)
     name <- IORV[[i]]$Type
-    print(name)
-    
+
     if (name == "FLOW_BETWEEN") {
       # Split string.law by ","
       laws <- strsplit(IORV[[i]]$String.Rate.Law, ",")[[1]]
@@ -454,7 +454,7 @@ createInputOutputExport <- function(IORV,
                     products = IORV[[i]]$Species.In.Ids,
                     modifiers = NA,
                     parameters = IORV[[i]]$Parameter.Ids,
-                    parameter.names = IORV[[i]]$Parameter.Ids,
+                    parameter.names = IORV[[i]]$Parameters,
                     parameter.values = par.vals,
                     eqn.text = IORV[[i]]$Equation.Text,
                     string.law = IORV[[i]]$String.Rate.Law,
@@ -498,7 +498,7 @@ createInputOutputExport <- function(IORV,
         par.ids.in.law <- FindId(par.in.law)
         par.val.to.add <- as.character(par.vals[j])
         
-        entry <- list(id = IORV[[i]]$ID,
+        entry <- list(id = paste0(IORV[[i]]$ID, "_", reactions_counter),
                       name = name,
                       reversible = "false",
                       fast = "false",
@@ -506,7 +506,7 @@ createInputOutputExport <- function(IORV,
                       products = prd.in.law,
                       modifiers = NA,
                       parameters = par.ids.in.law,
-                      parameter.names = par.ids.in.law,
+                      parameter.names = par.in.law,
                       parameter.values = par.val.to.add,
                       eqn.text = IORV[[i]]$Equation.Text,
                       string.law = law,
@@ -521,7 +521,6 @@ createInputOutputExport <- function(IORV,
     }
   }
   print("Printing final IO structure????????????>?<><><><><><><?><?><")
-  print(reactions)
   return(reactions)
 }
 
