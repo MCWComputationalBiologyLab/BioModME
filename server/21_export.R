@@ -446,6 +446,27 @@ createInputOutputExport <- function(IORV,
     if (name != "FLOW_BETWEEN") {
       par.vals <- collapseVector(par.vals)
       
+      comp.vol.names <- unname(sapply(compartmentRV, get, x = "par.id"))
+      comp.vol.names <- 
+        unname(
+          sapply(
+            comp.vol.names, 
+            function(x) FindIdName(x, idRV)
+          )
+        )
+      comp.names <- unname(sapply(compartmentRV, get, x = "Name"))
+      
+      # Break string law into components.  
+      # Check if components match volume terms
+      # Do proper replacing and storing.
+      string.law  <- IORV[[i]]$String.Rate.Law
+      for (j in seq_along(comp.vol.names)) {
+        string.law <- 
+          SubstituteSingleRateLawTerm(string.law, 
+                                      comp.vol.names[j], 
+                                      comp.names[j])
+      }
+      
       entry <- list(id = IORV[[i]]$ID,
                     name = name,
                     reversible = "false",
@@ -457,7 +478,7 @@ createInputOutputExport <- function(IORV,
                     parameter.names = IORV[[i]]$Parameters,
                     parameter.values = par.vals,
                     eqn.text = IORV[[i]]$Equation.Text,
-                    string.law = IORV[[i]]$String.Rate.Law,
+                    string.law = string.law,
                     function.name = IORV[[i]]$Type,
                     function.id = ifelse(isTruthy(IORV[[i]]$Backend.Call), 
                                          IORV[[i]]$Backend.Call, 
@@ -485,18 +506,35 @@ createInputOutputExport <- function(IORV,
       # par.names <- unname(sapply(parameters, function(x) FindIdName(x, idRV)))
       
       for (j in seq_along(laws)) {
-        law <- laws[j]
-        if (j == 1) {
-          rct.in.law <- FindId(reactants)
-          prd.in.law <- NA
+        # law <- laws[j]
+        # Remove starting + or -
+        law <- sub("^[+-]", "", laws[j])
+        if (length(laws) > 2) {
+          if (j == 1) {
+            rct.in.law <- FindId(reactants)
+            prd.in.law <- NA
+          } else {
+            rct.in.law <- NA
+            prd.in.law <- FindId(products[j-1])
+          }
+          
+          par.in.law <- parameters[j]
+          par.ids.in.law <- FindId(par.in.law)
+          par.val.to.add <- as.character(par.vals[j])
         } else {
-          rct.in.law <- NA
-          prd.in.law <- FindId(products[j-1])
+          if (j == 1) {
+            rct.in.law <- FindId(reactants)
+            prd.in.law <- NA
+          } else {
+            rct.in.law <- NA
+            prd.in.law <- FindId(products)
+          }
+          
+          par.in.law <- parameters
+          par.ids.in.law <- FindId(par.in.law)
+          par.val.to.add <- as.character(par.vals)
         }
-        
-        par.in.law <- parameters[j]
-        par.ids.in.law <- FindId(par.in.law)
-        par.val.to.add <- as.character(par.vals[j])
+
         
         entry <- list(id = paste0(IORV[[i]]$ID, "_", reactions_counter),
                       name = name,
