@@ -69,6 +69,12 @@ TAB_DEBUG <-
       inputId = "bttn_debug_display_units",
       label = "Print Units"
     ),
+    hr(), hr(),
+    tags$h3("Reset Latex/Mathjax laws"),
+    actionButton(
+      inputId = "bttn_debug_reset_diff_mathjax",
+      label = "Resolve display laws"
+    ),
     hr(), hr(), hr(),
     fluidRow(
       column(

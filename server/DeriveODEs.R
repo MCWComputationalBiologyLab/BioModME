@@ -183,6 +183,9 @@ DeriveEquationBasedODEs <- function(species.list.entry,
       rate       <- eqn$String.Rate.Law
       latex.rate <- eqn$Latex.Rate.Law
       mj.rate    <- eqn$MathJax.Rate.Law
+      print(rate)
+      print(latex.rate)
+      print(mj.rate)
       law        <- eqn$Reaction.Law
       descript   <- eqn$Description
       
