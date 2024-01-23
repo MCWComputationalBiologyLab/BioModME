@@ -109,6 +109,14 @@ output$export_save_as_sbml <- downloadHandler(
                                              rv.PARAMETERS$parameters,
                                              rv.COMPARTMENTS$compartments,
                                              rv.ID$id.df)
+    print("IOS =-----------=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=")
+    IOs          <- createInputOutputExport(rv.IO$InputOutput,
+                                            rv.PARAMETERS$parameters,
+                                            rv.COMPARTMENTS$compartments,
+                                            rv.ID$id.df)
+    
+    reactions <- c(reactions, IOs)
+    # Once IO is working properly, we should merge reactions and IOs
     functions    <- createSBMLFunctionExport(rv.CUSTOM.LAWS$cl.reaction)
     rules        <- createSBMLRulesExport(rv.CUSTOM.EQNS$ce.equations)
     # Build SBML Output Model
@@ -335,6 +343,214 @@ createSBMLReactionExport <- function(reactionRV,
     reactions[[i]] <- entry
   }
   
+  return(reactions)
+}
+
+createInputOutputExport <- function(IORV,
+                                    parameterRV,
+                                    compartmentRV,
+                                    idRV) {
+  # Converts the input output reactive variable to an exportable sbml format
+  # IO variables: 
+  # ID                || ID for the I/O
+  # Direction         || (Input, Output, Both)
+  # Display.Type      || Display name of the I/O
+  # Law -             || Type of law I/O follows
+  # Compartment.Out   || Compartment that flow is leaving from 
+  # Compartment.In    || Compartment that flow is going to 
+  # Species.Out       || Species leaving a compartment
+  # Species.In        || Species from inflow to compartment
+  # Parameters        || Parameters used in flow
+  # Description       || Description of the IO occuring
+  # Compartment.id    || ID of compartment eqn is in
+  # Species.id        || IDs of species in model
+  # Parameter.Ids     || IDs of parameters in model
+  # Equation.Text     || Text version of equation
+  # Equation.Latex    || Latex text version of equation
+  # Equation.MathJax  || Mathjax text version of equation
+  # String.Rate.Law   || String text for rate law
+  # Latex.Rate.Law    || Latex version of rate law
+  # MathJax.Rate.Law  || MathJax version of rate law
+  # Rate.MathML       || MathMl for rate law
+  # Reversible        || Bool if the equation is reversible or not
+  
+  # We need to convert these to reaction output for sbml so we need the 
+  # following variables: 
+  # id = id,
+  # name = name,
+  # reversible = reversible,
+  # fast = fast,
+  # reactants = reactants,
+  # products = products,
+  # modifiers = modifiers,
+  # parameters = parameters,
+  # parameter.names = parameter.names,
+  # parameter.values = par.vals,
+  # eqn.text = eqn.text,
+  # string.law = string.law,
+  # function.name = func.name,
+  # function.id = func.id
+  
+  # It would seem that parameters and parameter.names and taking the same 
+  # id values 
+  # 
+  # reactants would probably be flow out/species (minus) and products would be 
+  # flow/species in (plus)
+  # 
+  # The hard part of this is extracting flow between.
+
+  # Count the total number of entries in reactions
+  
+  total_entries <- 0
+  for (i in seq_along(IORV)) {
+    name <- IORV[[i]]$Type
+
+    if (name == "FLOW_BETWEEN") {
+      # Split string.law by ","
+      laws <- strsplit(IORV[[i]]$String.Rate.Law, ",")[[1]]
+      
+      # Add the number of laws to the total entries
+      total_entries <- total_entries + length(laws)
+    } else {
+      # Non FLOW_BETWEEN entry
+      total_entries <- total_entries + 1
+    }
+  }
+  
+  reactions <- vector(mode = "list", length = total_entries)
+  reactions_counter <- 1
+  
+  # Loop through IORV to populate reactions
+  for (i in seq_along(IORV)) {
+    name <- IORV[[i]]$Type
+    
+    par.split <- SplitEntry(IORV[[i]]$Parameter.Ids)
+    # Find Parameter values
+    par.vals <- vector(mode = "numeric", 
+                       length = length(par.split))
+    
+    for (j in seq_along(par.split)) {
+      par.vals[j] <- parameterRV[[par.split[j]]]$BaseValue
+    }
+    
+    
+    # Standard entry
+    if (name != "FLOW_BETWEEN") {
+      par.vals <- collapseVector(par.vals)
+      
+      comp.vol.names <- unname(sapply(compartmentRV, get, x = "par.id"))
+      comp.vol.names <- 
+        unname(
+          sapply(
+            comp.vol.names, 
+            function(x) FindIdName(x, idRV)
+          )
+        )
+      comp.names <- unname(sapply(compartmentRV, get, x = "Name"))
+      
+      # Break string law into components.  
+      # Check if components match volume terms
+      # Do proper replacing and storing.
+      string.law  <- IORV[[i]]$String.Rate.Law
+      for (j in seq_along(comp.vol.names)) {
+        string.law <- 
+          SubstituteSingleRateLawTerm(string.law, 
+                                      comp.vol.names[j], 
+                                      comp.names[j])
+      }
+      
+      entry <- list(id = IORV[[i]]$ID,
+                    name = name,
+                    reversible = "false",
+                    fast = "false",
+                    reactants = IORV[[i]]$Species.Out.Ids,
+                    products = IORV[[i]]$Species.In.Ids,
+                    modifiers = NA,
+                    parameters = IORV[[i]]$Parameter.Ids,
+                    parameter.names = IORV[[i]]$Parameters,
+                    parameter.values = par.vals,
+                    eqn.text = IORV[[i]]$Equation.Text,
+                    string.law = string.law,
+                    function.name = IORV[[i]]$Type,
+                    function.id = ifelse(isTruthy(IORV[[i]]$Backend.Call), 
+                                         IORV[[i]]$Backend.Call, 
+                                         NA))
+      entry <- lapply(entry, function(x) ifelse(x == "NA", NA, x))
+      reactions[[reactions_counter]] <- entry
+      reactions_counter <- reactions_counter + 1
+      
+    } else {
+      # browser()
+      # FLOW_BETWEEN entry
+      # These are split so the first is the out term, leaving compartment,
+      # and the next term will be the in term . So in this case, the first 
+      # term will be its own reaction with the species in being reactant.
+      # The next laws will only have a product term with the next string law.
+  
+      laws <- SplitEntry(IORV[[i]]$String.Rate.Law)
+      
+      # Perform element extraction
+      reactants  <- SplitEntry(IORV[[i]]$Species.Out)
+      products   <- SplitEntry(IORV[[i]]$Species.In)
+      parameters <- SplitEntry(IORV[[i]]$Parameters)
+      
+      # Parameters are IDs so we will need to convert them to names here
+      # par.names <- unname(sapply(parameters, function(x) FindIdName(x, idRV)))
+      
+      for (j in seq_along(laws)) {
+        # law <- laws[j]
+        # Remove starting + or -
+        law <- sub("^[+-]", "", laws[j])
+        if (length(laws) > 2) {
+          if (j == 1) {
+            rct.in.law <- FindId(reactants)
+            prd.in.law <- NA
+          } else {
+            rct.in.law <- NA
+            prd.in.law <- FindId(products[j-1])
+          }
+          
+          par.in.law <- parameters[j]
+          par.ids.in.law <- FindId(par.in.law)
+          par.val.to.add <- as.character(par.vals[j])
+        } else {
+          if (j == 1) {
+            rct.in.law <- FindId(reactants)
+            prd.in.law <- NA
+          } else {
+            rct.in.law <- NA
+            prd.in.law <- FindId(products)
+          }
+          
+          par.in.law <- parameters
+          par.ids.in.law <- FindId(par.in.law)
+          par.val.to.add <- as.character(par.vals)
+        }
+
+        
+        entry <- list(id = paste0(IORV[[i]]$ID, "_", reactions_counter),
+                      name = name,
+                      reversible = "false",
+                      fast = "false",
+                      reactants = rct.in.law,
+                      products = prd.in.law,
+                      modifiers = NA,
+                      parameters = par.ids.in.law,
+                      parameter.names = par.in.law,
+                      parameter.values = par.val.to.add,
+                      eqn.text = IORV[[i]]$Equation.Text,
+                      string.law = law,
+                      function.name = IORV[[i]]$Type,
+                      function.id = ifelse(isTruthy(IORV[[i]]$Backend.Call), 
+                                           IORV[[i]]$Backend.Call, 
+                                           NA))
+        entry <- lapply(entry, function(x) ifelse(x == "NA", NA, x))
+        reactions[[reactions_counter]] <- entry
+        reactions_counter <- reactions_counter + 1
+      }
+    }
+  }
+  print("Printing final IO structure????????????>?<><><><><><><?><?><")
   return(reactions)
 }
 

@@ -1765,9 +1765,9 @@ observeEvent(input$eqnCreate_addEqnToVector, {
       # Check to see if parameter name is new or needs to be appeneded
       if (parameters[i] %in% rv.PARAMETERS$parameters.names) {
         #APPEND
-        
         # Find parameter id
         par.id <- FindId(parameters[i])
+        par.ids <- c(par.ids, par.id)
         
         type <- 
           strsplit(rv.PARAMETERS$parameters[[par.id]]$Type, ", ")[[1]]

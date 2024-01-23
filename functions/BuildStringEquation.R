@@ -99,16 +99,48 @@ BuildStringEquation     <- function(reactants,
   
   # BUILD LATEX REACTION________________________________________________________
   # Build reaction strings
+  # Build Reaction Strings in LaTeX
   if (isTruthy(reactants)) {
     for (i in seq_along(reactants)) {
       if (i == 1) {
-        reactant.side <- Var2Latex(reactants[i])
+        if (stoich.reactants[i] == 1) {
+          reactant.side <- Var2Latex(reactants[i])
+        } else {
+          reactant.side <- 
+            paste0(stoich.reactants[i], "*", Var2Latex(reactants[i]))
+        }
       } else {
-        reactant.side <- paste0(reactant.side, " + ", Var2Latex(reactants[i]))
+        if (stoich.reactants[i] == 1) {
+          reactant.side <- paste0(reactant.side, " + ", Var2Latex(reactants[i]))
+        } else {
+          new.to.add <- 
+            paste0(stoich.reactants[i], "*", Var2Latex(reactants[i]))
+          reactant.side <- paste0(reactant.side, " + ", new.to.add)
+        }
       }
     }
   } else {
     reactant.side <- ""
+  }
+  
+  # Build Product Strings in LaTeX
+  if (prodDegSymbol) {
+    product.side <- "\\bigotimes"
+  } else if (isTruthy(products)) {
+    for (i in seq_along(products)) {
+      if (i == 1) {
+        product.side <- Var2Latex(products[i])
+      } else {
+        if (stoich.products[i] == 1) {
+          product.side <- paste0(product.side, " + ", Var2Latex(products[i]))
+        } else {
+          new.to.add <- paste0(stoich.products[i], "*", Var2Latex(products[i]))
+          product.side <- paste0(product.side, " + ", new.to.add)
+        }
+      }
+    }
+  } else {
+    product.side <- ""
   }
   
   # Build Product Strings
@@ -117,103 +149,116 @@ BuildStringEquation     <- function(reactants,
   } else if (isTruthy(products)) {
     for (i in seq_along(products)) {
       if (i == 1) {
-        product.side <- Var2Latex(products[i])
+        if (stoich.products[i] == 1) {
+          product.side <- Var2Latex(products[i])
+        } else {
+          product.side <- 
+            paste0(stoich.products[i], "*", Var2Latex(products[i]))
+        }
       } else {
-        product.side <- paste0(product.side, " + ", Var2Latex(products[i]))
+        if (stoich.products[i] == 1) {
+          product.side <- paste0(product.side, " + ", Var2Latex(products[i]))
+        } else {
+          new.to.add <- paste0(stoich.products[i], "*", Var2Latex(products[i]))
+          product.side <- paste0(product.side, " + ", new.to.add)
+        }
       }
     }
   } else {
     product.side  <- ""
   }
   
-  # Build Modifier Strings
+  # Build Modifier Strings in LaTeX
   if (isTruthy(modifiers)) {
-    for (i in seq_along(modifiers)) {
-      if (i == 1) {
-        mods <- Var2Latex(modifiers[i])
-      } else {
-        mods <- paste0(mods, ", ", Var2Latex(modifiers[i]))
-      }
-    }
+    mods <- paste0(sapply(modifiers, Var2Latex), collapse = ", ")
+    mods <- paste0("[", mods, "]")
   } else {
     mods <- ""
   }
   
-  # Build arrow type
+  # Build Arrow Type in LaTeX
   if (reversible) {
     direction <- "\\xrightleftharpoons"
   } else {
     direction <- "\\xrightarrow"
   }
   
-  # Build Parameter Versions
+  # Build Parameter Versions in LaTeX
   if (isTruthy(parameters)) {
-    for (i in seq_along(parameters)) {
-      if (i == 1) {
-        pars <- Var2Latex(parameters[i])
-      } else {
-        pars <- paste0(pars, ", ", Var2Latex(parameters[i]))
-      }
-    }
+    pars <- paste0(sapply(parameters, Var2Latex), collapse = ", ")
+    pars <- paste0("(", pars, ")")
   } else {
     pars <- ""
   }
   
-  # Build Arrow
-  arrow <- paste0(direction,
-                  "[", pars, "]",
-                  "{", mods, "}")
+  # Build Arrow in LaTeX
+  arrow <- paste0(direction, "[", pars, "]", "{", mods, "}")
   
-  # Build Final Reaction
-  latex.reaction <- paste0(reactant.side,
-                           arrow,
-                           product.side)
+  # Build Final Reaction in LaTeX
+  latex.reaction <- paste0(reactant.side, arrow, product.side)
+  
   
   # BUILD MATHJAX REACTION______________________________________________________
   # Build reaction strings
   if (length(reactants) > 0 && isTruthy(reactants)) {
     for (i in seq_along(reactants)) {
       if (i == 1) {
-        reactant.side <- Var2MathJ(reactants[i])
+        if (stoich.reactants[i] == 1) {
+          reactant.side <- Var2MathJ(reactants[i])
+        } else {
+          reactant.side <- paste0(stoich.reactants[i], "*", 
+                                  Var2MathJ(reactants[i]))
+        }
       } else {
         if (isTruthy(reactants[i])) {
-          reactant.side <- paste0(reactant.side, " + ", Var2MathJ(reactants[i]))
+          if (stoich.reactants[i] == 1) {
+            reactant.side <- paste0(reactant.side, " + ", 
+                                    Var2MathJ(reactants[i]))
+          } else {
+            new.to.add <- paste0(stoich.reactants[i], "*", 
+                                 Var2MathJ(reactants[i]))
+            reactant.side <- paste0(reactant.side, " + ", new.to.add)
+          }
         }
-        
       }
     }
   } else {
     reactant.side <- ""
   }
   
-  # Build Product Strings
+  # Build Product Strings in MathJax
   if (prodDegSymbol) {
     product.side <- "\\bigotimes"
   } else if (length(products) > 0 && isTruthy(products)) {
     for (i in seq_along(products)) {
       if (i == 1) {
-        product.side <- Var2MathJ(products[i])
+        if (stoich.products[i] == 1) {
+          product.side <- Var2MathJ(products[i])
+        } else {
+          product.side <- paste0(stoich.products[i], "*", 
+                                 Var2MathJ(products[i]))
+        }
       } else {
         if (isTruthy(products[i])) {
-          product.side <- paste0(product.side, " + ", Var2MathJ(products[i]))
+          if (stoich.products[i] == 1) {
+            product.side <- paste0(product.side, " + ", 
+                                   Var2MathJ(products[i]))
+          } else {
+            new.to.add <- paste0(stoich.products[i], "*", 
+                                 Var2MathJ(products[i]))
+            product.side <- paste0(product.side, " + ", new.to.add)
+          }
         }
       }
     }
   } else {
-    product.side  <- ""
+    product.side <- ""
   }
   
-  # Build Modifier Strings
+  # Build Modifier Strings in MathJax
   if (isTruthy(modifiers)) {
-    for (i in seq_along(modifiers)) {
-      if (i == 1) {
-        mods <- Var2MathJ(modifiers[i])
-      } else {
-        if (isTruthy(modifiers[i])) {
-          mods <- paste0(mods, ", ", Var2MathJ(modifiers[i]))
-        }
-      }
-    }
+    mods <- paste0(sapply(modifiers, Var2MathJ), collapse = ", ")
+    mods <- paste0("[", mods, "]")
   } else {
     mods <- ""
   }
@@ -249,9 +294,11 @@ BuildStringEquation     <- function(reactants,
                   "}")
   
   # Build Final Reaction
-  mj.reaction <- paste0(reactant.side,
+  mj.reaction <- paste0("$$",
+                        reactant.side,
                         arrow,
-                        product.side)
+                        product.side,
+                        "$$")
   
   out <- list("text" = text.reaction,
               "latex" = latex.reaction,

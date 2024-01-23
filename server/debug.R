@@ -12,6 +12,23 @@ observeEvent(input$bttn_debug_display_units, {
   print(rv.UNITS$units.base)
 })
 
+observeEvent(input$bttn_debug_reset_diff_mathjax, {
+  
+  # loop through reaction structure
+  for (i in seq_along(rv.REACTIONS$reactions)) {
+    # pull string laws
+    str.law <- rv.REACTIONS$reactions[[i]]$String.Rate.Law
+    # solve for latex and mathjax
+    converted.laws <- ConvertRateLaw(str.law)
+    latex.law <- converted.laws$latex
+    mathjax.law <- converted.laws$mathjax
+    # restore
+    rv.REACTIONS$reactions[[i]]$Latex.Rate.Law <- latex.law
+    rv.REACTIONS$reactions[[i]]$MathJax.Rate.Law <- mathjax.law
+  }
+
+})
+
 # View Variables ---------------------------------------------------------------
 observeEvent(input$debug_view_variables, {
 

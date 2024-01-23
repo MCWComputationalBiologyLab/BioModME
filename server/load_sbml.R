@@ -1009,6 +1009,7 @@ LoadSBML_show_progress <- function(sbmlFile, w_sbml, spinner) {
   Sys.sleep(sleep.time)
   w_sbml$update(html = waiter_fxn("Extracting Reactions", 
                                   spinner, 50))
+  # browser()
   # Extract Reactions___________________________________________________________
   if (!is.null(modelList$listOfReactions)) {
     exists.listOfReactions <- TRUE

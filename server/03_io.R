@@ -856,6 +856,7 @@ observeEvent(input$CIO_add_IO, {
         
         # Find parameter id
         par.id <- FindId(params[i])
+        par.ids <- c(par.ids, par.id)
         
         type.old  <- SplitEntry(rv.PARAMETERS$parameters[[par.id]]$Type)
         type.note <- SplitEntry(rv.PARAMETERS$parameters[[par.id]]$Type.Note)
