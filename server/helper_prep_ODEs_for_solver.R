@@ -4,7 +4,6 @@ diffeq_to_text <- function(list_of_diffeqs, list_of_vars){
     current_eqn <- paste0("d", list_of_vars[i], " <- ", list_of_diffeqs[i])
     output <- paste0(output, current_eqn, "\n ")
   }
-  #print(output)
   return(output)
 }
 
@@ -27,8 +26,6 @@ CustomEqnsToText <- function(customEqnRV) {
   {
     output <- paste0(output, additional.eqns[i], "\n ")
   }
-  print("AdditionalEqns")
-  print(output)
   return(output)
 }
 

@@ -43,8 +43,7 @@ createSBML <- function(model, id_df) {
   function.names <- unname(sapply(functions, 
                                   get,
                                   x = "id"))
-  PrintVar(function.names)
-  
+
   out <- c()
   # Build SBML Beginning Text --------------------------------------
   out <- c(out, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>")

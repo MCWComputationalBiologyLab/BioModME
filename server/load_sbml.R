@@ -359,7 +359,6 @@ sbml_2_biomodme_functions <- function(sbml.model) {
   # Products
   # Modifiers
   # Parameters
-  
   reactions <- bind_rows(sbml.model$reactions)
   # Check if Functions Exist
   if (!isTruthy(sbml.model$functions)) {
@@ -493,7 +492,7 @@ sbml_2_biomodme_reactions <- function(sbml.model) {
   # MathJax.Rate.Law  || MathJax version of rate law
   # Rate.MathML       || MathMl for rate law
   # Reversible        || Bool if the equation is reversible or not
-  
+  # browser()
   reactions <- bind_rows(sbml.model$reactions)
   # Convert ids to names for values in reactions species and pars
   # Want to look at specific columns to convert
@@ -997,10 +996,14 @@ LoadSBML_show_progress <- function(sbmlFile, w_sbml, spinner) {
     
     function.definitions <- NULL
     tryCatch({
+      print("FUNCTION DEFS ---------------------------------------------")
       function.definitions <- ExtractFunctionDefFromSBML(doc, func.info)
+      print(function.definitions[[3]])
+      print("AFTER EXTRACT --------------------------------------------")
       function.definitions <- FindFunctionDefInformation(doc,
                                                          function.definitions,
                                                          sbmlList)
+      print(function.definitions[[3]])
     })
     if(is.null(function.definitions)) {
       err.mes <- "Something went extracting SBML function definitions."
@@ -1094,7 +1097,8 @@ LoadSBML_show_progress <- function(sbmlFile, w_sbml, spinner) {
     # Store reaction information to output
     out[["reactions"]] <- reaction.list.results
   }
-  
+  print("REACTIONS")
+  print(reaction.list.results[[3]])
   Sys.sleep(sleep.time)
   # Bind Parameter lists if they both exist (equations/parameters)
   w_sbml$update(html = waiter_fxn("Combining Parameter Information", 
@@ -1160,7 +1164,6 @@ observeEvent(input$file_input_load_sbml, {
     )
     return(NULL)
   }
-  
   # Change variable name, initialize RVs, move forward
   sbml.model <- loaded.sbml$model
   # Bool that is used in reactions. SBML stores compartment id and we want to 
@@ -1280,7 +1283,6 @@ observeEvent(input$file_input_load_sbml, {
     err <- TRUE
   })
   if (err) return(NULL)
-
   ## Unpack SBML Reaction ____--------------------------------------------------
   mes <- "Converting Reactions to BioModME..."
   w_sbml$update(html = waiter_fxn(mes,
@@ -1322,7 +1324,6 @@ observeEvent(input$file_input_load_sbml, {
     err <- TRUE
   })
   if (err) return(NULL)
-  
   # Finish load effects --------------------------------------------------------
   
   
@@ -1394,7 +1395,6 @@ observeEvent(input$file_input_load_sbml, {
   )
   rv.sbml.temp$reactions = list()
   rv.sbml.temp$refresh.species.table = 1
-  
   # Generate Differential Equations
   solveForDiffEqs()
   # End UI Trigger Events

@@ -152,17 +152,7 @@ observeEvent(c(input$execute_run_model,
     d_of_var = paste0(input$execute_time_scale_var, "*", d_of_var)
   }
 
-  # print("Before Solver")
-  # print(rv.DE)
-  # print(diff.eqns.vector)
-  # print("into solver")
-  # print(parameters)
-  # print(state)
-  # print(diff_eqns)
-  # print(d_of_var)
-
   # Solve ODEs
-
   out <- ode(y = state,
              times = times,
              func =   ModelFxn,
@@ -181,7 +171,6 @@ observeEvent(c(input$execute_run_model,
                                    result.time)
     out[,1] <- conv.time.in
   }
-
 
   # Save Results to Appropriate Places
   rv.RESULTS$results.model <- out #store model to reactive var
@@ -269,7 +258,6 @@ output$execute_table_for_model <- DT::renderDataTable({
   req(rv.RESULTS$results.model.has.been.solved)
   m <- rv.RESULTS$results.model.units.view
   
-  # print(head(m))
   isolate(time_step <- input$execute_time_step)
   
   # m <- custom_round_df(m,

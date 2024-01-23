@@ -46,8 +46,6 @@ onStart <- observe({
   #     placement = "bottom"
   #   )
   # )
-  # print("DDFJDF")
-  # print(DURATION_CHOICES)
   # Remove this observer after first iteration
   onStart$destroy()
 })

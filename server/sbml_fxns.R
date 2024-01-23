@@ -871,7 +871,6 @@ FindFunctionDefInformation <- function(doc, functionDefList, sbmlList) {
           }
         }
         
-        
         functionDefList[[i]]$Reactants  <- collapseVector(fxn.reactants)
         functionDefList[[i]]$Products   <- collapseVector(fxn.products)
         functionDefList[[i]]$Modifiers  <- collapseVector(fxn.modifiers)

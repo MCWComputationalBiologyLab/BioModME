@@ -31,7 +31,6 @@ DetermineRateConstantUnits <- function(coefs,
   
   # First Order
   if (sum.coefs == 1) {
-    # print("First Order")
     # First order should be (1/time)
     u   <- paste0("1/", selectedTimeUnit)
     u.b <- paste0("1/", baseTimeUnit)

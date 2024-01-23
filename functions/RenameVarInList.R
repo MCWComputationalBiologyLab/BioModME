@@ -7,24 +7,19 @@ RenameVarInList <- function(oldName, newName, listToSearch) {
     latex.name <- Var2Latex(oldName)
     mathjax.name <- Var2MathJ(oldName)
     regex_oldName <- paste0("\\b", oldName, "\\b")
-    print(latex.name)
-    print(mathjax.name)
+
     for (i in seq_along(out)) {
-      # print(out[[i]])
       var.indices <- which(grepl(regex_oldName, out[[i]], fixed = TRUE))
-      print(var.indices)
       if (length(var.indices) > 0) {
         for (idx in var.indices) {
           out[[i]][[idx]] <- 
             gsub(oldName, newName, out[[i]][[idx]],  fixed = TRUE)
         }
-        # print(out[[i]])
       }
       
       # Search for var in latex term
       latex.indices <- which(grepl(latex.name, out[[i]], fixed = TRUE))
       if (length(latex.indices) > 0) {
-        print(latex.indices)
         for (idx in latex.indices) {
           out[[i]][[idx]] <- 
             gsub(latex.name, 
@@ -32,13 +27,11 @@ RenameVarInList <- function(oldName, newName, listToSearch) {
                  out[[i]][[idx]], 
                  fixed = TRUE)
         }
-        # print(out[[i]])
       }
       
       # Search for var in mathjax terms
       mathjax.indices <- which(grepl(mathjax.name, out[[i]], fixed = TRUE))
       if (length(mathjax.indices) > 0) {
-        print(mathjax.indices)
         for (idx in mathjax.indices) {
           out[[i]][[idx]] <- 
             gsub(mathjax.name, 
@@ -46,10 +39,8 @@ RenameVarInList <- function(oldName, newName, listToSearch) {
                  out[[i]][[idx]],  
                  fixed = TRUE)
         }
-        # print(out[[i]])
       }
     }
-    
   }
   return(out)
 }

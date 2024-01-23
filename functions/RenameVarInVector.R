@@ -17,7 +17,6 @@ RenameVarInVector <- function(oldName, newName, vectorToSearch) {
   regex_oldName <- paste0("\\b", oldName, "\\b")
   
   idx = 0
-  print("Running Rename Parameter")
   for (string.var in vectorToSearch) {
     idx = idx + 1 
     has.var <- grepl(regex_oldName, string.var, fixed = TRUE)

@@ -37,10 +37,6 @@ ssd_objective <- function(par.to.estimate,
       list(eval(parse(text = d_of_var)))
     })
   }
-  # print(ics.in.model)
-  # print(tvs)
-  # print(par.to.run)
-  # print(rateEqns)
   out <- ode(y = ics.in.model, 
              times = tvs, 
              func = myModel, 
@@ -65,7 +61,6 @@ ssd_objective <- function(par.to.estimate,
   ssqres <- (df.pred - df.expected)
   # Sum all terms
   out <- unname(unlist(ssqres))
-  # print(out)
   return(out)
 }
 
@@ -261,9 +256,6 @@ observeEvent(input$pe_parameter_value_table$changes$changes, {
     #   rv.PAR.ESTIMATION$pe.ub[xi] <- old
     # }
   }
-  PrintVar(rv.PAR.ESTIMATION$pe.initial.guess)
-  PrintVar(rv.PAR.ESTIMATION$pe.lb)
-  PrintVar(rv.PAR.ESTIMATION$pe.ub)
 })
 
 # Turn on/off rhandsontable ----------------------------------------------------
@@ -485,7 +477,6 @@ output$pe_parameter_estimation_plot <- renderPlot({
 
 # Store Estimated Parameters As Main Parameters --------------------------------
 observeEvent(input$pe_store_estimated_parameters, {
-  # browser()
   # Find calculated parameters and their values
   new.pars <- rv.PAR.ESTIMATION$pe.parameters
   new.vals <- rv.PAR.ESTIMATION$pe.calculated.values

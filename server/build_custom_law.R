@@ -4,8 +4,6 @@
 observeEvent(input$TI_CC_enter_rate_law, {
   a <- parse_string_expression(input$TI_CC_enter_rate_law)
   is.valid <- is_valid_expression(input$TI_CC_enter_rate_law, a$valid.terms)
-  print(a$valid.terms)
-  print(is.valid)
   if (is.valid) {
     js$backgroundCol("TI_CC_enter_rate_law", "#90ee90")
   } else {
@@ -103,7 +101,6 @@ observeEvent(input$bttn_store_custom_reaction, {
     latex.rate    <- NA
     mathjax.rate  <- NA
     mathml.rate   <- NA
-    print(string.rate)
     tryCatch(
       expr = {
         law.converted <- ConvertRateLaw(string.rate)
@@ -283,8 +280,6 @@ output$TO_CC_parameter_table <- renderRHandsontable({
   
   Type <- rep("Parameter", length(Variables))
   # Type <- factor(rep(par.types[1], length(Variables)), levels = par.types)
-  print(Variables)
-  print(Type)
   if (isTruthy(Variables)) {
     df.to.show <- data.frame(Variables,
                              Type
