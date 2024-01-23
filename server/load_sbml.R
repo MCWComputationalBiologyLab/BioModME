@@ -215,9 +215,13 @@ sbml_2_biomodme_species <- function(sbml.model) {
     species.list[[i]]$ID                <- species.ids[i]
     species.list[[i]]$Name              <- species.names[i]
     species.list[[i]]$Value             <- species.values[i]
-    species.list[[i]]$Unit              <- rv.UNITS$units.base$For.Var
+    species.list[[i]]$Unit              <- paste0(rv.UNITS$units.base$For.Var,
+                                                  "/",
+                                                  rv.UNITS$units.base$Volume)
     species.list[[i]]$UnitDescription   <- "conc (mol)"
-    species.list[[i]]$BaseUnit          <- rv.UNITS$units.base$For.Var
+    species.list[[i]]$BaseUnit          <- paste0(rv.UNITS$units.base$For.Var,
+                                                  "/",
+                                                  rv.UNITS$units.base$Volume)
     species.list[[i]]$BaseValue         <- species.values[i]
     species.list[[i]]$Description       <- ""
     species.list[[i]]$Compartment       <- species.comp[i]
