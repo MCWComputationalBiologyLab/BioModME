@@ -549,7 +549,7 @@ ExtractReactionMathFromSBML <- function(doc,
     reactants  <- SplitEntry(reactionList[[i]]$Reactants)
     products   <- SplitEntry(reactionList[[i]]$Products)
     modifiers  <- SplitEntry(reactionList[[i]]$Modifiers)
-
+    
     # Grab string of mathml.exp for function check
     mathml.string <- toString(reactions[[i]][["kineticLaw"]][["math"]])
     
@@ -595,16 +595,20 @@ ExtractReactionMathFromSBML <- function(doc,
           }
           
           # Calculate Rate Law By Substitution
-          string.rate.law <- SubstituteRateLawTerms(function.rate.law,
-                                                    function.reactants,
-                                                    function.products,
-                                                    function.modifiers,
-                                                    function.parameters,
-                                                    reactants,
-                                                    products,
-                                                    modifiers,
-                                                    parameters)
-          break
+          replacement <- SubstituteRateLawTerms(function.rate.law,
+                                                function.reactants,
+                                                function.products,
+                                                function.modifiers,
+                                                function.parameters,
+                                                reactants,
+                                                products,
+                                                modifiers,
+                                                parameters)
+          # browser()
+          # Solve mathml xml to string with function
+          mathml.w.fun <- rmp(gsub(" ", "", convertML2R(mathml.exp)))
+          pattern <- paste0(reaction.law, "\\((.*?)\\)")
+          string.rate.law <- gsub(pattern, replacement, mathml.w.fun)
         }
       }
     }
@@ -612,7 +616,7 @@ ExtractReactionMathFromSBML <- function(doc,
     # Extraction of reaction information if not function based
     if (!equation.uses.function) {
       reaction.law <- "CUSTOM"
-
+      
       # Convert mathml to string rate law for r
       string.rate.law <- rmp(gsub(" ", "", convertML2R(mathml.exp)))
       
@@ -649,7 +653,6 @@ ExtractReactionMathFromSBML <- function(doc,
       "Equation.Text"    = string.rate.law,
       "MathMl.Rate.Law"  = mathml.string
     )
-    # reactionList[[i]] <- to.add
   }
   
   return(reactionList)
@@ -704,6 +707,17 @@ FindFunctionDefInformation <- function(doc, functionDefList, sbmlList) {
   #                     (from ExtractFunctionDefFromSBML)
   #   @sbmlList: (list) sbml components 
   #              (from read_xml(pathToXMLFile) %>% as_list()) 
+  #              
+  extract_function_name <- function(input_string) {
+    matches <- gregexpr("<apply>\\s*<ci>\\s*(.*?)\\s*</ci>", input_string, perl = TRUE)
+    # Extract the matched substrings
+    substrings <- regmatches(input_string, matches)
+    
+    # Extract the content between <ci> and </ci>
+    result <- gsub("<ci>|</ci>", "", strsplit(substrings[[1]], "\n")[[1]][2])
+    return(RemoveWS(result))
+  }
+  
   modelList <- sbmlList$sbml$model
   reaction.info <- vector(mode = "character", 
                           length = length(modelList$listOfReactions))
@@ -1164,47 +1178,54 @@ convertML2R <- function(node) {
 }
 
 
-convertML2R.default <- function(children) {  
+convertML2R.default <- function(children) {
+  # print("DEFAULT")
   # this gets used when a "list" of children nodes are sent in
   n <- length(children)
-  expr <- c() 
+  expr <- c()
   for(i in 1:n) {
     expr <- c(expr, convertML2R(children[[i]]))
-  }   
+  }
   return(expr)
 }
 
 convertML2R.XMLNode <-function(node){
-  nm <- xmlName(node) 
+  # print("XMLNODE")
+  nm <- xmlName(node)
+  # PrintVar(nm)
   if(nm=="power"||
      nm == "divide"||
      nm =="times"||
      nm=="plus"||
      nm=="minus" ||
      nm=="exp") {
-    op <- switch(nm, 
-                 power="^", 
+    op <- switch(nm,
+                 power="^",
                  divide="/",
                  times="*",
                  plus="+",
                  minus="-",
                  exp="exp")
     out <- as.character(op)
-    
+
   } else if (nm == "ci" || nm == "csymbol") {
     # Character node, grab variable
     out <- node$children[[1]]$value
-    
+
   } else if (nm == "cn") {
     # Numerical code, convert to character
     out <- as.character(node$children[[1]]$value)
-    
+
   } else if(nm == "apply") {
+    # print("IN APPlY")
     # If apply, recurse function to solve
     val <- convertML2R(node$children)
     # Once recursive term has ended condense the expression
     # First term is our condense term
     condense.term <- val[1]
+    # print("AFTER APPLY RECURSIVE")
+    # print(val)
+    # print(condense.term)
     # If mathematical operator, condense with that as collapse term
     if (condense.term %in% c("*", "+", "-")) {
       if (length(val) == 2) {
@@ -1214,7 +1235,7 @@ convertML2R.XMLNode <-function(node){
         out <- paste0(to.condense, collapse = condense.term)
         out <- paste0("(", out, ")")
       }
-      
+
     } else if (condense.term == "/") {
       # Wrap second term in parenthesis
       denominator <- paste0("(", val[3], ")")
@@ -1232,16 +1253,17 @@ convertML2R.XMLNode <-function(node){
       out <- paste0(condense.term, "(", out, ")")
     }
     else {
-      out <- paste0(val, collapse ="")
+      # This is if it is a function then we condense val[1](val[2], val[n])
+      # out <- paste0(val, collapse ="")
+      out <- paste0(val[1], "(", paste(val[-1], collapse = ", "), ")")
     }
   } else  {
     out <- NA
     cat("error: nm =",nm," not in set!\n")
   }
-  
+
   return(out)
 }
-
 
 # Convert MathML to R Original Function From Previous Made Package -------------
 # These function come direction from Bioconduction - SBMLR. They read mathml
@@ -1308,6 +1330,7 @@ mathml2R.XMLNode <-function(node){
   } else  {cat("error: nm =",nm," not in set!\n")}
   return(as.expression(val))
 }
+
 
 # The next two functions are used by rules and were taken straight from read.SBML
 # The idea is that SBML doesn't provide a list of atoms/leaves with rules, so we have to create them

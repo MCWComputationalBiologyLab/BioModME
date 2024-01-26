@@ -109,12 +109,10 @@ output$export_save_as_sbml <- downloadHandler(
                                              rv.PARAMETERS$parameters,
                                              rv.COMPARTMENTS$compartments,
                                              rv.ID$id.df)
-    print("IOS =-----------=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=")
     IOs          <- createInputOutputExport(rv.IO$InputOutput,
                                             rv.PARAMETERS$parameters,
                                             rv.COMPARTMENTS$compartments,
                                             rv.ID$id.df)
-    
     reactions <- c(reactions, IOs)
     # Once IO is working properly, we should merge reactions and IOs
     functions    <- createSBMLFunctionExport(rv.CUSTOM.LAWS$cl.reaction)

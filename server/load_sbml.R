@@ -996,14 +996,10 @@ LoadSBML_show_progress <- function(sbmlFile, w_sbml, spinner) {
     
     function.definitions <- NULL
     tryCatch({
-      print("FUNCTION DEFS ---------------------------------------------")
       function.definitions <- ExtractFunctionDefFromSBML(doc, func.info)
-      print(function.definitions[[3]])
-      print("AFTER EXTRACT --------------------------------------------")
       function.definitions <- FindFunctionDefInformation(doc,
                                                          function.definitions,
                                                          sbmlList)
-      print(function.definitions[[3]])
     })
     if(is.null(function.definitions)) {
       err.mes <- "Something went extracting SBML function definitions."
@@ -1097,8 +1093,7 @@ LoadSBML_show_progress <- function(sbmlFile, w_sbml, spinner) {
     # Store reaction information to output
     out[["reactions"]] <- reaction.list.results
   }
-  print("REACTIONS")
-  print(reaction.list.results[[3]])
+
   Sys.sleep(sleep.time)
   # Bind Parameter lists if they both exist (equations/parameters)
   w_sbml$update(html = waiter_fxn("Combining Parameter Information", 
