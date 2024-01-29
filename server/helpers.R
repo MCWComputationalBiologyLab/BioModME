@@ -672,18 +672,191 @@ parse_string_expression <- function(expr_string) {
   # Return, valid, invalid, all var, operators, mathematical terms
 }
 
+# determineFraction <- function(string_input) {
+#   delimiters <- "(?=[+\\-*/(){}])"
+#   # Define the operators
+#   # operators <- c("+", "-", "*", "/", "(", ")", "{", "}")
+#   # browser()
+#   # Create the regular expression pattern
+#   # delimiters <- paste0("[", paste0("\\", operators, collapse = ""), "]")
+#   all.terms <- trimws(
+#     strsplit(string_input, delimiters, perl = TRUE)[[1]], which = "both")
+#   
+#   frac_indices <- which(all.terms == "/")
+#   # Determin what terms belong in the fraction
+#   
+#   # If no fraction terms found we just keep original phase
+#   if (length(frac_indices) == 0) {
+#     new.expression <- paste0(all.terms, collapse = "")
+#   }
+#   
+#   # Case, idx before is end parenthesis
+#   count = 0
+#   while(length(frac_indices > 0)) {
+#     count <- count + 1
+#     if (count > 3) {break}
+#     idx <- frac_indices[1]
+#     top.par.remove <- FALSE
+#     bot.par.remove <- FALSE
+#     in.top.parenthesis <- FALSE
+#     in.bot.parenthesis <- FALSE
+#     # Determine top fraction 
+#     frac.top.start.idx <- 1
+#     frac.top.stop.idx <- idx - 1
+#     if (all.terms[idx-1] == ")") {
+#       frac.top.stop.idx <- idx - 2
+#       for (j in seq(idx-1, 1)) {
+#         if (all.terms[j] == "(") {
+#           frac.top.start.idx <- j + 1
+#           if (j != 1) {
+#             before.frac.idx <- j - 1
+#           } else {
+#             before.frac.idx <- j 
+#           }
+#           
+#           
+#           # Find idx of start parenthesis
+#           top.par.remove <- TRUE
+#           top.par.idx <- j
+#           break
+#         }
+#       }
+#     } else {
+#       # Case: No parenthesis, search for either beginning or "+" or "-"
+#       for (j in seq(idx-1, 1)) {
+#         # Check if at beginning
+#         if (all.terms[j] == "(") {
+#           frac.top.start.idx = j + 1
+#           before.frac.idx <- j
+#           in.top.parenthesis <- TRUE
+#           
+#           break
+#         }
+#         else if (j == 1) {
+#           frac.top.start.idx <- j
+#           before.frac.idx <- j
+#         }
+#         else if (all.terms[j] == "+" || 
+#                  all.terms[j] == "-" || 
+#                  all.terms[j] == "{" ) {
+#           frac.top.start.idx = j + 1
+#           before.frac.idx <- j
+#           break
+#         }
+#       }
+#     }
+#     
+#     # Determine Bottom Fraction ------------------------------------------------
+#     # Cases: Parenthesis after fraction
+#     end.par.idx <- length(all.terms)
+#     frac.bot.start.idx <- idx + 1
+#     frac.bot.stop.idx  <- length(all.terms)
+#     if (all.terms[idx+1] == "(") {
+#       frac.bot.start.idx <- idx + 2
+#       # Search for corresponding )
+#       for(j in seq(idx+1, length(all.terms))) {
+#         if (all.terms[j] == ")") {
+#           frac.bot.stop.idx = j-1
+#           if (j != length(all.terms)) {
+#             # if paraentheiss is not the last term continue after parenthesis
+#             after.frac.idx <- j + 1
+#           } else {
+#             # End continuation before parenthesis (logic will skip)
+#             after.frac.idx <- j 
+#           }
+#           
+#           # Find idx of end par
+#           bot.par.remove <- TRUE
+#           bot.par.idx <- j
+#           break
+#         }
+#       }
+#     } else {
+#       for (j in seq(idx+1, length(all.terms))) {
+#         if (all.terms[j] == ")") {
+#           frac.bot.stop.idx = j-1
+#           after.frac.idx <- j
+#           in.bot.parenthesis <- TRUE
+#         }
+#         else if (j == length(all.terms)) {
+#           frac.bot.stop.idx = j
+#           after.frac.idx <- j
+#         }
+#         else if (all.terms[j] == "+" || 
+#                  all.terms[j] == "-" ||
+#                  all.terms[j] == "}") {
+#           
+#           frac.bot.stop.idx = j-1
+#           after.frac.idx <- j
+#           break
+#         }
+#       }
+#     }
+#     
+#     # Piece Fraction Together --------------------------------------------------
+#     # Pop index that was used
+#     frac_indices <- frac_indices[-1]
+#     
+#     # Build new expression for all terms
+#     # top.term    <- all.terms[frac.top.start.idx:frac.top.stop.idx]
+#     # bottom.term <- all.terms[frac.bot.start.idx:frac.bot.stop.idx]
+#     top.term <- paste0(all.terms[frac.top.start.idx:frac.top.stop.idx],
+#                        collapse = "")
+#     bottom.term <- paste0(all.terms[frac.bot.start.idx:frac.bot.stop.idx],
+#                           collapse = "")
+#     
+#     # if (inside.parenthesis) {
+#     #   
+#     # }
+#     if (before.frac.idx != 1) {
+#       before.frac <- paste0(all.terms[1:before.frac.idx],
+#                             collapse = "")
+#     } 
+#     else if (before.frac.idx == 1 && in.top.parenthesis) {
+#       before.frac <- "("
+#     }
+#     else {before.frac <- ""}
+#     
+#     
+#     if (after.frac.idx != length(all.terms)) {
+#       after.frac <- paste0(all.terms[(after.frac.idx):length(all.terms)],
+#                            collapse = "")
+#     }
+#     else if (after.frac.idx == length(all.terms) && in.bot.parenthesis) {
+#       after.frac <- ")"
+#     }
+#     else {after.frac <- ""}
+#     
+#     my.frac <- paste0("MathJaxFrac{",
+#                       top.term,
+#                       "}{",
+#                       bottom.term,
+#                       "}")
+#     
+#     new.expression <- paste0(before.frac, my.frac, after.frac)
+#     all.terms <- trimws(
+#       strsplit(new.expression, delimiters, perl = TRUE)[[1]], which = "both")
+#     frac_indices <- which(all.terms == "/")
+#   }
+#   
+#   new.expression <- str_replace_all(new.expression, "MathJaxFrac", "\\\\frac")
+#   return(new.expression)
+# }
+# 
 determineFraction <- function(string_input) {
   delimiters <- "(?=[+\\-*/(){}])"
   # Define the operators
   # operators <- c("+", "-", "*", "/", "(", ")", "{", "}")
-  
+  # browser()
   # Create the regular expression pattern
   # delimiters <- paste0("[", paste0("\\", operators, collapse = ""), "]")
+  string_input <- gsub(" ", "", string_input)
   all.terms <- trimws(
     strsplit(string_input, delimiters, perl = TRUE)[[1]], which = "both")
-  
+  # print("All terms")
+  # print(all.terms)
   frac_indices <- which(all.terms == "/")
-  # Determin what terms belong in the fraction
+  # Determine what terms belong in the fraction
   
   # If no fraction terms found we just keep original phase
   if (length(frac_indices) == 0) {
@@ -736,9 +909,7 @@ determineFraction <- function(string_input) {
           frac.top.start.idx <- j
           before.frac.idx <- j
         }
-        else if (all.terms[j] == "+" || 
-                 all.terms[j] == "-" || 
-                 all.terms[j] == "{" ) {
+        else if (all.terms[j] %in% c("+", "-", "{")) {
           frac.top.start.idx = j + 1
           before.frac.idx <- j
           break
@@ -748,6 +919,7 @@ determineFraction <- function(string_input) {
     
     # Determine Bottom Fraction ------------------------------------------------
     # Cases: Parenthesis after fraction
+    # browser()
     end.par.idx <- length(all.terms)
     frac.bot.start.idx <- idx + 1
     frac.bot.stop.idx  <- length(all.terms)
@@ -782,10 +954,8 @@ determineFraction <- function(string_input) {
           frac.bot.stop.idx = j
           after.frac.idx <- j
         }
-        else if (all.terms[j] == "+" || 
-                 all.terms[j] == "-" ||
-                 all.terms[j] == "}") {
-          
+        else if (all.terms[j] %in% c("+", "-", "}")) {
+
           frac.bot.stop.idx = j-1
           after.frac.idx <- j
           break
