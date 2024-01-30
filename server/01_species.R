@@ -213,8 +213,9 @@ parameterCheck <- function(parameter,
     idx <- which(params.names %in% par.name)
     old.unit.d <- parameterList[[idx]]$UnitDescription
     
+    
     # Make sure unit description is the same of each. 
-    if (old.unit.d != new.unit.d) {
+    if (!is.na(old.unit.d) & old.unit.d != new.unit.d) {
       var.pass <- FALSE
       error.message <- paste0(par.name, 
                               ": parameter name is used and has a different 

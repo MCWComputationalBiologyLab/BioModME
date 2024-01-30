@@ -1730,7 +1730,7 @@ observeEvent(input$eqnCreate_addEqnToVector, {
              "</math>")
     
   }
-  
+  # browser()
   #Error Check
   # We need parameter name, unit description
   passed.error.check <- TRUE
