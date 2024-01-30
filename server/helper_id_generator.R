@@ -8,7 +8,7 @@ GenerateId <- function(currentSeed, type) {
   # Outputs: 
   #   @list: seed - incremented seed Values, id - unique id of variable
   
-  print(currentSeed)
+  # print(currentSeed)
   #format the seed to a nice format and convert it to a string
   if (currentSeed < 10) {
     seed <- paste0("000", as.character(currentSeed))

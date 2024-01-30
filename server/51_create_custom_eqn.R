@@ -41,8 +41,7 @@ observeEvent(input$TI_custom_eqn_LHS, {
 
 # Store custom equation
 observeEvent(input$bttn_custom_eqn_enter, {
-  print("Custom equation entered")
-  
+
   # Extract information
   LHS.var <- RemoveWS(input$TI_custom_eqn_LHS)
   RHS.exp <- RemoveWS(input$TI_custom_eqn_RHS)

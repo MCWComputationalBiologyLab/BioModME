@@ -71,8 +71,6 @@ output$DifferentialEquationsBox <- renderUI({
 })
 
 output$summary_DE_mathjax <- renderUI({
-  print("DIFF Equations")
-  print(rv.DE$de.equations.list)
   text.size <- input$TI_summary_de_mathjax_font_size
   overflow.type <- ifelse(input$CI_summary_hide_scrollbars, "hidden", "auto")
   title.style = paste0("font-size:",

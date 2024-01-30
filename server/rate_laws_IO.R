@@ -191,11 +191,6 @@ FlowBetween <- function(speciesOut,
   # Out <- "-(F1*A), +(F1.2*B), +(F1.3*C)
   
   # flows <- strsplit(flowRates, ", ")[[1]]
-  print(speciesOut)
-  print(speciesIn)
-  print(compartmentIn)
-  print(compartmentOut)
-  print(flowRates)
   
   # Split Terms
   # speciesOut     <- strsplit(speciesOut, ", ")[[1]]
@@ -218,7 +213,6 @@ FlowBetween <- function(speciesOut,
   rate.out <- Flow(speciesOut, 
                    flowRates[1],
                    buildWMinus = TRUE)
-  print(rate.out)
   rate.str[1] <- rate.out$string
   rate.ps[1]  <- rate.out$pretty.string
   rate.lat[1] <- rate.out$latex
@@ -230,7 +224,6 @@ FlowBetween <- function(speciesOut,
     rate.in <- Flow(speciesOut, 
                     flowRates[i+1],
                     buildWPlus = TRUE)
-    print(rate.in)
     rate.str[i+1] <- rate.in$string
     rate.ps[i+1]  <- rate.in$pretty.string
     rate.lat[i+1] <- rate.in$latex
@@ -250,7 +243,5 @@ FlowBetween <- function(speciesOut,
                    "latex"         = latex,
                    "mj"            = mj,
                    "mathml"        = ml)
-  print("out list")
-  print(out.list)
   return(out.list)
 }

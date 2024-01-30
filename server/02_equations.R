@@ -768,7 +768,6 @@ observeEvent(input$eqnCreate_addEqnToVector, {
                                         rv.UNITS$units.selected$Duration,
                                         addOrder = 1)
         # Perform conversion to base units if needed
-        print(u)
         if (u$unit != u$unit.base) {
           base.val <- UnitConversion(u$unit.d,
                                      u$unit,
@@ -2143,7 +2142,6 @@ output$main_eqns_table <- renderRHandsontable({
   override <- rv.REFRESH$refresh.eqn.table
   df <- as_tibble(do.call(rbind, rv.REACTIONS$reactions))
   # df <- bind_rows(rv.REACTIONS$reactions)
-  # print(df)
   if (nrow(df) == 0) {
   # if (nrow(rv.REACTIONS$reactions.df) == 0) {
     temp <- data.frame(c("Press addition button below to add equations
@@ -2175,7 +2173,6 @@ output$main_eqns_table <- renderRHandsontable({
                        allowColEdit = FALSE
       )
     } else {
-    # print(rv.REACTIONS$reactions.df)
     df.to.show <- select(df,
                          "Equation.Text",
                          "Eqn.Display.Type",
@@ -2555,7 +2552,6 @@ observeEvent(rv.REACTIONS$reactions, {
   rv.REACTIONS$reactions.df <- as_tibble(
     do.call(rbind, rv.REACTIONS$reactions))
   
-  print(rv.REACTIONS$reactions.df)
   #Update Number Counters on Equation Modals
   updatePickerInput(session,
                     'eqnCreate_edit_select_equation',

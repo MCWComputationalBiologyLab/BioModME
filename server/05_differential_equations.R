@@ -376,9 +376,6 @@ buildMathjaxEqn <- function(de.entry,
 #     diff.eqns[i] <- current.diff
 #   }
 #   
-#   print("Diff.eqns")
-#   print(diff.eqns)
-#   
 #   out <- paste0(diff.eqns, collapse = " \\\\\\\\\\ ")
 #   # out <- paste0("$$", out, "$$")
 #   out <- paste0("$$\\begin{aligned} ", out, "\\end{aligned}$$")
@@ -391,8 +388,6 @@ buildMathjaxEqn <- function(de.entry,
 #   # 
 #   # # Collapse vector with mathjax newline (//)
 #   # for (i in seq_along(rv.DE$de.equations.list)) {
-#   #   print("DE TESTS ITER")
-#   #   print(rv.DE$de.equations.list[[i]]$ODES.mathjax.vector)
 #   #   if (isTruthy(rv.DE$de.equations.list[[i]]$ODES.mathjax.vector)) {
 #   #     textOut <- paste0(textOut, 
 #   #                    rv.DE$de.equations.list[[i]]$ODES.mathjax.vector, 
@@ -434,7 +429,6 @@ output$vTO_displayEquations_txt <- renderText({
 })
 
 output$vTO_displayEquations_p_mathml <- renderText({
-  # browser()
   eqns  <- unname(sapply(rv.DE$de.equations.list,
                          get,
                          x = "ODES.eqn.string"))
@@ -451,7 +445,7 @@ output$vTO_displayEquations_p_mathml <- renderText({
   # Convert to mathml
   mathml_equations <- c()
   for (i in seq_along(eqns)) {
-    print(eqns[i])
+    # print(eqns[i])
     temp <- mathml(eval(parse(text=paste0("quote(", eqns[i], ")"))))
     temp <- gsub("&#x2062;", "*", temp)
     temp <- gsub("&sdot;", "*", temp)
@@ -465,7 +459,6 @@ output$vTO_displayEquations_p_mathml <- renderText({
       # )
     mathml_equations <- c(mathml_equations, temp)
   }
-  # browser()
   if (input$PI_dde_p_mathml_selection == "View All") {
     formatted_mathml <- sapply(mathml_equations, function(eq) {
       parsed_xml <- read_xml(eq)
@@ -487,11 +480,9 @@ output$vTO_displayEquations_p_mathml <- renderText({
   }
   
   return(eqns_out)
-  # print(eqns)
 })
 
 output$vTO_displayEquations_c_mathml <- renderText({
-  # browser()
   eqns  <- unname(sapply(rv.DE$de.equations.list,
                          get,
                          x = "ODES.eqn.string"))
@@ -536,14 +527,12 @@ output$vTO_displayEquations_c_mathml <- renderText({
                     xml_str,
                     fixed = TRUE)
   }
-  # print(eqns)
 })
 
 output$vTO_displayEquations_latex <- renderText({
   eqns  <- unname(sapply(rv.DE$de.equations.list,
                          get,
                          x = "ODES.eqn.string"))
-  print(eqns)
 })
 
 output$dbttn_download_diffequations_specific <- downloadHandler(

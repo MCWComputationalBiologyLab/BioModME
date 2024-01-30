@@ -148,7 +148,6 @@ observeEvent(input$load_model, {
   DE$custom.diffeq.var <- model.load$custom.diffeq.var
   DE$custom.diffeq     <- model.load$custom.diffeq
   DE$custom.diffeq.df  <- model.load$custom.diffeq.df
-  jPrint("Loaded DE")
   #-----------------------------------------------------------------------------
   
   # Load Input/Outputs Section
@@ -259,7 +258,6 @@ observeEvent(input$load_model, {
   #   id$id.diffeq <- ids$dif
   #   id$id.seed <- ids$seed
   # }
-  jPrint("Loaded Ids")
   #solveForDiffEqs()
   
   # Load things for loop mode
@@ -269,8 +267,7 @@ observeEvent(input$load_model, {
   loop$time.start <- options$time.start 
   loop$time.end <- options$time.end 
   loop$time.step <- options$time.step 
-  jPrint("Loaded Loop")
-  
+
   #initialize things for compare mode
   compareModel$model.1 <- results$model.final
   compareModel$model.2 <- results$model.final
@@ -300,7 +297,6 @@ observeEvent(input$load_model, {
   # updatePickerInput(session, 
   #                   "compare_models_select_vars",
   #                   choices = params$vars.all)
-  jPrint("update 1")
   updatePickerInput(session,
                     "eqnCreate_selectEqnForDescription",
                     choices = my.choices)
@@ -320,8 +316,7 @@ observeEvent(input$load_model, {
   updatePickerInput(session
                     ,"Inout_delete_IO_eqn"
                     ,choices = seq(IO$n.IO))
-  jPrint("update 2")
-  
+
   updatePickerInput(session,
                     'eqnCreate_edit_select_equation'
                     ,choices = seq(length(eqns$main)))
@@ -337,8 +332,7 @@ observeEvent(input$load_model, {
   updatePickerInput(session #updates output substrate choices for enzyme degradation
                     ,"enzyme_deg_substrate"
                     ,choices = sort(vars$species))
-  jPrint("update 3")
-  
+
   # Update Model Options -------------------------------------------------------
   updateTextInput(session,
                   "execute_time_start",
@@ -372,8 +366,7 @@ observeEvent(input$load_model, {
   updateTextInput(session, "loop_start_time", value = input$execute_time_start)
   updateTextInput(session, "loop_end_time", value = input$execute_time_end)
   updateTextInput(session, "loop_time_step", value = input$execute_time_step)
-  jPrint("update 5")
-  
+
   # w_load$hide()
   waiter_hide()
 })

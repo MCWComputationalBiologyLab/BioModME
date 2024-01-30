@@ -549,7 +549,7 @@ ExtractReactionMathFromSBML <- function(doc,
     reactants  <- SplitEntry(reactionList[[i]]$Reactants)
     products   <- SplitEntry(reactionList[[i]]$Products)
     modifiers  <- SplitEntry(reactionList[[i]]$Modifiers)
-
+    
     # Grab string of mathml.exp for function check
     mathml.string <- toString(reactions[[i]][["kineticLaw"]][["math"]])
     
@@ -595,16 +595,20 @@ ExtractReactionMathFromSBML <- function(doc,
           }
           
           # Calculate Rate Law By Substitution
-          string.rate.law <- SubstituteRateLawTerms(function.rate.law,
-                                                    function.reactants,
-                                                    function.products,
-                                                    function.modifiers,
-                                                    function.parameters,
-                                                    reactants,
-                                                    products,
-                                                    modifiers,
-                                                    parameters)
-          break
+          replacement <- SubstituteRateLawTerms(function.rate.law,
+                                                function.reactants,
+                                                function.products,
+                                                function.modifiers,
+                                                function.parameters,
+                                                reactants,
+                                                products,
+                                                modifiers,
+                                                parameters)
+          # browser()
+          # Solve mathml xml to string with function
+          mathml.w.fun <- rmp(gsub(" ", "", convertML2R(mathml.exp)))
+          pattern <- paste0(reaction.law, "\\((.*?)\\)")
+          string.rate.law <- gsub(pattern, replacement, mathml.w.fun)
         }
       }
     }
@@ -612,7 +616,7 @@ ExtractReactionMathFromSBML <- function(doc,
     # Extraction of reaction information if not function based
     if (!equation.uses.function) {
       reaction.law <- "CUSTOM"
-
+      
       # Convert mathml to string rate law for r
       string.rate.law <- rmp(gsub(" ", "", convertML2R(mathml.exp)))
       
@@ -649,7 +653,6 @@ ExtractReactionMathFromSBML <- function(doc,
       "Equation.Text"    = string.rate.law,
       "MathMl.Rate.Law"  = mathml.string
     )
-    # reactionList[[i]] <- to.add
   }
   
   return(reactionList)
@@ -704,7 +707,33 @@ FindFunctionDefInformation <- function(doc, functionDefList, sbmlList) {
   #                     (from ExtractFunctionDefFromSBML)
   #   @sbmlList: (list) sbml components 
   #              (from read_xml(pathToXMLFile) %>% as_list()) 
+  #              
+  extract_function_name <- function(input_string) {
+    matches <- gregexpr("<apply>\\s*<ci>\\s*(.*?)\\s*</ci>", input_string, perl = TRUE)
+    # Extract the matched substrings
+    substrings <- regmatches(input_string, matches)
+    
+    # Extract the content between <ci> and </ci>
+    result <- gsub("<ci>|</ci>", "", strsplit(substrings[[1]], "\n")[[1]][2])
+    return(RemoveWS(result))
+  }
+  
   modelList <- sbmlList$sbml$model
+  reaction.info <- vector(mode = "character", 
+                          length = length(modelList$listOfReactions))
+  # Create reaction df of information
+  for (i in seq_along(modelList$listOfReactions)) {
+    # Separate current reaction node
+    current.reaction <- modelList$listOfReactions[[i]]
+    # Pull math law and check if it contains the current search fxn
+    reactions <- doc$doc$children$sbml[["model"]][["listOfReactions"]]
+    
+    # Extract mathml expression and make string
+    mathml.exp <- reactions[[i]][["kineticLaw"]][["math"]][[1]]
+    mathml.exp.string <- toString(reactions[[i]][["kineticLaw"]][["math"]])
+    reaction.info[i] <- extract_function_name(mathml.exp.string)
+  }
+  # browser()
   # Iterating function definitions, the iterating reactions to find matching 
   # function id in the reaction. From there we will extract reaction info to 
   # build up the proper function definition.
@@ -713,8 +742,12 @@ FindFunctionDefInformation <- function(doc, functionDefList, sbmlList) {
   for (i in seq_along(functionDefList)) {
     function.id <- functionDefList[[i]]$id
     match.found <- FALSE
-    for (j in seq_along(modelList$listOfReactions)) {
-      # Separate current reaction node
+    # if (i ==3) {browser()}
+    j <- match(function.id, reaction.info)
+    
+    if (!is.na(j)) {match.found <- TRUE} else {match.found <- FALSE}
+    
+    if (match.found) {
       current.reaction <- modelList$listOfReactions[[j]]
       # Pull math law and check if it contains the current search fxn
       reactions <- doc$doc$children$sbml[["model"]][["listOfReactions"]]
@@ -722,85 +755,84 @@ FindFunctionDefInformation <- function(doc, functionDefList, sbmlList) {
       # Extract mathml expression and make string
       mathml.exp <- reactions[[j]][["kineticLaw"]][["math"]][[1]]
       mathml.exp.string <- toString(reactions[[j]][["kineticLaw"]][["math"]])
-      # Search if the function id exists in the mathml string
-      if (grepl(function.id, mathml.exp.string, fixed = TRUE)) {
-        # Extract from mathml string block
-        # There is probably a much better way to do this but I'm straped for time
-        # We will push the mathml string through an expression solver getting a 
-        # results like "V1*funcDef(var1,var2)" and will extract var1/2 from funcDef
-        solved.expr <- toString(mathml2R(mathml.exp))
-        # Extract terms between parentheses
-        terms <- str_extract_all(solved.expr, "\\((.*?)\\)")[[1]]
-        # Remove the parentheses from the extracted terms
-        terms <- gsub("\\(|\\)", "", terms)
-        # Split the terms by commas and trim white space
-        terms <- trimws(strsplit(terms, ",")[[1]])
-        
-        # Pull reaction information
-        reactants.exists <- FALSE
-        products.exists   <- FALSE
-        modifiers.exists  <- FALSE
-        parameters.exists <- FALSE
-        reaction.list <- vector("list", 1)
-        found.terms <- c()
-        
-        for (k in seq_along(current.reaction)) {
-          cur.node <- current.reaction[k]
-          node.name <- names(cur.node)
-          if (node.name == "listOfReactants") {
-            reactants.exists <- TRUE
-            node.reactants <- Attributes2Tibble(cur.node$listOfReactants)
-            # Grab the species from tibble
-            spec.grab <- node.reactants %>% pull(species)
-            found.terms <- c(found.terms, spec.grab)
-            # Condense multiple values to be comma separated
-            collapsed.grab <- paste(spec.grab, collapse = ", ");
-            reaction.list[[1]]$reactants <- collapsed.grab
-          } else if (node.name == "listOfModifiers") {
-            modifiers.exists <- TRUE
-            node.modifiers <- Attributes2Tibble(cur.node$listOfModifiers)
-            modifier.grab <- node.modifiers %>% pull(species)
-            found.terms <- c(found.terms, modifier.grab)
+      
+      # Extract from mathml string block
+      # There is probably a much better way to do this but I'm straped for time
+      # We will push the mathml string through an expression solver getting a 
+      # results like "V1*funcDef(var1,var2)" and will extract var1/2 from funcDef
+      solved.expr <- toString(mathml2R(mathml.exp))
+      # Extract terms between parentheses
+      terms <- str_extract_all(solved.expr, "\\((.*?)\\)")[[1]]
+      # Remove the parentheses from the extracted terms
+      terms <- gsub("\\(|\\)", "", terms)
+      # Split the terms by commas and trim white space
+      terms <- trimws(strsplit(terms, ",")[[1]])
+      
+      # Pull reaction information
+      reactants.exists <- FALSE
+      products.exists   <- FALSE
+      modifiers.exists  <- FALSE
+      parameters.exists <- FALSE
+      reaction.list <- vector("list", 1)
+      found.terms <- c()
+      
+      for (k in seq_along(current.reaction)) {
+        cur.node <- current.reaction[k]
+        node.name <- names(cur.node)
+        if (node.name == "listOfReactants") {
+          reactants.exists <- TRUE
+          node.reactants <- Attributes2Tibble(cur.node$listOfReactants)
+          # Grab the species from tibble
+          spec.grab <- node.reactants %>% pull(species)
+          found.terms <- c(found.terms, spec.grab)
+          # Condense multiple values to be comma separated
+          collapsed.grab <- paste(spec.grab, collapse = ", ");
+          reaction.list[[1]]$reactants <- collapsed.grab
+        } else if (node.name == "listOfModifiers") {
+          modifiers.exists <- TRUE
+          node.modifiers <- Attributes2Tibble(cur.node$listOfModifiers)
+          modifier.grab <- node.modifiers %>% pull(species)
+          found.terms <- c(found.terms, modifier.grab)
+          
+          reaction.list[[1]]$modifiers <- paste(modifier.grab,
+                                                collapse = ", ")
+        } else if (node.name == "listOfProducts") {
+          products.exists <- TRUE
+          node.products <- Attributes2Tibble(cur.node$listOfProducts)
+          product.grab <- node.products %>% pull(species)
+          found.terms <- c(found.terms, product.grab)
+          reaction.list[[1]]$products <- paste(product.grab,
+                                               collapse = ", ")
+        } else if (node.name == "kineticLaw") {
+          # Check if parameter node exists
+          node.par <- Attributes2Tibble(cur.node$kineticLaw$listOfParameters)
+          # Build Parameter df to join with parameters
+          if (nrow(node.par)> 0) {
+            parameters.exists <- TRUE
+            # Condense parameter data to build with equations table
+            reaction.list[[1]]$parameters <- paste(node.par %>% pull(id),
+                                                   collapse = ", ")
+            reaction.list[[1]]$parameters.val <- 
+              paste(node.par %>% pull(value),
+                    collapse = ", ")
+          } else {
+            # assign all remaining variables to parameters
+            parameters.exists <- TRUE
             
-            reaction.list[[1]]$modifiers <- paste(modifier.grab,
-                                                  collapse = ", ")
-          } else if (node.name == "listOfProducts") {
-            products.exists <- TRUE
-            node.products <- Attributes2Tibble(cur.node$listOfProducts)
-            product.grab <- node.products %>% pull(species)
-            found.terms <- c(found.terms, product.grab)
-            reaction.list[[1]]$products <- paste(product.grab,
-                                                 collapse = ", ")
-          } else if (node.name == "kineticLaw") {
-            # Check if parameter node exists
-            node.par <- Attributes2Tibble(cur.node$kineticLaw$listOfParameters)
-            # Build Parameter df to join with parameters
-            if (nrow(node.par)> 0) {
-              parameters.exists <- TRUE
-              # Condense parameter data to build with equations table
-              reaction.list[[1]]$parameters <- paste(node.par %>% pull(id),
-                                                     collapse = ", ")
-              reaction.list[[1]]$parameters.val <- 
-                paste(node.par %>% pull(value),
-                      collapse = ", ")
-            } else {
-              # assign all remaining variables to parameters
-              parameters.exists <- TRUE
-              
-              pars.grab <- terms[which(!(terms %in% found.terms))]
-              reaction.list[[1]]$parameters <- paste0(pars.grab, 
-                                                      collapse = ", ")
-            }
-            
-            
+            pars.grab <- terms[which(!(terms %in% found.terms))]
+            reaction.list[[1]]$parameters <- paste0(pars.grab, 
+                                                    collapse = ", ")
           }
+          
+          
         }
-        # Check for null cases 
-        if (!reactants.exists)  {reaction.list[[1]]$reactants  <- NA}
-        if (!products.exists)   {reaction.list[[1]]$products   <- NA}
-        if (!modifiers.exists)  {reaction.list[[1]]$modifiers  <- NA}
-        if (!parameters.exists) {reaction.list[[1]]$parameters <- NA}
-        
+      }
+      # Check for null cases 
+      if (!reactants.exists)  {reaction.list[[1]]$reactants  <- NA}
+      if (!products.exists)   {reaction.list[[1]]$products   <- NA}
+      if (!modifiers.exists)  {reaction.list[[1]]$modifiers  <- NA}
+      if (!parameters.exists) {reaction.list[[1]]$parameters <- NA}
+      
       # Perform model extraction for fxn definitions
       # Here we know the mathml code looks like 
       # <apply> <ci>lawname</ci><ci>var1</ci><ci>var2</ci></apply>
@@ -815,73 +847,67 @@ FindFunctionDefInformation <- function(doc, functionDefList, sbmlList) {
       # Notes: Need to account for when reactions have reactants/products that 
       #        exist but are not found in the law.
       # Pull function information
-        
-        fxn.reactants  <- NA
-        fxn.products   <- NA
-        fxn.modifiers  <- NA
-        fxn.parameters <- NA
-        
-        n.reactants  <- 0
-        n.products   <- 0
-        n.modifiers  <- 0
-        n.parameters <- 0
-        
-        fxn.vars <- SplitEntry(functionDefList[[i]]$variables)
-        for (ii in seq_along(terms)) {
-          # check if the var is in elements
-          if (terms[ii] %in% SplitEntry(reaction.list[[1]]$reactants)) {
-            if (anyNA(fxn.reactants)) {fxn.reactants <- c()}
-            fxn.reactants <- c(fxn.reactants, fxn.vars[ii])
-            n.reactants <- n.reactants + 1
-          } else if (terms[ii] %in% SplitEntry(reaction.list[[1]]$products)) {
-            if (anyNA(fxn.products)) {fxn.products <- c()}
-            fxn.products <- c(fxn.products, fxn.vars[ii])
-            n.products <- n.products + 1
-          } else if (terms[ii] %in% SplitEntry(reaction.list[[1]]$modifiers)) {
-            if (anyNA(fxn.modifiers)) {fxn.modifiers <- c()}
-            fxn.modifiers <- c(fxn.modifiers, fxn.vars[ii])
-            n.modifiers <- n.modifiers + 1
-          } else if (terms[ii] %in% SplitEntry(reaction.list[[1]]$parameters)) {
-            if (anyNA(fxn.parameters)) {fxn.parameters <- c()}
-            fxn.parameters <- c(fxn.parameters, fxn.vars[ii])
-            n.parameters <- n.parameters + 1
-          }
+      
+      fxn.reactants  <- NA
+      fxn.products   <- NA
+      fxn.modifiers  <- NA
+      fxn.parameters <- NA
+      
+      n.reactants  <- 0
+      n.products   <- 0
+      n.modifiers  <- 0
+      n.parameters <- 0
+      
+      fxn.vars <- SplitEntry(functionDefList[[i]]$variables)
+      for (ii in seq_along(terms)) {
+        # check if the var is in elements
+        if (terms[ii] %in% SplitEntry(reaction.list[[1]]$reactants)) {
+          if (anyNA(fxn.reactants)) {fxn.reactants <- c()}
+          fxn.reactants <- c(fxn.reactants, fxn.vars[ii])
+          n.reactants <- n.reactants + 1
+        } else if (terms[ii] %in% SplitEntry(reaction.list[[1]]$products)) {
+          if (anyNA(fxn.products)) {fxn.products <- c()}
+          fxn.products <- c(fxn.products, fxn.vars[ii])
+          n.products <- n.products + 1
+        } else if (terms[ii] %in% SplitEntry(reaction.list[[1]]$modifiers)) {
+          if (anyNA(fxn.modifiers)) {fxn.modifiers <- c()}
+          fxn.modifiers <- c(fxn.modifiers, fxn.vars[ii])
+          n.modifiers <- n.modifiers + 1
+        } else if (terms[ii] %in% SplitEntry(reaction.list[[1]]$parameters)) {
+          if (anyNA(fxn.parameters)) {fxn.parameters <- c()}
+          fxn.parameters <- c(fxn.parameters, fxn.vars[ii])
+          n.parameters <- n.parameters + 1
         }
-        
-        # Take into account possible variables that aren't in law (react/prod)
-        if (!is.na(reaction.list[[1]]$reactants)) {
-          react.i <- 1
-          while (n.reactants < length(reaction.list[[1]]$reactants)) {
-            if (anyNA(fxn.reactants)) {fxn.reactants <- c()}
-            n.reactants <- n.reactants + 1
-            to.add <- paste0("reactant_", react.i)
-            fxn.reactants <- c(fxn.reactants, to.add)
-            react.i <- react.i + 1
-          }
-        }
-        
-        if (!is.na(reaction.list[[1]]$products)) {
-          prod.i <- 1
-          while (n.products < length(reaction.list[[1]]$products)) {
-            if (anyNA(fxn.products)) {fxn.products <- c()}
-            n.products <- n.products + 1
-            to.add <- paste0("product_", prod.i)
-            fxn.products <- c(fxn.products, to.add)
-            prod.i <- prod.i + 1
-          }
-        }
-        
-        
-        functionDefList[[i]]$Reactants  <- collapseVector(fxn.reactants)
-        functionDefList[[i]]$Products   <- collapseVector(fxn.products)
-        functionDefList[[i]]$Modifiers  <- collapseVector(fxn.modifiers)
-        functionDefList[[i]]$Parameters <- collapseVector(fxn.parameters)
-        
-        match.found <- TRUE
-        break
       }
-    }
-    if (!match.found) {
+      
+      # Take into account possible variables that aren't in law (react/prod)
+      if (!is.na(reaction.list[[1]]$reactants)) {
+        react.i <- 1
+        while (n.reactants < length(reaction.list[[1]]$reactants)) {
+          if (anyNA(fxn.reactants)) {fxn.reactants <- c()}
+          n.reactants <- n.reactants + 1
+          to.add <- paste0("reactant_", react.i)
+          fxn.reactants <- c(fxn.reactants, to.add)
+          react.i <- react.i + 1
+        }
+      }
+      
+      if (!is.na(reaction.list[[1]]$products)) {
+        prod.i <- 1
+        while (n.products < length(reaction.list[[1]]$products)) {
+          if (anyNA(fxn.products)) {fxn.products <- c()}
+          n.products <- n.products + 1
+          to.add <- paste0("product_", prod.i)
+          fxn.products <- c(fxn.products, to.add)
+          prod.i <- prod.i + 1
+        }
+      }
+      
+      functionDefList[[i]]$Reactants  <- collapseVector(fxn.reactants)
+      functionDefList[[i]]$Products   <- collapseVector(fxn.products)
+      functionDefList[[i]]$Modifiers  <- collapseVector(fxn.modifiers)
+      functionDefList[[i]]$Parameters <- collapseVector(fxn.parameters)
+    } else {
       idx.to.remove  <- c(idx.to.remove, i)
       name.to.remove <- c(name.to.remove, function.id)
     }
@@ -1152,47 +1178,54 @@ convertML2R <- function(node) {
 }
 
 
-convertML2R.default <- function(children) {  
+convertML2R.default <- function(children) {
+  # print("DEFAULT")
   # this gets used when a "list" of children nodes are sent in
   n <- length(children)
-  expr <- c() 
+  expr <- c()
   for(i in 1:n) {
     expr <- c(expr, convertML2R(children[[i]]))
-  }   
+  }
   return(expr)
 }
 
 convertML2R.XMLNode <-function(node){
-  nm <- xmlName(node) 
+  # print("XMLNODE")
+  nm <- xmlName(node)
+  # PrintVar(nm)
   if(nm=="power"||
      nm == "divide"||
      nm =="times"||
      nm=="plus"||
      nm=="minus" ||
      nm=="exp") {
-    op <- switch(nm, 
-                 power="^", 
+    op <- switch(nm,
+                 power="^",
                  divide="/",
                  times="*",
                  plus="+",
                  minus="-",
                  exp="exp")
     out <- as.character(op)
-    
+
   } else if (nm == "ci" || nm == "csymbol") {
     # Character node, grab variable
     out <- node$children[[1]]$value
-    
+
   } else if (nm == "cn") {
     # Numerical code, convert to character
     out <- as.character(node$children[[1]]$value)
-    
+
   } else if(nm == "apply") {
+    # print("IN APPlY")
     # If apply, recurse function to solve
     val <- convertML2R(node$children)
     # Once recursive term has ended condense the expression
     # First term is our condense term
     condense.term <- val[1]
+    # print("AFTER APPLY RECURSIVE")
+    # print(val)
+    # print(condense.term)
     # If mathematical operator, condense with that as collapse term
     if (condense.term %in% c("*", "+", "-")) {
       if (length(val) == 2) {
@@ -1202,7 +1235,7 @@ convertML2R.XMLNode <-function(node){
         out <- paste0(to.condense, collapse = condense.term)
         out <- paste0("(", out, ")")
       }
-      
+
     } else if (condense.term == "/") {
       # Wrap second term in parenthesis
       denominator <- paste0("(", val[3], ")")
@@ -1220,16 +1253,17 @@ convertML2R.XMLNode <-function(node){
       out <- paste0(condense.term, "(", out, ")")
     }
     else {
-      out <- paste0(val, collapse ="")
+      # This is if it is a function then we condense val[1](val[2], val[n])
+      # out <- paste0(val, collapse ="")
+      out <- paste0(val[1], "(", paste(val[-1], collapse = ", "), ")")
     }
   } else  {
     out <- NA
     cat("error: nm =",nm," not in set!\n")
   }
-  
+
   return(out)
 }
-
 
 # Convert MathML to R Original Function From Previous Made Package -------------
 # These function come direction from Bioconduction - SBMLR. They read mathml
@@ -1296,6 +1330,7 @@ mathml2R.XMLNode <-function(node){
   } else  {cat("error: nm =",nm," not in set!\n")}
   return(as.expression(val))
 }
+
 
 # The next two functions are used by rules and were taken straight from read.SBML
 # The idea is that SBML doesn't provide a list of atoms/leaves with rules, so we have to create them

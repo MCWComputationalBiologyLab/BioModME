@@ -40,9 +40,7 @@ CreateRModel <- function(variables, parameters, parameterValues, ICsValues,
                            " with(as.list(c(state, parameters)), {\n")                         
   
   parameters <- BuildParameterStatement(parameters, parameterValues)
-  print(parameters)
   state <- BuildStateStatement(variables, ICsValues)
-  print(state)
   times <- paste0("times <- seq(", timeStart, ", ", timeEnd, ", by = ",
                   timeStep, ")\n")
   

@@ -190,8 +190,6 @@ observeEvent(rv.LOADBUTTONS$LB.count, {
   }
   
   # If files don't have content.ml
-  print("Reactions")
-  print(rv.REACTIONS$reactions)
   if (!purrr::is_empty(rv.REACTIONS$reactions)) {
     if (!isTruthy(rv.REACTIONS$reactions[[1]]$Content.MathMl)) {
       for (i in seq_along(rv.REACTIONS$reaction)) {

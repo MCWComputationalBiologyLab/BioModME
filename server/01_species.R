@@ -1,5 +1,4 @@
 # observeEvent(input$test_popup_table, {
-#   print("Test popout button")
 #   if (input$createVar_show_active_compartment_only) {
 #     #Extract variables of active compartment
 #     my.compartment <- input$createVar_active_compartment
@@ -25,9 +24,7 @@
 #                             "Compartment",
 #                             "Description"
 #   )
-#   print(df.by.comp)
 #   showTableInPopup(df.by.comp, session, width = 900, height = 500)
-#   print("show over")
 # })
 
 # Helper Functions -------------------------------------------------------------
@@ -65,7 +62,6 @@ variableCheck <- function(variable,
   # 3 - Variable name contains special characters
   # 4 - Variable name starts with punctuation
   # 5 - Variable name found in parameter names
-  #browser()
   var.pass <- TRUE
   error.message <- "None"
   error.code = 0 
@@ -76,10 +72,7 @@ variableCheck <- function(variable,
   repeat.param <- FALSE
   
   #check for repeat var
-  print(allowRepeatVar)
-  print(variable %in% currentVarList)
   if (variable %in% currentVarList && !allowRepeatVar) {
-    print("var used")
     var.pass <- FALSE
     error.message <- paste0(variable, ": Variable is already used")
     error.code <- 1

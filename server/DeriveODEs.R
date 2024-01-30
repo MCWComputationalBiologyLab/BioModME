@@ -56,11 +56,8 @@ DeriveDifferentialEquations <- function(compartments.rv,
     has.IO.ode  <- FALSE
     
     # Solve for eqn based odes
-    print(species.list[[i]]$Reaction.ids)
-    print(is.na(species.list[[i]]$Reaction.ids))
     if (!is.na(species.list[[i]]$Reaction.ids)) {
       has.eqn.ode <- TRUE
-      # print(species.list[[i]])
       eqn.ODEs <- DeriveEquationBasedODEs(species.list[[i]],
                                           compartments.rv,
                                           reactions.rv)
@@ -176,16 +173,12 @@ DeriveEquationBasedODEs <- function(species.list.entry,
     
   } else {
     reactions <- strsplit(species.list.entry$Reaction.ids, ", ")[[1]]
-    # browser()
     for (eqn.id in reactions) {
       # Extract equation by ID and appropriate laws
       eqn        <- reactions.rv$reactions[[eqn.id]]
       rate       <- eqn$String.Rate.Law
       latex.rate <- eqn$Latex.Rate.Law
       mj.rate    <- eqn$MathJax.Rate.Law
-      print(rate)
-      print(latex.rate)
-      print(mj.rate)
       law        <- eqn$Reaction.Law
       descript   <- eqn$Description
       
