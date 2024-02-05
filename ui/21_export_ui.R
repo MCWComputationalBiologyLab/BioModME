@@ -83,11 +83,15 @@ TAB_EXPORT <-
           ),
         downloadButton(
           outputId = "export_data_to_matlab_script",
-          label = "MatLab Code"
+          label = "MatLab"
         ),
         downloadButton(
           outputId = "export_data_to_R_script",
-          label = "R Code"
+          label = "R"
+        ),
+        downloadButton(
+          outputId = "export_data_to_julia_script",
+          label = "Julia"
         )
       )
     ),
