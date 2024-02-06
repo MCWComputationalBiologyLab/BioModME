@@ -668,6 +668,10 @@ output$export_data_to_matlab_script <- downloadHandler(
 
 # Export to Julia Script -------------------------------------------------------
 output$export_data_to_julia_script <- downloadHandler(
+  
+  # Get the equations from the custom equations
+  # rules <- unname(sapply(rv.CUSTOM.EQNS, get, x = "Equation"))
+  
   filename = function(){
     paste0(input$export_code_file_name, ".jl")
   },
@@ -677,7 +681,7 @@ output$export_data_to_julia_script <- downloadHandler(
       rv.PARAMETERS$parameters.names,
       rv.DE$de.eqns.for.solver,
       rv.PARAMETERS$parameters.df$BaseValue,
-      rv.CUSTOM.EQNS$ce.equations,
+      unname(sapply(rv.CUSTOM.EQNS$ce.equations, get, x = "Equation")),
       rv.SPECIES$species.df$BaseValue,
       rv.SOLVER.OPTIONS$time.start,
       rv.SOLVER.OPTIONS$time.end)

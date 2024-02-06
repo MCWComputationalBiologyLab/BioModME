@@ -126,7 +126,7 @@ jl_diff_equations <- function(species,
   # Unpack State Variables
   unpack_state_line <- paste0(paste(species, collapse = ', '), ' = u')
   unpack_state_lines <- strwrap(unpack_state_line, width = line_width, simplify = TRUE)
-  unpack_species <- paste("\t", unpack_state_lines, "\n", collapse = "\n")
+  unpack_species <- paste("\t", unpack_state_lines, collapse = "\n")
   diff_eq_string <- 
     paste(
       diff_eq_string, 
@@ -144,7 +144,7 @@ jl_diff_equations <- function(species,
   diff_eq_string <- 
     paste(
       diff_eq_string, 
-      "\t# Unpack Parameter Variables\n", 
+      "\n\t# Unpack Parameter Variables\n", 
       unpack_parameter_lines, 
       "\n",
       sep = ""
@@ -152,13 +152,12 @@ jl_diff_equations <- function(species,
   
   # NonConstant Values (Rules)
   if (length(rules) > 0) {
-    unpack_rules <- paste("\t", paste(rules, collapse = "\n"), "\n", sep = "")
+    unpack_rules <- paste("\n\t", paste(rules, collapse = "\n"), "\n", sep = "")
     diff_eq_string <- 
       paste(
         diff_eq_string, 
-        "\t# NonConstant Values (Rules)\n", 
-        unpack_rules, 
-        "\n",
+        "\n\t# NonConstant Values (Rules)", 
+        unpack_rules,
         sep = ""
       )
   }
@@ -204,7 +203,8 @@ jl_generate_script <- function(species,
                                rules, 
                                ICs, 
                                timeStart,
-                               timeEnd) {
+                               timeEnd,
+                               line_width = 80) {
   
   ConvertVarForJulia <- function(varToConvert) {
     #sub all "." and "_"
@@ -212,7 +212,7 @@ jl_generate_script <- function(species,
     
     return(converted.var)
   }
-  
+
   species  <- sapply(species, ConvertVarForJulia, USE.NAMES = FALSE)
   parameters <- sapply(parameters, ConvertVarForJulia, USE.NAMES = FALSE)
   diffEquations  <- sapply(diffEquations, ConvertVarForJulia, USE.NAMES = FALSE)
@@ -231,7 +231,7 @@ jl_generate_script <- function(species,
                    # "% ", h.eqns, "\n",
                    # "% ", h.io, "\n",
                    "# ", "-------------------------------\n\n",
-                   "using DifferentialEquations, ComponentArrays")
+                   "using DifferentialEquations, Plots, ComponentArrays")
   
   # Build State
   state.vars <- jl_state_variables(species, ICs)
@@ -242,7 +242,13 @@ jl_generate_script <- function(species,
   
   # Build Differential Equations
   diff.eq <- 
-    jl_diff_equations(species, parameters, diffEquations, rules, line_width = 60)
+    jl_diff_equations(
+      species, 
+      parameters,
+      diffEquations,
+      rules,
+      line_width = line_width
+    )
   
   # Create Driver
   driver <- c(
@@ -250,7 +256,7 @@ jl_generate_script <- function(species,
     "p = params()\n",
     "# We can pass and change parameter values above like so:\n",
     "#p = params(DOSE_ml = 5, DOSE_zf = 300)\n",
-    paste0("tspan = (", timeStart, timeEnd, ")\n"),
+    paste0("tspan = (", timeStart,", ", timeEnd, ")\n"),
     "prob = ODEProblem(modelDiffEq!, u0, tspan, p)\n",
     "sol = solve(prob)\n",
     "plot(sol, idxs = (0, 1))\n",
