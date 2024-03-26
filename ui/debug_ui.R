@@ -74,21 +74,21 @@ TAB_DEBUG <-
     actionButton(
       inputId = "bttn_debug_reset_diff_mathjax",
       label = "Resolve display laws"
-    ),
-    hr(), hr(), hr(),
-    fluidRow(
-      column(
-        width = 3,
-        verticalLayout(
-          pickerInput(
-            inputId = "css_selector",
-            label = "Select Skin",
-            choices = c("Default",
-                        "Night",
-                        "RoyalBlue"),
-            select = "Default"
-          )
-        )
-      )
     )
+    # hr(), hr(), hr(),
+    # fluidRow(
+    #   column(
+    #     width = 3,
+    #     verticalLayout(
+    #       pickerInput(
+    #         inputId = "css_selector",
+    #         label = "Select Skin",
+    #         choices = c("Default",
+    #                     "Night",
+    #                     "RoyalBlue"),
+    #         select = "Default"
+    #       )
+    #     )
+    #   )
+    # )
 )
