@@ -1573,13 +1573,16 @@ observeEvent(input$eqnCreate_addEqnToVector, {
   }
   else if (startsWith(input$eqnCreate_reaction_law, "user_custom_law_")) {
     # Parse and store information for custom entered law
-    # browser()
     # Find the custom law that is being used
     backend.name <- input$eqnCreate_reaction_law
-    custom.id    <- strsplit(backend.name, "_")[[1]][4]
+    
+    laws.names <- unname(sapply(rv.CUSTOM.LAWS$cl.reaction, get, x = "Law.Name"))
+    
+    idx <- match(backend.name, laws.names)
+    #custom.id    <- strsplit(backend.name, "_")[[1]][4]
     
     # Find the reaction entry of this id
-    law.entry <- rv.CUSTOM.LAWS$cl.reaction[[custom.id]]
+    law.entry <- rv.CUSTOM.LAWS$cl.reaction[[idx]]
     backend.call <- input$eqnCreate_reaction_law
     
     # Pull entry base variables
