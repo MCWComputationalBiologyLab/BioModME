@@ -675,6 +675,7 @@ observeEvent(input$myVariables_DT$changes$changes, {
     solveForDiffEqs()
 
   } else if (yi == 1) {
+    #browser()
     # CHANGE SPECIES VALUE
     rv.SPECIES$species[[search.id]]$Value <- new
     

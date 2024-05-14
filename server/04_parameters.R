@@ -274,8 +274,63 @@ observeEvent(input$parameters_DT$changes$changes, {
       }
     } else {
       # Reassign NA
+      # 
+      # I want to add the ability to add units to custom Parameters which are 
+      # the NA ones listed here.  To do so we need to change:
+      # $Unit
+      # $UnitDescription
+      # $BaseUnit
+      # $BaseValue (possibly)
+      # 
+      # To add the unit we would have to take what the user puts in and verify
+      # that it is valid.  Steps:
+      # (1) Break entered units: umol/L -> c("umol", "div", "L")
+      #   The fxn UnitBreak will give c("umol", "/", "L")
+      # (2) Find which are units and what types. 
+      # (3) Create Base unit term: mol/L
+      # (4) Create UnitDescription Term: conc (mol) <div> volume
+      # (5) Perform conversion to BaseValue umol/L -> mol/L
+      # 
+      # Break Term
+      #browser()
+      new.unit <- UnitBreak(new)
+      # Find Unit Definition
+      unit.definition <- UnitTermsToDefinition(new.unit, rv.UNITS$units.choices)
+      ud.string <- paste0(unit.definition, collapse = "")
+      # Check to make sure unit definition is valid: 
+      if (is.null(unit.definition)) {
+        rv.REFRESH$refresh.param.table <- rv.REFRESH$refresh.param.table + 1
+        rv.PARAMETERS$parameters[[par.id]]$Unit <- NA
+        
+      } else {
+        # Create base unit term
+        base.unit <- ConvertToUnitTerm(unit.definition, rv.UNITS$units.base)
+        # Perform Conversion to BaseUnits if necessary
+        from.val  <- rv.PARAMETERS$parameters[[par.id]]$Value
+        
+        if (new != base.unit) {
+          # Perform unit conversion for base
+          descriptor <- unit.definition
+          converted.value <- UnitConversion(descriptor,
+                                            new.unit,
+                                            base.unit,
+                                            as.numeric(from.val))
+          # Store base unit value
+          rv.PARAMETERS$parameters[[par.id]]$BaseValue <- converted.value
+        } else {
+          rv.PARAMETERS$parameters[[par.id]]$BaseValue <- from.val
+        }
+        print(new)
+        print(ud.string)
+        print(base.unit)
+        # Store unit definitions
+        rv.PARAMETERS$parameters[[par.id]]$Unit <- new
+        rv.PARAMETERS$parameters[[par.id]]$UnitDescription <- ud.string
+        rv.PARAMETERS$parameters[[par.id]]$BaseUnit <- base.unit
+      }
+      
       rv.REFRESH$refresh.param.table <- rv.REFRESH$refresh.param.table + 1
-      rv.PARAMETERS$parameters[[par.id]]$Unit <- NA
+      #rv.PARAMETERS$parameters[[par.id]]$Unit <- NA
     }
     
   } else if (yi == 3) {

@@ -267,6 +267,19 @@ UnitCompare <- function(unitDescriptor,
   return(out)
 }
 
+#' Breaks down a unit function into its components.
+#' 
+#' This function breaks down a unit function into its components such as 
+#' parentheses, mathematical operators, and terms.
+#' 
+#' @param unitFxn A character string representing a unit function.
+#' @param splitExponents Logical indicating whether to  split terms by powers.
+#' @return A character vector containing the components of the unit function.
+#' @examples
+#' eqn <- "L/(mol*min)"
+#' UnitBreak(eqn)
+#' # Output:
+#' # [1] "L"   "/"   "("   "mol" "*"   "min" ")"
 UnitBreak <- function(unitFxn,
                       splitExponents = TRUE) {
   
@@ -1167,4 +1180,126 @@ RenameVarInDFColumn <- function(oldName, newName, dfcol, isMath = FALSE) {
   return(dfcol)
 }
 
-
+#' Converts unit terms into a human-readable definition.
+#' 
+#' This function converts a list of unit terms into a human-readable definition.
+#' 
+#' @param terms A character vector containing the unit terms.
+#' @param unit_list A list containing predefined unit categories.
+#' @return A character vector representing the human-readable definition.
+#' @examples
+#' terms <- c("volume", "<power>(2)", "<div>", "<group>", "conc", "(mol)", "<power>(2)", "<multiply>", "time", "<endgroup>")
+#' unit_list <- list("Duration" = c("s", "min"), "Volume" = c("ml", "L"), "count" = c("mol", "umol"))
+#' UnitTermsToDefinition(terms, unit_list)
+#' # Output:
+#' # [1] "Volume^2 / (mol^2 * time)"
+#' @export
+UnitTermsToDefinition <- function(terms, unit_list) {
+  converted_terms <- character(length(terms))
+  
+  i <- 1
+  j <- 1
+  while (i <= length(terms)) {
+    term <- terms[i]
+    if (term == "/") {
+      converted_terms[j] <- "<div> "
+    } else if (term == "*") {
+      converted_terms[j] <- "<multiply> "
+    } else if (term == "+") {
+      converted_terms[j] <- "<addition> "
+    } else if (term == "-") {
+      converted_terms[j] <- "<subtraction> "
+    } else if (term == "(") {
+      converted_terms[j] <- "<group> "
+    } else if (term == ")") {
+      converted_terms[j] <- "<endgroup> "
+    } else if (term == "^") {
+      # Extract exponent
+      next_term <- terms[i + 1]
+      if (!grepl("^\\d+$", next_term)) {
+        stop("Error: Exponent must be a positive integer.")
+      }
+      converted_terms[j] <- "<power>("
+      converted_terms[j + 1] <- next_term
+      converted_terms[j + 2] <- ") "
+      i <- i + 1  # Skip next term as it's already handled
+      j <- j + 2
+    } else if (grepl("^\\d", term)) {
+      # If term starts with a number, prepend "numX"
+      converted_terms[j] <- paste0("num", term, " ")
+    } else {
+      found_category <- FALSE
+      for (category_name in names(unit_list)) {
+        if (term %in% unit_list[[category_name]]) {
+          found_category <- TRUE
+          if (category_name == "Duration") {
+            converted_terms[j] <- "time "
+          } else if (category_name == "count") {
+            converted_terms[j] <- "conc "
+          } else if (category_name == "Volume") {
+            converted_terms[j] <- "volume "
+          }
+          break
+        }
+      }
+      if (!found_category) {
+        return(NULL)
+      }
+    }
+    i <- i + 1
+    j <- j + 1
+  }
+  
+  #result <- paste(converted_terms, collapse = "")
+  return(converted_terms)
+}
+#' Converts a list of terms, categories, and exponents back to a unit term.
+#' 
+#' This function converts a list of terms, categories, and exponents back to a unit term.
+#' 
+#' @param terms A character vector containing the converted terms.
+#' @param baseUnits A list containing the base units for volume, count, and duration.
+#' @return A character vector representing the unit term.
+#' @examples
+#' converted_terms <- c("volume", "<power>(2)", "<div>", "<group>", "conc", "(mol)", "<power>(2)", "<multiply>", "time", "<endgroup>")
+#' categories <- c("Volume", "Volume", "Volume", "Volume", "count", "count", "count", "Duration", "Duration", "Duration")
+#' baseUnits <- list(Volume = "L", Count = "mol", Duration = "min")
+#' ConvertToUnitTerm(converted_terms, baseUnits)
+#' # Output:
+#' # [1] "L^2/(mol^2*min)"
+#' @export
+ConvertToUnitTerm <- function(terms, baseUnits) {
+  unit_term <- ""
+  
+  for (i in seq_along(terms)) {
+    term <- RemoveWS(terms[i])
+    if (term == "<div>") {
+      unit_term <- paste(unit_term, "/", sep = "")
+    } else if (term == "<multiply>") {
+      unit_term <- paste(unit_term, "*", sep = "")
+    } else if (term == "<addition>") {
+      unit_term <- paste(unit_term, "+", sep = "")
+    } else if (term == "subtraction") {
+      unit_term <- paste(unit_term, "-", sep = "")
+    } else if (term == "<group>") {
+      unit_term <- paste(unit_term, "(", sep = "")
+    } else if (term == "<endgroup>") {
+      unit_term <- paste(unit_term, ")", sep = "")
+    } else if (startsWith(term, "<power>(")) {
+      exponent <- gsub("[^0-9]", "", terms[i+1])
+      unit_term <- paste(unit_term, "^", exponent, sep = "")
+    } else if (startsWith(term, "num")) {
+      # Extract number
+      number <- as.numeric(gsub("[^0-9]", "", term))
+      unit_term <- paste(unit_term, number, sep = "")
+    } else if (term == "volume") {
+      unit_term <- paste(unit_term, baseUnits$Volume, sep = "")
+    } else if (term == "conc") {
+      unit_term <- paste(unit_term, baseUnits$Count, sep = "")
+    } else if (term == "time") {
+      unit_term <- paste(unit_term, baseUnits$Duration, sep = "")
+    }
+  }
+  
+  return(unit_term)
+}
