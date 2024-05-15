@@ -294,8 +294,10 @@ observeEvent(input$parameters_DT$changes$changes, {
       # Break Term
       #browser()
       new.unit <- UnitBreak(new)
+      print(new.unit)
       # Find Unit Definition
       unit.definition <- UnitTermsToDefinition(new.unit, rv.UNITS$units.choices)
+      print(unit.definition)
       ud.string <- paste0(unit.definition, collapse = "")
       # Check to make sure unit definition is valid: 
       if (is.null(unit.definition)) {
@@ -310,9 +312,11 @@ observeEvent(input$parameters_DT$changes$changes, {
         
         if (new != base.unit) {
           # Perform unit conversion for base
+          print(new.unit)
+          print(base.unit)
           descriptor <- unit.definition
           converted.value <- UnitConversion(descriptor,
-                                            new.unit,
+                                            paste0(new.unit, collapse = ""),
                                             base.unit,
                                             as.numeric(from.val))
           # Store base unit value

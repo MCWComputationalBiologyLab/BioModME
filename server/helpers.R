@@ -1234,7 +1234,7 @@ UnitTermsToDefinition <- function(terms, unit_list) {
           found_category <- TRUE
           if (category_name == "Duration") {
             converted_terms[j] <- "time "
-          } else if (category_name == "count") {
+          } else if (category_name == "Count") {
             converted_terms[j] <- "conc "
           } else if (category_name == "Volume") {
             converted_terms[j] <- "volume "
