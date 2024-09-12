@@ -8,6 +8,7 @@
 #'
 #' @param species Vector of species names.
 #' @param ICs Vector of initial conditions corresponding to species.
+#' @param comments Vector of comments to add
 #'
 #' @return A string representing the state function.
 #'
@@ -16,17 +17,17 @@
 #' state_string <- jl_state_variables(c("state1", "state2"), c(0.1, 6))
 #' cat(state_string)
 #' }
-jl_state_variables <- function(species, ICs) {
+jl_state_variables <- function(species, ICs, comments) {
   
   # Create the function string
   state.string <- "function state()\n\tComponentVector{Float64}(\n"
   
   for (i in seq_along(species)) {
     if (i != length(species)) {
-      line <- paste("\t\t", species[i], " = ", ICs[i], ",", sep = "")
+      line <- paste("\t\t", species[i], " = ", ICs[i], ",", " # ", comments[i], sep = "")
       
     } else {
-      line <- paste("\t\t", species[i], " = ", ICs[i], sep = "")
+      line <- paste("\t\t", species[i], " = ", ICs[i], " # ", comments[i], sep = "")
     }
     state.string <- paste(state.string, line, "\n", sep = "")
   }
@@ -64,7 +65,7 @@ jl_state_names <- function(species) {
 #'
 #' @param param_names Vector of parameter names.
 #' @param defaults_values Vector of default values corresponding to parameter names.
-#'
+#' @param comments Vecotr of comments corresponding to parameters
 #' @return A string representing the params function.
 #'
 #' @examples
@@ -72,15 +73,15 @@ jl_state_names <- function(species) {
 #' param_string <- generate_params_function(c("param1", "param2"), c(1, 5))
 #' cat(param_string)
 #' }
-jl_parameter_variables <- function(param_names, defaults_values) {
+jl_parameter_variables <- function(param_names, defaults_values, comments) {
   param_string <- 'function params(; kwargs...)\n\tdefaults = (\n'
   
   for (i in seq_along(param_names)) {
     if (i != length(param_names)) {
       line <- 
-        paste("\t\t", param_names[i], " = ", defaults_values[i], ",", sep = "")
+        paste("\t\t", param_names[i], " = ", defaults_values[i], ",", " # ", comments[i], sep = "")
     } else {
-      line <- paste("\t\t", param_names[i], " = ", defaults_values[i], sep = "")
+      line <- paste("\t\t", param_names[i], " = ", defaults_values[i], " # ", comments[i], sep = "")
     }
     param_string <- paste(param_string, line, "\n", sep = "")
   }
@@ -199,9 +200,11 @@ jl_diff_equations <- function(species,
 jl_generate_script <- function(species, 
                                parameters, 
                                diffEquations, 
-                               parameterValues, 
+                               parameterValues,
+                               parameterComments,
                                rules, 
-                               ICs, 
+                               ICs,
+                               speciesComments,
                                timeStart,
                                timeEnd,
                                line_width = 80) {
@@ -234,11 +237,11 @@ jl_generate_script <- function(species,
                    "using DifferentialEquations, Plots, ComponentArrays")
   
   # Build State
-  state.vars <- jl_state_variables(species, ICs)
+  state.vars <- jl_state_variables(species, ICs, speciesComments)
   state.names <- jl_state_names(species)
   
   # Build Parameters
-  parameter.vars <- jl_parameter_variables(parameters, parameterValues)
+  parameter.vars <- jl_parameter_variables(parameters, parameterValues, parameterComments)
   
   # Build Differential Equations
   diff.eq <- 

@@ -69,7 +69,7 @@ output$equationBuilder_mass_action <- renderUI({
         textInput(
           inputId = "TI_mass_action_forward_k",
           label = "Forward Rate Constant",
-          value = paste0("k_f", 
+          value = paste0("kf_", 
                          as.character(rv.REACTIONS$reaction.id.counter + 1))
         ),
         tags$head(tags$style("#TI_mass_action_forward_k {margin-top: -7px;}")),
@@ -79,7 +79,7 @@ output$equationBuilder_mass_action <- renderUI({
           textInput(
             inputId = "TI_mass_action_reverse_k",
             label = "Reverse Rate Constant",
-            value = paste0("k_r", 
+            value = paste0("kr_", 
                            as.character(rv.REACTIONS$reaction.id.counter + 1))
           ),
           tags$head(tags$style("#TI_mass_action_reverse_k {margin-top: -7px;}"))
@@ -182,7 +182,7 @@ output$equationBuilder_mass_action_w_regulation <- renderUI({
           textInput(
             inputId = "TI_MAwR_forward_k",
             label = "Forward Rate Constant",
-            value = paste0("k_f", 
+            value = paste0("kf_", 
                            as.character(rv.REACTIONS$reaction.id.counter + 1)
                            )
            ),
@@ -197,7 +197,7 @@ output$equationBuilder_mass_action_w_regulation <- renderUI({
           textInput(
             inputId = "TI_MAwR_reverse_k",
             label = "Reverse Rate Constant",
-            value = paste0("k_r", 
+            value = paste0("kr_", 
                            as.character(rv.REACTIONS$reaction.id.counter + 1)
                            )
           ),
@@ -259,7 +259,7 @@ output$equationBuilder_mass_action_w_regulation <- renderUI({
               inputId = paste0("TI_MAwR_forward_regulator_RC_", 
                                as.character(i)),
               label = "Rate Constant",
-              value = paste0("k_f", 
+              value = paste0("kf_", 
                              as.character(rv.REACTIONS$reaction.id.counter + 1),
                              ".", 
                              as.character(i)
@@ -308,7 +308,7 @@ output$equationBuilder_mass_action_w_regulation <- renderUI({
               inputId = paste0("TI_MAwR_reverse_regulator_RC_", 
                                as.character(i)),
               label = "Rate Constant",
-              value = paste0("k_r",
+              value = paste0("kr_",
                              as.character(rv.REACTIONS$reaction.id.counter + 1),
                              ".",
                              as.character(i))
@@ -357,7 +357,7 @@ output$equationBuilder_synthesis <- renderUI({
           textInput(
             inputId = "TI_synthesis_rate_RC",
             label = "Rate Constant",
-            value = paste0("k_syn",
+            value = paste0("ks_",
                            as.character(rv.REACTIONS$reaction.id.counter + 1))
             
           )
@@ -400,7 +400,7 @@ output$equationBuilder_synthesis <- renderUI({
           textInput(
             inputId = "TI_synthesis_byFactor_RC",
             label = "Rate Constant",
-            value = paste0("k_syn", 
+            value = paste0("ks_", 
                            as.character(rv.REACTIONS$reaction.id.counter + 1))
           )
         ),
@@ -454,7 +454,7 @@ output$equationBuilder_degradation_rate <- renderUI({
           textInput(
             inputId = "TI_degradation_rate_RC",
             label = "Rate Constant",
-            value = paste0("k_d", 
+            value = paste0("kd_", 
                            as.character(rv.REACTIONS$reaction.id.counter + 1))
           ),
           textInput(
@@ -523,7 +523,7 @@ output$equationBuilder_degradation_by_enzyme <- renderUI({
           textInput(
             inputId = "TI_degradation_enzyme_kcat",
             label = "kcat",
-            value = paste0("k_d", 
+            value = paste0("kd_", 
                            as.character(rv.REACTIONS$reaction.id.counter+1))
           )
         ),

@@ -48,6 +48,7 @@ source(file.path("ui", "contributions_ui.R"))
 source(file.path("ui", "51_parameter_estimation_ui.R"))
 source(file.path("ui", "51_create_custom_law_ui.R"))
 source(file.path("ui", "51_create_custom_eqn_ui.R"))
+source(file.path("ui", "52_custom_logic_ui.R"))
 source(file.path("ui", "61_global_options_ui.R"))
 source(file.path("ui", "71_import_ui.R"))
 source(file.path("ui", "repository_ui.R"))
@@ -116,7 +117,9 @@ ui <- dashboardPage(
           menuSubItem("Build Custom Law",
                       tabName = "TAB_CREATE_CUSTOM_LAW"),
           menuSubItem("Custom Equations",
-                      tabName = "TAB_CREATE_CUSTOM_EQN")
+                      tabName = "TAB_CREATE_CUSTOM_EQN"),
+          menuSubItem("Logic",
+                      tabName = "TAB_CUSTOM_LOGIC")
         ),
         menuItem("Export",
                  tabName = "TAB_EXPORT",
@@ -167,6 +170,11 @@ ui <- dashboardPage(
     ),
     # Apply outside functionalities
     useShinyjs(),
+    tags$head(
+      tags$script(type = "text/javascript", src = "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML")
+    )
+    ,
+    #withMathJax(helpText("Some math here $$\\alpha+\\beta$$")),
     extendShinyjs(text = jsColChanger, functions = c("backgroundCol")),
     withMathJax(),
     useWaiter(),
@@ -182,27 +190,27 @@ ui <- dashboardPage(
     # SVG: { linebreaks: { automatic: true } },
     
     # Sets mathjax context menu to show up on modals
-    tags$div(HTML(
-      "<script type='text/x-mathjax-config'>
-        MathJax.Hub.Config({
-          TeX: {
-            Macros: {
-            set: ['\\left\\{#1\\right\\}',1],
-            }
-          },
-        MathMenu: {
-          styles: {
-            '#MathJax_About': {'z-index':1201},
-            '.MathJax_Menu': {'z-index':1201}
-          }
-        }
-        });
-
-        MathJax.Hub.Register.StartupHook('MathMenu Ready',function () {
-          MathJax.Menu.BGSTYLE['z-index'] = 1200;
-        });
-      </script>"
-    )),
+    # tags$div(HTML(
+    #   "<script type='text/x-mathjax-config'>
+    #     MathJax.Hub.Config({
+    #       TeX: {
+    #         Macros: {
+    #         set: ['\\left\\{#1\\right\\}',1],
+    #         }
+    #       },
+    #     MathMenu: {
+    #       styles: {
+    #         '#MathJax_About': {'z-index':1201},
+    #         '.MathJax_Menu': {'z-index':1201}
+    #       }
+    #     }
+    #     });
+    # 
+    #     MathJax.Hub.Register.StartupHook('MathMenu Ready',function () {
+    #       MathJax.Menu.BGSTYLE['z-index'] = 1200;
+    #     });
+    #   </script>"
+    # )),
     
     # Apply js functionalites from scripts
     includeScript("www/js/popup.js"),
@@ -236,6 +244,7 @@ ui <- dashboardPage(
       TAB_PARAMETER_ESTIMATION,
       TAB_CREATE_CUSTOM_LAW,
       TAB_CREATE_CUSTOM_EQN,
+      TAB_CUSTOM_LOGIC,
       TAB_GLOBAL_OPTIONS,
       TAB_DOCUMENTATION,
       TAB_CONTRIBUTIONS,

@@ -491,7 +491,7 @@ Law_Of_Mass_Action <- function(r.stoich,
       } else {
         if (p.stoich[i] == "1") {
           builder <- paste0(builder, "*", products[i])
-          lat.builder <- paste0(builder, "*", Var2Latex(products[i]))
+          lat.builder <- paste0(lat.builder, "*", Var2Latex(products[i]))
         } else {
           builder <- paste0(builder, "*",products[i], "^", p.stoich[i])
           lat.builder <- paste0(lat.builder, 

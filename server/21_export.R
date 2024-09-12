@@ -681,8 +681,10 @@ output$export_data_to_julia_script <- downloadHandler(
       rv.PARAMETERS$parameters.names,
       rv.DE$de.eqns.for.solver,
       rv.PARAMETERS$parameters.df$BaseValue,
+      rv.PARAMETERS$parameters.df$Description,
       unname(sapply(rv.CUSTOM.EQNS$ce.equations, get, x = "Equation")),
       rv.SPECIES$species.df$BaseValue,
+      rv.SPECIES$species.df$Description,
       rv.SOLVER.OPTIONS$time.start,
       rv.SOLVER.OPTIONS$time.end)
     writeLines(file_out, file)

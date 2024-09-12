@@ -2400,7 +2400,9 @@ observeEvent(input$eqnCreate_addEqnToVector, {
 
 output$eqnCreate_showEquationBuilding <- renderUI({
   withMathJax(
+    #helpText("Some math here $$\\alpha+\\beta$$"),
     equationMathJaxBuilder()
+    
   )
 })
 
