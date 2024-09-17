@@ -128,6 +128,15 @@ observeEvent(input$debug_view_custom_eqns, {
   rv.DEBUG$button_pressed_last <- "CustomEqn"
 })
 
+observeEvent(input$debug_view_custom_logic, {
+  updatePickerInput(
+    session = session, 
+    inputId = "debug_filter_searchType",
+    choices =  c("None")
+  )
+  rv.DEBUG$button_pressed_last <- "CustomLogic"
+})
+
 
 observeEvent(input$debug_filter_searchType, {
   print(input$debug_filter_searchType)
@@ -206,6 +215,10 @@ observeEvent(input$debug_filter_searchType, {
   else if (rv.DEBUG$button_pressed_last == "CustomEqn") {
     rv.LOGS$variable.debug.button <- print(rv.CUSTOM.EQNS$ce.equations)
     rv.LOGS$variable.debug.table  <- bind_rows(rv.CUSTOM.EQNS$ce.equations)
+  }
+  else if (rv.DEBUG$button_pressed_last == "CustomLogic") {
+    rv.LOGS$variable.debug.button <- print(rv.CUSTOM.LOGIC$logic)
+    rv.LOGS$variable.debug.table  <- print(rv.CUSTOM.LOGIC$logic)
   }
   
 })

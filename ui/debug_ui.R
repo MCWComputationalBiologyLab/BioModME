@@ -38,6 +38,9 @@ TAB_DEBUG <-
                        width = "50%"),
           actionButton(inputId = "debug_view_custom_eqns",
                        label = "Custom Eqns",
+                       width = "50%"),
+          actionButton(inputId = "debug_view_custom_logic",
+                       label = "Custom Logic",
                        width = "50%")
         )
       ),
