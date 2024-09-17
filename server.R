@@ -76,6 +76,7 @@ server <- shinyServer(function(input, output, session) {
   source(file.path("server", "51_parameter_estimation.R"), local = TRUE)$value
   source(file.path("server", "51_create_custom_eqn.R"), local = TRUE)$value
   source(file.path("server", "build_custom_law.R"), local = TRUE)$value
+  source(file.path("server", "51_custom_logic.R"), local = TRUE)$value
   source(file.path("server", "61_global_options.R"), local = TRUE)$value
   source(file.path("server", "71_import_server.R"), local = TRUE)$value
   
