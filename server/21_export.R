@@ -23,6 +23,7 @@ output$export_save_data <- downloadHandler(
     react.law <- reactiveValuesToList(rv.REACTIONLAWS)
     CL.temp   <- reactiveValuesToList(rv.CUSTOM.LAWS)
     CE.temp   <- reactiveValuesToList(rv.CUSTOM.EQNS)
+    logic.t   <- reactiveValuesToList(rv.CUSTOM.LOGIC)
     
     to.save <- c(mod.info,
                  comp.temp,
@@ -40,7 +41,8 @@ output$export_save_data <- downloadHandler(
                  unit.temp,
                  react.law,
                  CL.temp,
-                 CE.temp)
+                 CE.temp,
+                 logic.t)
 
     saveRDS(to.save, file)
   }
@@ -69,6 +71,7 @@ output$dbttn_header_download_model <- downloadHandler(
     react.law <- reactiveValuesToList(rv.REACTIONLAWS)
     CL.temp   <- reactiveValuesToList(rv.CUSTOM.LAWS)
     CE.temp   <- reactiveValuesToList(rv.CUSTOM.EQNS)
+    logic.t   <- reactiveValuesToList(rv.CUSTOM.LOGIC)
     
     to.save <- c(mod.info,
                  comp.temp,
@@ -86,7 +89,8 @@ output$dbttn_header_download_model <- downloadHandler(
                  unit.temp,
                  react.law,
                  CL.temp,
-                 CE.temp)
+                 CE.temp,
+                 logic.t)
     
     saveRDS(to.save, file)
   }

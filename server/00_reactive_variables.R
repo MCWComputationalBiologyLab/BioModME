@@ -578,8 +578,12 @@ rv.CUSTOM.LAWS <- reactiveValues(
   # Rate.MathML       || MathMl for rate law
   # Reversible        || Bool if the equation is reversible or not
   
-  reaction.names = vector(),
-  logic = vector()
+  reaction.names = vector()
+  
+)
+
+rv.CUSTOM.LOGIC <- reactiveValues(
+  logic = list()
 )
 
 # rv.CUSTOM.EQNS ---------------------------------------------------------------

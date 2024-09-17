@@ -168,6 +168,9 @@ observeEvent(rv.LOADBUTTONS$LB.count, {
   # Load Custom Equations ------------------------------------------------------
   rv.CUSTOM.EQNS$ce.equations <- LoadCheck(model$ce.equations, list())
   
+  # Load Custom Logic ----------------------------------------------------------
+  rv.CUSTOM.LOGIC$logic <- LoadCheck(model$logic, list())
+  
   # Load Reaction Laws ---------------------------------------------------------
   rv.REACTIONLAWS$laws <- model$laws
   
@@ -312,6 +315,14 @@ observeEvent(rv.LOADBUTTONS$LB.count, {
   names(options) <- option.names
   updatePickerInput(session, "eqnCreate_reaction_law", choices = options)
   
+  if (length(rv.CUSTOM.LOGIC$logic) != 0) {
+    updateSelectInput(
+      session, 
+      "SI_customLogic_show_logic",
+      choices = seq_along(rv.CUSTOM.LOGIC$logic),
+      selected = 1
+    )
+  } 
 
   
   # w_load$hide()

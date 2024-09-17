@@ -7,25 +7,7 @@ TAB_CUSTOM_LOGIC <-
     br(),
     box(
       width = 12,
-      # fluidRow(
-      #   column(
-      #     width = 3,
-      #     textInput(
-      #       inputId = "TI_customLogic_if_condition",
-      #       label = "Conditional Statement",
-      #       value = "",
-      #       placeholder = "species <= 0 || species_2 > 5"
-      #     )
-      #   ),
-      #   column(
-      #     width = 9, 
-      #     textAreaInput(
-      #       inputId = "TI_customLogic_if_statement",
-      #       label = "Statement Trigger",
-      #       value = "species = 0"
-      #     )
-      #   )
-      # )
+      title = "Add Custom Code",
       fluidRow(
         column(
           width = 12,
@@ -48,6 +30,41 @@ TAB_CUSTOM_LOGIC <-
           actionButton(
             inputId = "button_customLogic_add_custom_code",
             label = "Add"
+          )
+        )
+      )
+    ),
+    box(
+      width = 12,
+      title = "View/Remove Logic",
+      fluidRow(
+        column(
+          width = 4,
+          div(
+            style = "float: left; width: 100%;", # Ensure the wrapping div takes full width
+            div(
+              style = "width: 100%;", # Set the width of the selectInput to 100%
+              selectInput(
+                inputId = "SI_customLogic_show_logic",
+                label = "Select",
+                choices = c(),  # Use '=' instead of '<-' for assigning the choices
+                selectize = FALSE,
+                size = 12
+              )
+            ),
+            actionButton(
+              inputId = "bttn_customLogic_delete_logic",
+              label = "Delete",
+              style = "float: right;"
+            )
+          )
+        ),
+        column(
+          width = 8,
+          verbatimTextOutput(outputId = "TO_customLogic_view_logic"),
+          tags$style(
+            type='text/css', 
+            '#TO_customLogic_view_logic {white-space: pre-wrap;}'
           )
         )
       )
