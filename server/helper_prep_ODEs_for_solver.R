@@ -35,12 +35,13 @@ CustomLogicToText <- function(customLogicRV) {
   #   @ customLogicRV - Reactive variable with all custom logic information
   # Output: 
   #   @output - String, additional eqns separated by newline
-  
+  #browser()
   
   # Extract info from input RV
-  additional.eqns <- unname(sapply(customLogicRV,
-                                   get,
-                                   x = "Logic"))
+  # additional.eqns <- unname(sapply(customLogicRV,
+                                   # get,
+                                   # x = "Logic"))
+  additional.eqns <-sapply(customLogicRV, function(x) x[[1]])
   
   # Initialize
   output <- ""

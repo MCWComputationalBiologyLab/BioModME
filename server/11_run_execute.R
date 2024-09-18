@@ -6,41 +6,48 @@ w_execute <- Waiter$new(id = "box3")
 w_plot_execute <- Waiter$new(id = "lineplot_plotly")
 
 # # Functions --------------------------------------------------------------------
+ModelFxn <- function(t,
+                     state,
+                     parameters,
+                     extraEqns,
+                     customLogic,
+                     differentialEqns,
+                     vars){
+  print("MODELLLLL")
+  with(as.list(c(state, parameters)), {
+    print("RUnning model fxn")
+    print(state)
+    print(parameters)
+    eval(parse(text = extraEqns))
+    eval(parse(text = customLogic))
+    eval(parse(text = differentialEqns))
+    list(eval(parse(text = vars)))
+  })
+}
+
 # ModelFxn <- function(t, 
 #                      state, 
 #                      parameters,
 #                      extraEqns,
 #                      customLogic,
 #                      differentialEqns,
-#                      vars){
-#   with(as.list(c(state, parameters)), {
-#     eval(parse(text = extraEqns))
-#     eval(parse(text = customLogic))
-#     eval(parse(text = differentialEqns))
-#     list(eval(parse(text = vars)))
-#   })
+#                      vars) {
+#   
+#   # Create a new environment for evaluation
+#   local_env <- new.env()
+#   
+#   # Populate the environment with state and parameters
+#   list2env(c(state, parameters), envir = local_env)
+#   
+#   # Defer the evaluation until this function is executed by ode()
+#   eval(parse(text = extraEqns), envir = local_env)
+#   eval(parse(text = customLogic), envir = local_env)
+#   eval(parse(text = differentialEqns), envir = local_env)
+#   
+#   # Return the list of evaluated differentials
+#   list(eval(parse(text = vars), envir = local_env))
 # }
 
-ModelFxn <- function(t, 
-                     state, 
-                     parameters,
-                     extraEqns,
-                     customLogic,
-                     differentialEqns,
-                     vars){
-  # Combine state and parameters into an environment
-  local_env <- as.list(c(state, parameters))
-  
-  with(local_env, {
-    # Evaluate each of the components in the specified environment
-    eval(parse(text = extraEqns), envir = local_env)
-    eval(parse(text = customLogic), envir = local_env)
-    eval(parse(text = differentialEqns), envir = local_env)
-    
-    # Return the list of evaluated differentials
-    list(eval(parse(text = vars), envir = local_env))
-  })
-}
 
 # Update UI, Renders, Animations, etc... ---------------------------------------
 
@@ -171,6 +178,7 @@ observeEvent(c(input$execute_run_model,
 
   custom.eqns <- CustomEqnsToText(rv.CUSTOM.EQNS$ce.equations)
   
+  print("Before custom logic scirpt")
   custom.logic <- CustomLogicToText(rv.CUSTOM.LOGIC$logic)
   print(custom.logic)
   if (input$execute_turnOn_time_scale_var) {
