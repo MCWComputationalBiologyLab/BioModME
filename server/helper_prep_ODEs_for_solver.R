@@ -29,6 +29,30 @@ CustomEqnsToText <- function(customEqnRV) {
   return(output)
 }
 
+CustomLogicToText <- function(customLogicRV) {
+  # Reads custom logic rv and pulls logic
+  # Input:
+  #   @ customLogicRV - Reactive variable with all custom logic information
+  # Output: 
+  #   @output - String, additional eqns separated by newline
+  
+  
+  # Extract info from input RV
+  additional.eqns <- unname(sapply(customLogicRV,
+                                   get,
+                                   x = "Logic"))
+  
+  # Initialize
+  output <- ""
+  for (i in seq(length(additional.eqns)))
+  {
+    output <- paste0(output, additional.eqns[i], "\n ")
+  }
+  
+  print("Custom Logic Test")
+  print(output)
+  return(output)
+}
 
 
 output_var_for_ode_solver <- function(list_of_vars){

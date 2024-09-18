@@ -5,17 +5,40 @@
 w_execute <- Waiter$new(id = "box3")
 w_plot_execute <- Waiter$new(id = "lineplot_plotly")
 
-# Functions --------------------------------------------------------------------
+# # Functions --------------------------------------------------------------------
+# ModelFxn <- function(t, 
+#                      state, 
+#                      parameters,
+#                      extraEqns,
+#                      customLogic,
+#                      differentialEqns,
+#                      vars){
+#   with(as.list(c(state, parameters)), {
+#     eval(parse(text = extraEqns))
+#     eval(parse(text = customLogic))
+#     eval(parse(text = differentialEqns))
+#     list(eval(parse(text = vars)))
+#   })
+# }
+
 ModelFxn <- function(t, 
                      state, 
                      parameters,
                      extraEqns,
+                     customLogic,
                      differentialEqns,
                      vars){
-  with(as.list(c(state, parameters)), {
-    eval(parse(text = extraEqns))
-    eval(parse(text = differentialEqns))
-    list(eval(parse(text = vars)))
+  # Combine state and parameters into an environment
+  local_env <- as.list(c(state, parameters))
+  
+  with(local_env, {
+    # Evaluate each of the components in the specified environment
+    eval(parse(text = extraEqns), envir = local_env)
+    eval(parse(text = customLogic), envir = local_env)
+    eval(parse(text = differentialEqns), envir = local_env)
+    
+    # Return the list of evaluated differentials
+    list(eval(parse(text = vars), envir = local_env))
   })
 }
 
@@ -147,17 +170,22 @@ observeEvent(c(input$execute_run_model,
   d_of_var <- output_var_for_ode_solver(names(rv.SPECIES$species))
 
   custom.eqns <- CustomEqnsToText(rv.CUSTOM.EQNS$ce.equations)
-
+  
+  custom.logic <- CustomLogicToText(rv.CUSTOM.LOGIC$logic)
+  print(custom.logic)
   if (input$execute_turnOn_time_scale_var) {
     d_of_var = paste0(input$execute_time_scale_var, "*", d_of_var)
   }
 
+  #print(ModelFxn(times, state, parameters, custom.eqns, custom.logic, diff_eqns, d_of_var))
+  
   # Solve ODEs
   out <- ode(y = state,
              times = times,
              func =   ModelFxn,
              parms = parameters,
              extraEqns = custom.eqns,
+             customLogic = custom.logic,
              differentialEqns = diff_eqns,
              vars = d_of_var
              #,method = input$execute_ode_solver_type
