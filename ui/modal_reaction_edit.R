@@ -90,6 +90,51 @@ shinyBS::bsModal(
         ),
         conditionalPanel(
           condition = 
+            "input.eqnCreate_reaction_law_edit == 'exponential_growth'",
+          uiOutput("equationBuilder_exponential_growth_edit")
+        ),
+        conditionalPanel(
+          condition = 
+            "input.eqnCreate_reaction_law_edit == 'logistic_competition'",
+          prettyCheckbox(
+            inputId = "CB_log_comp_single_species_edit",
+            label = "Single species competition (only X grows competitively)",
+            value = FALSE
+          ),
+          uiOutput("equationBuilder_logistic_competition_edit")
+        ),
+        conditionalPanel(
+          condition = 
+            "input.eqnCreate_reaction_law_edit == 'monod_growth'",
+          uiOutput("equationBuilder_monod_growth_edit")
+        ),
+        conditionalPanel(
+          condition = 
+            "input.eqnCreate_reaction_law_edit == 'competitive_monod'",
+          prettyCheckbox(
+            inputId = "CB_comp_monod_single_species_edit",
+            label = "Single species competition (only X grows competitively)",
+            value = FALSE
+          ),
+          prettyCheckbox(
+            inputId = "CB_comp_monod_no_substrate_restriction_edit",
+            label = "Remove competitive restriction from substrate consumption",
+            value = FALSE
+          ),
+          uiOutput("equationBuilder_competitive_monod_edit")
+        ),
+        conditionalPanel(
+          condition = 
+            "input.eqnCreate_reaction_law_edit == 'substrate_synthesis_competition'",
+          uiOutput("equationBuilder_substrate_synthesis_competition_edit")
+        ),
+        conditionalPanel(
+          condition = 
+            "input.eqnCreate_reaction_law_edit == 'predator_prey'",
+          uiOutput("equationBuilder_predator_prey_edit")
+        ),
+        conditionalPanel(
+          condition = 
             "input.eqnCreate_reaction_law_edit == 'michaelis_menten'",
           uiOutput("equationBuilder_michaelis_menten_edit")
         ),

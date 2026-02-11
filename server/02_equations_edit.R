@@ -1,5 +1,114 @@
 # Edit Tab Controlling the editing of equations
 
+# Exponential growth edit builder
+output$equationBuilder_exponential_growth_edit <- renderUI({
+  div(
+    fluidRow(
+      column(
+        width = 4,
+        pickerInput(
+          inputId = "PI_exp_growth_species_edit",
+          label   = "Growing Species",
+          choices = sort(rv.SPECIES$df.by.compartment$Name),
+          selected = input$PI_exp_growth_species_edit,
+          options = pickerOptions(liveSearch = TRUE,
+                                  liveSearchStyle = "startsWith")
+        )
+      )
+    ),
+    fluidRow(
+      column(
+        width = 4,
+        textInput(
+          inputId = "TI_exp_growth_mu_edit",
+          label = "Growth Rate Parameter (mu)",
+          value = if (is.null(input$TI_exp_growth_mu_edit)) "mu" else input$TI_exp_growth_mu_edit
+        )
+      ),
+      column(
+        width = 3,
+        numericInput(
+          inputId = "NI_exp_growth_mu_value_edit",
+          label = "Value",
+          value = if (is.null(input$NI_exp_growth_mu_value_edit)) 0.7 else input$NI_exp_growth_mu_value_edit,
+          min = 0,
+          step = 0.01
+        )
+      )
+    )
+  )
+})
+
+# Monod growth edit builder
+output$equationBuilder_monod_growth_edit <- renderUI({
+  div(
+    fluidRow(
+      column(
+        width = 4,
+        pickerInput(
+          inputId = "PI_monod_species_edit",
+          label   = "Growing Species (X)",
+          choices = sort(rv.SPECIES$df.by.compartment$Name),
+          selected = input$PI_monod_species_edit,
+          options = pickerOptions(liveSearch = TRUE,
+                                  liveSearchStyle = "startsWith")
+        )
+      ),
+      column(
+        width = 4,
+        pickerInput(
+          inputId = "PI_monod_substrate_edit",
+          label   = "Substrate (S)",
+          choices = sort(rv.SPECIES$df.by.compartment$Name),
+          selected = input$PI_monod_substrate_edit,
+          options = pickerOptions(liveSearch = TRUE,
+                                  liveSearchStyle = "startsWith")
+        )
+      )
+    ),
+    fluidRow(
+      column(
+        width = 3,
+        textInput(
+          inputId = "TI_monod_mu_max_edit",
+          label = "mu_max",
+          value = if (is.null(input$TI_monod_mu_max_edit)) "mu_max" else input$TI_monod_mu_max_edit
+        )
+      ),
+      column(
+        width = 3,
+        numericInput(
+          inputId = "NI_monod_mu_max_value_edit",
+          label = "Value",
+          value = if (is.null(input$NI_monod_mu_max_value_edit)) 0.7 else input$NI_monod_mu_max_value_edit,
+          min = 0,
+          step = 0.01
+        )
+      ),
+      column(
+        width = 3,
+        textInput(
+          inputId = "TI_monod_K_s_edit",
+          label = "K_s (half-saturation)",
+          value = if (is.null(input$TI_monod_K_s_edit)) "K_s" else input$TI_monod_K_s_edit
+        )
+      ),
+      column(
+        width = 3,
+        numericInput(
+          inputId = "NI_monod_K_s_value_edit",
+          label = "Value",
+          value = if (is.null(input$NI_monod_K_s_value_edit)) 0.5 else input$NI_monod_K_s_value_edit,
+          min = 0.0001,
+          step = 0.01
+        )
+      )
+    )
+  )
+})
+
+# Competitive Monod growth edit builder - moved to 02_equations_renderUI.R
+
 # Left Box: Equation Edit Options ----------------------------------------------
 output$eqnCreate_edit_rendering_sidebar <- renderUI({
 # browser()
@@ -267,6 +376,11 @@ output$eqnCreate_edit_rendering_sidebar <- renderUI({
           value = num.prods,
           min = 1,
           step = 1
+        ),
+        prettyCheckbox(
+          inputId = "CB_degradation_enzyme_relative_formation_edit",
+          label = "Relative Formation",
+          value = if ("krel" %in% names(degInfo) && !is.na(degInfo$krel) && degInfo$krel != "") TRUE else FALSE
         )
       ),
       hr(),
@@ -681,7 +795,8 @@ output$eqnCreate_edit_rending_mainbar <- renderUI({
                 inputId = paste0("PI_MAwR_forward_regulator_edit_", 
                                  as.character(i)),
                 label = paste0("Forward Regulator ", as.character(i)),
-                choices = sort(rv.SPECIES$df.by.compartment$Name),
+                choices = sort(c(rv.SPECIES$df.by.compartment$Name,
+                                 rv.PARAMETERS$parameters.names)),
                 selected = Forward.Mods[i],
                 options = pickerOptions(liveSearch = TRUE,
                                         liveSearchStyle = "startsWith"))
@@ -727,7 +842,8 @@ output$eqnCreate_edit_rending_mainbar <- renderUI({
                 inputId = paste0("PI_MAwR_reverse_regulator_edit_", 
                                  as.character(i)),
                 label = paste0("Reverse Regulator ", as.character(i)),
-                choices = sort(rv.SPECIES$df.by.compartment$Name),
+                choices = sort(c(rv.SPECIES$df.by.compartment$Name,
+                                 rv.PARAMETERS$parameters.names)),
                 selected = Reverse.Mods[i],
                 options = pickerOptions(liveSearch = TRUE,
                                         liveSearchStyle = "startsWith")
@@ -763,6 +879,301 @@ output$eqnCreate_edit_rending_mainbar <- renderUI({
             })
           )
         )
+      )
+    )
+  }
+  else if (eqn.reaction.law == "exponential_growth") {
+    growthInfo <- rv.REACTIONS$exponentialGrowth[[eqn.ID]]
+    
+    species    <- growthInfo$Species
+    mu         <- growthInfo$Mu
+    mu.id      <- growthInfo$Mu.id
+    mu.value   <- rv.PARAMETERS$parameters[[mu.id]]$Value
+    
+    div(
+      fluidRow(
+        column(
+          width = 4,
+          pickerInput(
+            inputId = "PI_exp_growth_species_edit",
+            label   = "Growing Species",
+            choices = sort(rv.SPECIES$df.by.compartment$Name),
+            selected = species,
+            options = pickerOptions(liveSearch = TRUE,
+                                    liveSearchStyle = "startsWith")
+          )
+        )
+      ),
+      fluidRow(
+        column(
+          width = 4,
+          textInput(
+            inputId = "TI_exp_growth_mu_edit",
+            label = "Growth Rate Parameter (mu)",
+            value = mu
+          )
+        ),
+        column(
+          width = 3,
+          numericInput(
+            inputId = "NI_exp_growth_mu_value_edit",
+            label = "Value",
+            value = mu.value,
+            min = 0,
+            step = 0.01
+          )
+        )
+      )
+    )
+  }
+  else if (eqn.reaction.law == "logistic_competition") {
+    info <- rv.REACTIONS$logisticCompetition[[eqn.ID]]
+    species.x   <- info$Species.X
+    species.y   <- info$Species.Y
+    r.x         <- info$r.x
+    alpha.xy    <- info$alpha.xy
+    Kc          <- info$Kc
+    
+    # Check if single species mode
+    single.species.mode <- if (!is.null(info$Single.Species.Mode)) info$Single.Species.Mode else FALSE
+    
+    r.x.val      <- rv.PARAMETERS$parameters[[info$r.x.id]]$Value
+    alpha.xy.val <- rv.PARAMETERS$parameters[[info$alpha.xy.id]]$Value
+    Kc.val       <- rv.PARAMETERS$parameters[[info$Kc.id]]$Value
+    
+    if (single.species.mode) {
+      # Single species mode UI
+      div(
+        fluidRow(
+          column(
+            width = 4,
+            pickerInput("PI_log_comp_species_x_edit", "Species X (growing competitively)",
+                        choices = sort(rv.SPECIES$df.by.compartment$Name),
+                        selected = species.x,
+                        options = pickerOptions(liveSearch = TRUE,
+                                                liveSearchStyle = "startsWith"))
+          ),
+          column(
+            width = 4,
+            pickerInput("PI_log_comp_species_y_edit", "Species Y (competitor only)",
+                        choices = sort(rv.SPECIES$df.by.compartment$Name),
+                        selected = species.y,
+                        options = pickerOptions(liveSearch = TRUE,
+                                                liveSearchStyle = "startsWith"))
+          )
+        ),
+        fluidRow(
+          column(width = 3, textInput("TI_log_comp_r_x_edit", "r_x", value = r.x)),
+          column(width = 3, numericInput("NI_log_comp_r_x_value_edit", "Value", value = r.x.val, min = 0, step = 0.01)),
+          column(width = 3, textInput("TI_log_comp_alpha_xy_edit", "alpha_xy", value = alpha.xy)),
+          column(width = 3, numericInput("NI_log_comp_alpha_xy_value_edit", "Value", value = alpha.xy.val, min = 0, step = 0.01))
+        ),
+        fluidRow(
+          column(width = 3, textInput("TI_log_comp_Kc_edit", "Kc (carrying capacity)", value = Kc)),
+          column(width = 3, numericInput("NI_log_comp_Kc_value_edit", "Value", value = Kc.val, min = 0.0001, step = 0.1))
+        )
+      )
+    } else {
+      # Both species mode UI
+      r.y         <- info$r.y
+      alpha.yx    <- info$alpha.yx
+      r.y.val      <- rv.PARAMETERS$parameters[[info$r.y.id]]$Value
+      alpha.yx.val <- rv.PARAMETERS$parameters[[info$alpha.yx.id]]$Value
+      
+      div(
+        fluidRow(
+          column(
+            width = 4,
+            pickerInput("PI_log_comp_species_x_edit", "Species X",
+                        choices = sort(rv.SPECIES$df.by.compartment$Name),
+                        selected = species.x,
+                        options = pickerOptions(liveSearch = TRUE,
+                                                liveSearchStyle = "startsWith"))
+          ),
+          column(
+            width = 4,
+            pickerInput("PI_log_comp_species_y_edit", "Species Y",
+                        choices = sort(rv.SPECIES$df.by.compartment$Name),
+                        selected = species.y,
+                        options = pickerOptions(liveSearch = TRUE,
+                                                liveSearchStyle = "startsWith"))
+          )
+        ),
+        fluidRow(
+          column(width = 3, textInput("TI_log_comp_r_x_edit", "r_x", value = r.x)),
+          column(width = 3, numericInput("NI_log_comp_r_x_value_edit", "Value", value = r.x.val, min = 0, step = 0.01)),
+          column(width = 3, textInput("TI_log_comp_r_y_edit", "r_y", value = r.y)),
+          column(width = 3, numericInput("NI_log_comp_r_y_value_edit", "Value", value = r.y.val, min = 0, step = 0.01))
+        ),
+        fluidRow(
+          column(width = 3, textInput("TI_log_comp_alpha_xy_edit", "alpha_xy", value = alpha.xy)),
+          column(width = 3, numericInput("NI_log_comp_alpha_xy_value_edit", "Value", value = alpha.xy.val, min = 0, step = 0.01)),
+          column(width = 3, textInput("TI_log_comp_alpha_yx_edit", "alpha_yx", value = alpha.yx)),
+          column(width = 3, numericInput("NI_log_comp_alpha_yx_value_edit", "Value", value = alpha.yx.val, min = 0, step = 0.01))
+        ),
+        fluidRow(
+          column(width = 3, textInput("TI_log_comp_Kc_edit", "Kc (carrying capacity)", value = Kc)),
+          column(width = 3, numericInput("NI_log_comp_Kc_value_edit", "Value", value = Kc.val, min = 0.0001, step = 0.1))
+        )
+      )
+    }
+  }
+  else if (eqn.reaction.law == "monod_growth") {
+    info <- rv.REACTIONS$monodGrowth[[eqn.ID]]
+    species    <- info$Species
+    substrate  <- info$Substrate
+    mu_max     <- info$Mu_max
+    K_s        <- info$K_s
+    
+    mu_max.val <- rv.PARAMETERS$parameters[[info$Mu_max.id]]$Value
+    K_s.val    <- rv.PARAMETERS$parameters[[info$K_s.id]]$Value
+    
+    div(
+      fluidRow(
+        column(
+          width = 4,
+          pickerInput("PI_monod_species_edit", "Growing Species (X)",
+                      choices = sort(rv.SPECIES$df.by.compartment$Name),
+                      selected = species,
+                      options = pickerOptions(liveSearch = TRUE,
+                                              liveSearchStyle = "startsWith"))
+        ),
+        column(
+          width = 4,
+          pickerInput("PI_monod_substrate_edit", "Substrate (S)",
+                      choices = sort(rv.SPECIES$df.by.compartment$Name),
+                      selected = substrate,
+                      options = pickerOptions(liveSearch = TRUE,
+                                              liveSearchStyle = "startsWith"))
+        )
+      ),
+      fluidRow(
+        column(width = 3, textInput("TI_monod_mu_max_edit", "mu_max", value = mu_max)),
+        column(width = 3, numericInput("NI_monod_mu_max_value_edit", "Value", value = mu_max.val, min = 0, step = 0.01)),
+        column(width = 3, textInput("TI_monod_K_s_edit", "K_s (half-saturation)", value = K_s)),
+        column(width = 3, numericInput("NI_monod_K_s_value_edit", "Value", value = K_s.val, min = 0.0001, step = 0.01))
+      )
+    )
+  }
+  else if (eqn.reaction.law == "competitive_monod") {
+    info <- rv.REACTIONS$competitiveMonod[[eqn.ID]]
+    species.x   <- info$Species.X
+    species.y   <- info$Species.Y
+    substrate   <- info$Substrate
+    mu_max.x    <- info$mu_max.x
+    mu_max.y    <- info$mu_max.y
+    K_s.x       <- info$K_s.x
+    K_s.y       <- info$K_s.y
+    alpha.xy    <- info$alpha.xy
+    alpha.yx    <- info$alpha.yx
+    Kc          <- info$Kc
+    Y_x         <- info$Y_x
+    Y_y         <- info$Y_y
+    single.species.mode <- if (!is.null(info$Single.Species.Mode)) info$Single.Species.Mode else FALSE
+    no.substrate.restriction <- if (!is.null(info$No.Substrate.Restriction)) info$No.Substrate.Restriction else FALSE
+    
+    # Set checkbox values
+    updatePrettyCheckbox(session, "CB_comp_monod_single_species_edit", value = single.species.mode)
+    updatePrettyCheckbox(session, "CB_comp_monod_no_substrate_restriction_edit", value = no.substrate.restriction)
+    
+    mu_max.x.val <- rv.PARAMETERS$parameters[[info$mu_max.x.id]]$Value
+    mu_max.y.val <- rv.PARAMETERS$parameters[[info$mu_max.y.id]]$Value
+    K_s.x.val    <- rv.PARAMETERS$parameters[[info$K_s.x.id]]$Value
+    K_s.y.val    <- rv.PARAMETERS$parameters[[info$K_s.y.id]]$Value
+    alpha.xy.val <- rv.PARAMETERS$parameters[[info$alpha.xy.id]]$Value
+    alpha.yx.val <- rv.PARAMETERS$parameters[[info$alpha.yx.id]]$Value
+    Kc.val       <- rv.PARAMETERS$parameters[[info$Kc.id]]$Value
+    Y_x.val      <- rv.PARAMETERS$parameters[[info$Y_x.id]]$Value
+    Y_y.val      <- rv.PARAMETERS$parameters[[info$Y_y.id]]$Value
+    
+    div(
+      fluidRow(
+        column(width = 3, pickerInput("PI_comp_monod_species_x_edit", "Species X",
+                    choices = sort(rv.SPECIES$df.by.compartment$Name),
+                    selected = species.x,
+                    options = pickerOptions(liveSearch = TRUE,
+                                            liveSearchStyle = "startsWith"))),
+        column(width = 3, pickerInput("PI_comp_monod_species_y_edit", "Species Y",
+                    choices = sort(rv.SPECIES$df.by.compartment$Name),
+                    selected = species.y,
+                    options = pickerOptions(liveSearch = TRUE,
+                                            liveSearchStyle = "startsWith"))),
+        column(width = 3, pickerInput("PI_comp_monod_substrate_edit", "Substrate (S)",
+                    choices = sort(rv.SPECIES$df.by.compartment$Name),
+                    selected = substrate,
+                    options = pickerOptions(liveSearch = TRUE,
+                                            liveSearchStyle = "startsWith")))
+      ),
+      fluidRow(
+        column(width = 3, textInput("TI_comp_monod_mu_max_x_edit", "mu_max_x", value = mu_max.x)),
+        column(width = 3, numericInput("NI_comp_monod_mu_max_x_value_edit", "Value", value = mu_max.x.val, min = 0, step = 0.01)),
+        column(width = 3, textInput("TI_comp_monod_mu_max_y_edit", "mu_max_y", value = mu_max.y)),
+        column(width = 3, numericInput("NI_comp_monod_mu_max_y_value_edit", "Value", value = mu_max.y.val, min = 0, step = 0.01))
+      ),
+      fluidRow(
+        column(width = 3, textInput("TI_comp_monod_K_s_x_edit", "K_s_x", value = K_s.x)),
+        column(width = 3, numericInput("NI_comp_monod_K_s_x_value_edit", "Value", value = K_s.x.val, min = 0.0001, step = 0.01)),
+        column(width = 3, textInput("TI_comp_monod_K_s_y_edit", "K_s_y", value = K_s.y)),
+        column(width = 3, numericInput("NI_comp_monod_K_s_y_value_edit", "Value", value = K_s.y.val, min = 0.0001, step = 0.01))
+      ),
+      fluidRow(
+        column(width = 3, textInput("TI_comp_monod_alpha_xy_edit", "alpha_xy", value = alpha.xy)),
+        column(width = 3, numericInput("NI_comp_monod_alpha_xy_value_edit", "Value", value = alpha.xy.val, min = 0, step = 0.01)),
+        column(width = 3, textInput("TI_comp_monod_alpha_yx_edit", "alpha_yx", value = alpha.yx)),
+        column(width = 3, numericInput("NI_comp_monod_alpha_yx_value_edit", "Value", value = alpha.yx.val, min = 0, step = 0.01))
+      ),
+      fluidRow(
+        column(width = 3, textInput("TI_comp_monod_Kc_edit", "Kc (carrying capacity)", value = Kc)),
+        column(width = 3, numericInput("NI_comp_monod_Kc_value_edit", "Value", value = Kc.val, min = 0.0001, step = 0.1)),
+        column(width = 3, textInput("TI_comp_monod_Y_x_edit", "Y_x (yield)", value = Y_x)),
+        column(width = 3, numericInput("NI_comp_monod_Y_x_value_edit", "Value", value = Y_x.val, min = 0.0001, step = 0.01))
+      ),
+      fluidRow(
+        column(width = 3, textInput("TI_comp_monod_Y_y_edit", "Y_y (yield)", value = Y_y)),
+        column(width = 3, numericInput("NI_comp_monod_Y_y_value_edit", "Value", value = Y_y.val, min = 0.0001, step = 0.01))
+      )
+    )
+  }
+  else if (eqn.reaction.law == "predator_prey") {
+    info <- rv.REACTIONS$predatorPrey[[eqn.ID]]
+    prey      <- info$Prey
+    predator  <- info$Predator
+    r         <- info$r
+    a         <- info$a
+    b         <- info$b
+    d         <- info$d
+    r.val     <- info$r.val
+    a.val     <- info$a.val
+    b.val     <- info$b.val
+    d.val     <- info$d.val
+    
+    div(
+      fluidRow(
+        column(width = 4,
+          pickerInput("PI_pred_prey_prey_edit", "Prey (X)",
+            choices = sort(rv.SPECIES$df.by.compartment$Name),
+            selected = prey,
+            options = pickerOptions(liveSearch = TRUE,
+                                    liveSearchStyle = "startsWith"))),
+        column(width = 4,
+          pickerInput("PI_pred_prey_predator_edit", "Predator (Y)",
+            choices = sort(rv.SPECIES$df.by.compartment$Name),
+            selected = predator,
+            options = pickerOptions(liveSearch = TRUE,
+                                    liveSearchStyle = "startsWith")))
+      ),
+      hr(),
+      fluidRow(
+        column(width = 3, textInput("TI_pred_prey_r_edit", "r (prey growth rate)", value = r)),
+        column(width = 3, numericInput("NI_pred_prey_r_value_edit", "Value", value = r.val, min = 0, step = 0.01)),
+        column(width = 3, textInput("TI_pred_prey_a_edit", "a (attack rate)", value = a)),
+        column(width = 3, numericInput("NI_pred_prey_a_value_edit", "Value", value = a.val, min = 0, step = 0.0001))
+      ),
+      fluidRow(
+        column(width = 3, textInput("TI_pred_prey_b_edit", "b (conversion rate)", value = b)),
+        column(width = 3, numericInput("NI_pred_prey_b_value_edit", "Value", value = b.val, min = 0, step = 0.0001)),
+        column(width = 3, textInput("TI_pred_prey_d_edit", "d (predator death rate)", value = d)),
+        column(width = 3, numericInput("NI_pred_prey_d_value_edit", "Value", value = d.val, min = 0, step = 0.01))
       )
     )
   }
@@ -874,6 +1285,9 @@ output$eqnCreate_edit_rending_mainbar <- renderUI({
     RC.id      <- degInfo$Rate.Constant.id
     Product    <- degInfo$Products
     Product.id <- degInfo$Products.id
+    krel       <- if ("krel" %in% names(degInfo)) degInfo$krel else NA
+    krel.id    <- if ("krel.id" %in% names(degInfo)) degInfo$krel.id else NA
+    use.relative.formation <- !is.na(krel) && !is.na(krel.id)
     
     prod.exists <- ifelse(is.na(Product), FALSE, TRUE)
     if (prod.exists) {
@@ -894,20 +1308,64 @@ output$eqnCreate_edit_rending_mainbar <- renderUI({
           )
         ),
         column(
-          width = 4,
+          width = 8,
           conditionalPanel(
             condition = "input.CB_degradation_rate_toProducts_edit",
-            lapply(
-              seq(input$NI_degradation_rate_num_products_edit), function(i){
-                pickerInput(
-                  inputId = paste0("PI_degradation_rate_product_edit_", 
-                                   as.character(i)),
-                  label = paste0("Product ", as.character(i)),
-                  choices = sort(rv.SPECIES$df.by.compartment$Name),
-                  selected = Product[i],
-                  options = pickerOptions(liveSearch = TRUE,
-                                          liveSearchStyle = "startsWith"))
-              }
+            fluidRow(
+              column(
+                width = 12,
+                prettyCheckbox(
+                  inputId = "CB_degradation_rate_relative_formation_edit",
+                  label = "Relative Formation",
+                  value = use.relative.formation
+                )
+              )
+            ),
+            fluidRow(
+              column(
+                width = 6,
+                lapply(
+                  seq(input$NI_degradation_rate_num_products_edit), function(i){
+                    pickerInput(
+                      inputId = paste0("PI_degradation_rate_product_edit_", 
+                                       as.character(i)),
+                      label = paste0("Product ", as.character(i)),
+                      choices = sort(rv.SPECIES$df.by.compartment$Name),
+                      selected = Product[i],
+                      options = pickerOptions(liveSearch = TRUE,
+                                              liveSearchStyle = "startsWith"))
+                  }
+                )
+              ),
+              column(
+                width = 6,
+                conditionalPanel(
+                  condition = "input.CB_degradation_rate_relative_formation_edit",
+                  fluidRow(
+                    column(
+                      width = 12,
+                      textInput(
+                        inputId = "TI_degradation_rate_krel_edit",
+                        label = "krel (product yield fraction)",
+                        value = if (!is.na(krel)) krel else "krel"
+                      )
+                    )
+                  ),
+                  fluidRow(
+                    column(
+                      width = 12,
+                      numericInput(
+                        inputId = "NI_degradation_rate_krel_value_edit",
+                        label = "Value (0-1)",
+                        value = if (!is.na(krel.id)) rv.PARAMETERS$parameters[[krel.id]]$Value else 0.1,
+                        min = 0,
+                        max = 1,
+                        step = 0.01
+                      )
+                    )
+                  )
+                )
+              )
             )
           )
         )
@@ -959,10 +1417,14 @@ output$eqnCreate_edit_rending_mainbar <- renderUI({
     kcat.id    <- degInfo$kcat.id
     Product    <- degInfo$Products
     Product.id <- degInfo$Products.id
+    krel       <- if ("krel" %in% names(degInfo)) degInfo$krel else NA
+    krel.id    <- if ("krel.id" %in% names(degInfo)) degInfo$krel.id else NA
+    use.relative.formation <- !is.na(krel) && !is.na(krel.id)
     
     prod.exists <- ifelse(is.na(Product), FALSE, TRUE)
     if (prod.exists) {
       num.prods <- length(strsplit(Product, ", ")[[1]])
+      Product <- strsplit(Product, ", ")[[1]]
     }
     
     div(
@@ -988,21 +1450,66 @@ output$eqnCreate_edit_rending_mainbar <- renderUI({
           )
         ),
         column(
-          width = 3,
-          offset = 1,
+          width = 9,
           conditionalPanel(
             condition = "input.CB_degradation_enzyme_toProducts_edit",
-            lapply(
-              seq(input$NI_degradation_enzyme_num_products_edit), function(i){
-                pickerInput(
-                  inputId = paste0("PI_degradation_enzyme_product_edit_", 
-                                   as.character(i)),
-                  label = paste0("Product ", as.character(i)),
-                  choices = sort(rv.SPECIES$df.by.compartment$Name),
-                  selected = Product[i],
-                  options = pickerOptions(liveSearch = TRUE,
-                                          liveSearchStyle = "startsWith"))
-              }
+            fluidRow(
+              column(
+                width = 12,
+                prettyCheckbox(
+                  inputId = "CB_degradation_enzyme_relative_formation_edit",
+                  label = "Relative Formation",
+                  value = use.relative.formation
+                )
+              )
+            ),
+            fluidRow(
+              column(
+                width = 6,
+                lapply(
+                  seq(input$NI_degradation_enzyme_num_products_edit), function(i){
+                    pickerInput(
+                      inputId = paste0("PI_degradation_enzyme_product_edit_", 
+                                       as.character(i)),
+                      label = paste0("Product ", as.character(i)),
+                      choices = sort(rv.SPECIES$df.by.compartment$Name),
+                      selected = if (prod.exists && i <= length(Product)) Product[i] else NULL,
+                      options = pickerOptions(liveSearch = TRUE,
+                                              liveSearchStyle = "startsWith"))
+                  }
+                )
+              ),
+              column(
+                width = 6,
+                conditionalPanel(
+                  condition = "input.CB_degradation_enzyme_relative_formation_edit",
+                  fluidRow(
+                    column(
+                      width = 12,
+                      textInput(
+                        inputId = "TI_degradation_enzyme_krel_edit",
+                        label = "krel (product yield fraction)",
+                        value = if (!is.na(krel)) krel else "krel"
+                      )
+                    )
+                  ),
+                  fluidRow(
+                    column(
+                      width = 12,
+                      numericInput(
+                        inputId = "NI_degradation_enzyme_krel_value_edit",
+                        label = "Value (0-1)",
+                        value = if (!is.na(krel.id) && krel.id %in% names(rv.PARAMETERS$parameters)) {
+                          rv.PARAMETERS$parameters[[krel.id]]$Value
+                        } else 0.1,
+                        min = 0,
+                        max = 1,
+                        step = 0.01
+                      )
+                    )
+                  )
+                )
+              )
             )
           )
         )
@@ -1071,6 +1578,50 @@ output$eqnCreate_edit_rending_mainbar <- renderUI({
             inputId = "TI_degradation_enzyme_Km_value_edit",
             label = "Value",
             value = rv.PARAMETERS$parameters[[Km.id]]$Value
+          )
+        )
+      )
+    )
+  }
+  else if (eqn.reaction.law == "exponential_growth") {
+    growthInfo <- rv.REACTIONS$exponentialGrowth[[eqn.ID]]
+    
+    species    <- growthInfo$Species
+    mu         <- growthInfo$Mu
+    mu.id      <- growthInfo$Mu.id
+    mu.value   <- rv.PARAMETERS$parameters[[mu.id]]$Value
+    
+    div(
+      fluidRow(
+        column(
+          width = 4,
+          pickerInput(
+            inputId = "PI_exp_growth_species_edit",
+            label   = "Growing Species",
+            choices = sort(rv.SPECIES$df.by.compartment$Name),
+            selected = species,
+            options = pickerOptions(liveSearch = TRUE,
+                                    liveSearchStyle = "startsWith")
+          )
+        )
+      ),
+      fluidRow(
+        column(
+          width = 4,
+          textInput(
+            inputId = "TI_exp_growth_mu_edit",
+            label = "Growth Rate Parameter (mu)",
+            value = mu
+          )
+        ),
+        column(
+          width = 3,
+          numericInput(
+            inputId = "NI_exp_growth_mu_value_edit",
+            label = "Value",
+            value = mu.value,
+            min = 0,
+            step = 0.01
           )
         )
       )
@@ -1207,6 +1758,10 @@ output$eqnCreate_edit_rending_mainbar <- renderUI({
         )
       )
     )
+  }
+  else if (eqn.reaction.law == "predator_prey") {
+    # Use the UI from equationBuilder_predator_prey_edit
+    uiOutput("equationBuilder_predator_prey_edit")
   }
 })
 
@@ -1434,6 +1989,16 @@ observeEvent(input$modal_editEqn_edit_button, {
       kr.val <- NA
     }
     # browser()
+
+    # Ensure par.ids reflects the current `parameters` order (safety rebuild)
+    if (exists("par.ids")) {
+      par.ids <- c()
+      if (length(parameters) > 0) {
+        for (i in seq_along(parameters)) {
+          par.ids <- c(par.ids, FindId(parameters[i]))
+        }
+      }
+    }
     # Build Rate Law
     laws <- Law_Of_Mass_Action(r.stoich,
                                reactants,
@@ -1451,6 +2016,511 @@ observeEvent(input$modal_editEqn_edit_button, {
     content.ml  <- laws$content.ml
     
   } 
+  else if (eqn.reaction.law == "exponential_growth") {
+    reaction.id  <- NA
+    eqn.display  <- "Exponential Growth"
+    backend.call <- "exponential_growth"
+    modifiers    <- NA
+    modifiers.id <- NA
+    reactants    <- NA
+    reactants.id <- NA
+    products     <- NA
+    products.id  <- NA
+    isReversible <- FALSE
+    
+    growth.species    <- input$PI_exp_growth_species_edit
+    growth.species.id <- FindId(growth.species)
+    species           <- growth.species
+    species.id        <- growth.species.id
+    
+    mu.name     <- input$TI_exp_growth_mu_edit
+    mu.val      <- input$NI_exp_growth_mu_value_edit
+    unit.description <- "num <div> time"
+    base.unit   <- paste0("1/", rv.UNITS$units.base$Duration)
+    param.unit  <- paste0("1/", rv.UNITS$units.selected$Duration)
+    param.description <- paste0("Specific growth rate for ", growth.species)
+    
+    if (param.unit != base.unit) {
+      base.val <- UnitConversion(unit.description,
+                                 param.unit,
+                                 base.unit,
+                                 as.numeric(mu.val))
+    } else {
+      base.val <- mu.val
+    }
+    
+    parameters         <- c(parameters, mu.name)
+    param.vals         <- c(param.vals, mu.val)
+    param.units        <- c(param.units, param.unit)
+    unit.descriptions  <- c(unit.descriptions, unit.description)
+    param.descriptions <- c(param.descriptions, param.description)
+    base.units         <- c(base.units, base.unit)
+    base.values        <- c(base.values, base.val)
+    
+    rate.law    <- paste0(mu.name, "*", growth.species)
+    p.rate.law  <- rate.law
+    latex.law   <- paste0(mu.name, "\\cdot ", growth.species)
+    mathjax.law <- paste0(Var2MathJ(mu.name), "*", Var2MathJ(growth.species))
+    mathml.law  <- NA
+    content.ml  <- NA
+    eqn.d       <- "Exponential growth dX/dt = mu*X"
+  }
+  else if (eqn.reaction.law == "monod_growth") {
+    reaction.id  <- NA
+    eqn.display  <- "Monod Growth"
+    backend.call <- "monod_growth"
+    modifiers    <- NA
+    modifiers.id <- NA
+    isReversible <- FALSE
+    
+    growth.species    <- input$PI_monod_species_edit
+    growth.species.id <- FindId(growth.species)
+    substrate         <- input$PI_monod_substrate_edit
+    substrate.id     <- FindId(substrate)
+    species           <- c(growth.species, substrate)
+    species.id        <- c(growth.species.id, substrate.id)
+    
+    # Substrate is consumed (reactant), growing species is produced (product)
+    reactants    <- substrate
+    reactants.id <- substrate.id
+    products     <- growth.species
+    products.id  <- growth.species.id
+    
+    mu_max.name     <- input$TI_monod_mu_max_edit
+    mu_max.val      <- input$NI_monod_mu_max_value_edit
+    unit.description.mu <- "num <div> time"
+    base.unit.mu    <- paste0("1/", rv.UNITS$units.base$Duration)
+    param.unit.mu   <- paste0("1/", rv.UNITS$units.selected$Duration)
+    
+    if (param.unit.mu != base.unit.mu) {
+      base.val.mu <- UnitConversion(unit.description.mu,
+                                    param.unit.mu,
+                                    base.unit.mu,
+                                    as.numeric(mu_max.val))
+    } else {
+      base.val.mu <- mu_max.val
+    }
+    
+    K_s.name     <- input$TI_monod_K_s_edit
+    K_s.val      <- input$NI_monod_K_s_value_edit
+    unit.K_s     <- rv.UNITS$units.selected$For.Var
+    base.K_s     <- rv.UNITS$units.base$For.Var
+    unit.description.K_s <- paste0("conc (", base.K_s, ")")
+    
+    if (unit.K_s != base.K_s) {
+      base.val.K_s <- UnitConversion(unit.description.K_s,
+                                     unit.K_s,
+                                     base.K_s,
+                                     as.numeric(K_s.val))
+    } else {
+      base.val.K_s <- K_s.val
+    }
+    
+    parameters         <- c(parameters, mu_max.name, K_s.name)
+    param.vals         <- c(param.vals, mu_max.val, K_s.val)
+    param.units        <- c(param.units, param.unit.mu, unit.K_s)
+    unit.descriptions  <- c(unit.descriptions, unit.description.mu, unit.description.K_s)
+    param.descriptions <- c(param.descriptions, paste0("Specific growth rate for ", growth.species), paste0("Half-saturation constant for ", substrate))
+    base.units         <- c(base.units, base.unit.mu, base.K_s)
+    base.values        <- c(base.values, base.val.mu, base.val.K_s)
+    
+    rate.law    <- paste0(mu_max.name, "*", growth.species, "*", substrate, "/(", K_s.name, "+", substrate, ")")
+    p.rate.law  <- rate.law
+    latex.law   <- paste0(mu_max.name, "\\cdot ", growth.species, "\\cdot \\frac{", substrate, "}{", K_s.name, "+", substrate, "}")
+    mathjax.law <- paste0(Var2MathJ(mu_max.name), "*", Var2MathJ(growth.species), "*\\frac{", Var2MathJ(substrate), "}{", Var2MathJ(K_s.name), "+", Var2MathJ(substrate), "}")
+    mathml.law  <- NA
+    content.ml  <- NA
+    eqn.d       <- paste0("Monod growth d", growth.species, "/dt = ", mu_max.name, "*", growth.species, "*", substrate, "/(", K_s.name, "+", substrate, ")")
+  }
+  else if (eqn.reaction.law == "competitive_monod") {
+    # Check if single species mode (only X grows competitively)
+    single.species.mode <- isTruthy(input$CB_comp_monod_single_species_edit)
+    # Check if substrate consumption should exclude competitive restriction
+    no.substrate.restriction <- isTruthy(input$CB_comp_monod_no_substrate_restriction_edit)
+    
+    reaction.id  <- NA
+    eqn.display  <- if (single.species.mode) "Competitive Monod Growth (Single Species)" else "Competitive Monod Growth"
+    backend.call <- "competitive_monod"
+    modifiers    <- NA
+    modifiers.id <- NA
+    isReversible <- FALSE
+    
+    # Use different input IDs based on mode
+    if (single.species.mode) {
+      species.x    <- input$PI_comp_monod_species_x_edit_2
+      species.y    <- input$PI_comp_monod_species_y_edit_2
+      substrate    <- input$PI_comp_monod_substrate_edit_2
+    } else {
+      species.x    <- input$PI_comp_monod_species_x_edit
+      species.y    <- input$PI_comp_monod_species_y_edit
+      substrate    <- input$PI_comp_monod_substrate_edit
+    }
+    species.id.x <- FindId(species.x)
+    species.id.y <- FindId(species.y)
+    substrate.id <- FindId(substrate)
+    
+    if (single.species.mode) {
+      # Only X grows competitively, Y is a modifier
+      species      <- c(species.x, substrate)
+      species.id   <- c(species.id.x, substrate.id)
+      modifiers    <- species.y
+      modifiers.id <- species.id.y
+    } else {
+      # Both species compete
+      species      <- c(species.x, species.y, substrate)
+      species.id   <- c(species.id.x, species.id.y, substrate.id)
+    }
+    
+    # Parameters
+    mu_max.x.name  <- input$TI_comp_monod_mu_max_x_edit
+    mu_max.x.val   <- input$NI_comp_monod_mu_max_x_value_edit
+    K_s.x.name     <- input$TI_comp_monod_K_s_x_edit
+    K_s.x.val      <- input$NI_comp_monod_K_s_x_value_edit
+    alpha.xy.name  <- input$TI_comp_monod_alpha_xy_edit
+    alpha.xy.val   <- input$NI_comp_monod_alpha_xy_value_edit
+    Kc.name        <- input$TI_comp_monod_Kc_edit
+    Kc.val         <- input$NI_comp_monod_Kc_value_edit
+    Y_x.name       <- input$TI_comp_monod_Y_x_edit
+    Y_x.val        <- input$NI_comp_monod_Y_x_value_edit
+    
+    # Units
+    unit.description.mu <- "num <div> time"
+    base.unit.mu        <- paste0("1/", rv.UNITS$units.base$Duration)
+    unit.mu             <- paste0("1/", rv.UNITS$units.selected$Duration)
+    
+    unit.K_s     <- rv.UNITS$units.selected$For.Var
+    base.K_s     <- rv.UNITS$units.base$For.Var
+    unit.description.K_s <- paste0("conc (", base.K_s, ")")
+    
+    unit.Kc      <- rv.UNITS$units.selected$For.Var
+    base.Kc      <- rv.UNITS$units.base$For.Var
+    
+    addParam <- function(name, val, unit, base.unit, unit.desc, desc){
+      if (unit != base.unit) {
+        base.val <- UnitConversion(unit.desc, unit, base.unit, as.numeric(val))
+      } else { base.val <- val }
+      list(name=name,val=val,unit=unit,base.unit=base.unit,unit.desc=unit.desc,
+           base.val=base.val, desc=desc)
+    }
+    
+    p.mu_max.x <- addParam(mu_max.x.name, mu_max.x.val, unit.mu, base.unit.mu, unit.description.mu,
+                          paste0("Maximum growth rate of ", species.x))
+    p.K_s.x    <- addParam(K_s.x.name, K_s.x.val, unit.K_s, base.K_s, unit.description.K_s,
+                          paste0("Half-saturation constant for ", species.x))
+    p.alpha.xy <- addParam(alpha.xy.name, alpha.xy.val, "dimensionless", "dimensionless",
+                          "dimensionless", paste0("Effect of ", species.y, " on ", species.x))
+    p.Kc       <- addParam(Kc.name, Kc.val, unit.Kc, base.Kc,
+                          paste0("conc (", base.Kc, ")"),
+                          "Community carrying capacity")
+    p.Y_x      <- addParam(Y_x.name, Y_x.val, "dimensionless", "dimensionless",
+                          "dimensionless", paste0("Yield coefficient for ", species.x))
+    
+    if (single.species.mode) {
+      # Single species mode: only X parameters
+      pack <- list(p.mu_max.x, p.K_s.x, p.alpha.xy, p.Kc, p.Y_x)
+    } else {
+      # Both species mode: need all parameters
+      mu_max.y.name  <- input$TI_comp_monod_mu_max_y_edit
+      mu_max.y.val   <- input$NI_comp_monod_mu_max_y_value_edit
+      K_s.y.name     <- input$TI_comp_monod_K_s_y_edit
+      K_s.y.val      <- input$NI_comp_monod_K_s_y_value_edit
+      alpha.yx.name  <- input$TI_comp_monod_alpha_yx_edit
+      alpha.yx.val   <- input$NI_comp_monod_alpha_yx_value_edit
+      Y_y.name       <- input$TI_comp_monod_Y_y_edit
+      Y_y.val        <- input$NI_comp_monod_Y_y_value_edit
+      
+      p.mu_max.y <- addParam(mu_max.y.name, mu_max.y.val, unit.mu, base.unit.mu, unit.description.mu,
+                            paste0("Maximum growth rate of ", species.y))
+      p.K_s.y    <- addParam(K_s.y.name, K_s.y.val, unit.K_s, base.K_s, unit.description.K_s,
+                            paste0("Half-saturation constant for ", species.y))
+      p.alpha.yx <- addParam(alpha.yx.name, alpha.yx.val, "dimensionless", "dimensionless",
+                            "dimensionless", paste0("Effect of ", species.x, " on ", species.y))
+      p.Y_y      <- addParam(Y_y.name, Y_y.val, "dimensionless", "dimensionless",
+                            "dimensionless", paste0("Yield coefficient for ", species.y))
+      pack <- list(p.mu_max.x, p.mu_max.y, p.K_s.x, p.K_s.y, p.alpha.xy, p.alpha.yx, p.Kc, p.Y_x, p.Y_y)
+    }
+    
+    for (p in pack){
+      parameters         <- c(parameters, p$name)
+      param.vals         <- c(param.vals, p$val)
+      param.units        <- c(param.units, p$unit)
+      unit.descriptions  <- c(unit.descriptions, p$unit.desc)
+      param.descriptions <- c(param.descriptions, p$desc)
+      base.units         <- c(base.units, p$base.unit)
+      base.values        <- c(base.values, p$base.val)
+    }
+    
+    # Rate laws:
+    # For X: μ_max_x * X * S / (K_s_x + S) * (1 - (X + α_xy * Y) / K_c)
+    rate.law.x <- paste0(mu_max.x.name, "*", species.x, "*", substrate, "/(", K_s.x.name, "+", substrate, ")*(1-(", species.x, "+", alpha.xy.name, "*", species.y, ")/", Kc.name, ")")
+    # For S consumption from X: Y_x * (growth rate of X) - ODE derivation will add negative sign for reactant
+    # If no.substrate.restriction is TRUE, remove competitive term from substrate consumption
+    if (no.substrate.restriction) {
+      rate.law.s.x <- paste0(Y_x.name, "*", mu_max.x.name, "*", species.x, "*", substrate, "/(", K_s.x.name, "+", substrate, ")")
+    } else {
+      rate.law.s.x <- paste0(Y_x.name, "*", mu_max.x.name, "*", species.x, "*", substrate, "/(", K_s.x.name, "+", substrate, ")*(1-(", species.x, "+", alpha.xy.name, "*", species.y, ")/", Kc.name, ")")
+    }
+    
+    if (single.species.mode) {
+      # Only X equation and S consumption from X
+      rate.law.y <- NA
+      rate.law.s.y <- NA
+      # Build MathJax - substrate consumption may or may not have competitive term
+      if (no.substrate.restriction) {
+        mathjax.law <- paste0("\\begin{aligned}",
+                              "\\frac{d", Var2MathJ(species.x), "}{dt} &= ", Var2MathJ(mu_max.x.name), Var2MathJ(species.x), "\\frac{", Var2MathJ(substrate), "}{", Var2MathJ(K_s.x.name), "+", Var2MathJ(substrate), "}\\left(1-\\frac{", Var2MathJ(species.x), "+", Var2MathJ(alpha.xy.name), Var2MathJ(species.y), "}{", Var2MathJ(Kc.name), "}\\right) \\\\",
+                              "\\frac{d", Var2MathJ(substrate), "}{dt} &= -", Var2MathJ(Y_x.name), "*", Var2MathJ(mu_max.x.name), Var2MathJ(species.x), "\\frac{", Var2MathJ(substrate), "}{", Var2MathJ(K_s.x.name), "+", Var2MathJ(substrate), "}",
+                              "\\end{aligned}")
+      } else {
+        mathjax.law <- paste0("\\begin{aligned}",
+                              "\\frac{d", Var2MathJ(species.x), "}{dt} &= ", Var2MathJ(mu_max.x.name), Var2MathJ(species.x), "\\frac{", Var2MathJ(substrate), "}{", Var2MathJ(K_s.x.name), "+", Var2MathJ(substrate), "}\\left(1-\\frac{", Var2MathJ(species.x), "+", Var2MathJ(alpha.xy.name), Var2MathJ(species.y), "}{", Var2MathJ(Kc.name), "}\\right) \\\\",
+                              "\\frac{d", Var2MathJ(substrate), "}{dt} &= -", Var2MathJ(Y_x.name), "*", Var2MathJ(mu_max.x.name), Var2MathJ(species.x), "\\frac{", Var2MathJ(substrate), "}{", Var2MathJ(K_s.x.name), "+", Var2MathJ(substrate), "}\\left(1-\\frac{", Var2MathJ(species.x), "+", Var2MathJ(alpha.xy.name), Var2MathJ(species.y), "}{", Var2MathJ(Kc.name), "}\\right)",
+                              "\\end{aligned}")
+      }
+      eqn.d       <- paste0("Competitive Monod growth: ", species.x, " grows competitively with ", species.y, " as competitor")
+    } else {
+      # Both species equations
+      mu_max.y.name  <- input$TI_comp_monod_mu_max_y_edit
+      K_s.y.name     <- input$TI_comp_monod_K_s_y_edit
+      alpha.yx.name  <- input$TI_comp_monod_alpha_yx_edit
+      Y_y.name       <- input$TI_comp_monod_Y_y_edit
+      
+      rate.law.y <- paste0(mu_max.y.name, "*", species.y, "*", substrate, "/(", K_s.y.name, "+", substrate, ")*(1-(", species.y, "+", alpha.yx.name, "*", species.x, ")/", Kc.name, ")")
+      # If no.substrate.restriction is TRUE, remove competitive term from substrate consumption
+      if (no.substrate.restriction) {
+        rate.law.s.y <- paste0(Y_y.name, "*", mu_max.y.name, "*", species.y, "*", substrate, "/(", K_s.y.name, "+", substrate, ")")
+      } else {
+        rate.law.s.y <- paste0(Y_y.name, "*", mu_max.y.name, "*", species.y, "*", substrate, "/(", K_s.y.name, "+", substrate, ")*(1-(", species.y, "+", alpha.yx.name, "*", species.x, ")/", Kc.name, ")")
+      }
+      # Build MathJax - substrate consumption may or may not have competitive term
+      if (no.substrate.restriction) {
+        mathjax.law <- paste0("\\begin{aligned}",
+                              "\\frac{d", Var2MathJ(species.x), "}{dt} &= ", Var2MathJ(mu_max.x.name), Var2MathJ(species.x), "\\frac{", Var2MathJ(substrate), "}{", Var2MathJ(K_s.x.name), "+", Var2MathJ(substrate), "}\\left(1-\\frac{", Var2MathJ(species.x), "+", Var2MathJ(alpha.xy.name), Var2MathJ(species.y), "}{", Var2MathJ(Kc.name), "}\\right) \\\\",
+                              "\\frac{d", Var2MathJ(species.y), "}{dt} &= ", Var2MathJ(mu_max.y.name), Var2MathJ(species.y), "\\frac{", Var2MathJ(substrate), "}{", Var2MathJ(K_s.y.name), "+", Var2MathJ(substrate), "}\\left(1-\\frac{", Var2MathJ(species.y), "+", Var2MathJ(alpha.yx.name), Var2MathJ(species.x), "}{", Var2MathJ(Kc.name), "}\\right) \\\\",
+                              "\\frac{d", Var2MathJ(substrate), "}{dt} &= -", Var2MathJ(Y_x.name), "*", Var2MathJ(mu_max.x.name), Var2MathJ(species.x), "\\frac{", Var2MathJ(substrate), "}{", Var2MathJ(K_s.x.name), "+", Var2MathJ(substrate), "}-", Var2MathJ(Y_y.name), "*", Var2MathJ(mu_max.y.name), Var2MathJ(species.y), "\\frac{", Var2MathJ(substrate), "}{", Var2MathJ(K_s.y.name), "+", Var2MathJ(substrate), "}",
+                              "\\end{aligned}")
+      } else {
+        mathjax.law <- paste0("\\begin{aligned}",
+                              "\\frac{d", Var2MathJ(species.x), "}{dt} &= ", Var2MathJ(mu_max.x.name), Var2MathJ(species.x), "\\frac{", Var2MathJ(substrate), "}{", Var2MathJ(K_s.x.name), "+", Var2MathJ(substrate), "}\\left(1-\\frac{", Var2MathJ(species.x), "+", Var2MathJ(alpha.xy.name), Var2MathJ(species.y), "}{", Var2MathJ(Kc.name), "}\\right) \\\\",
+                              "\\frac{d", Var2MathJ(species.y), "}{dt} &= ", Var2MathJ(mu_max.y.name), Var2MathJ(species.y), "\\frac{", Var2MathJ(substrate), "}{", Var2MathJ(K_s.y.name), "+", Var2MathJ(substrate), "}\\left(1-\\frac{", Var2MathJ(species.y), "+", Var2MathJ(alpha.yx.name), Var2MathJ(species.x), "}{", Var2MathJ(Kc.name), "}\\right) \\\\",
+                              "\\frac{d", Var2MathJ(substrate), "}{dt} &= -", Var2MathJ(Y_x.name), "*", Var2MathJ(mu_max.x.name), Var2MathJ(species.x), "\\frac{", Var2MathJ(substrate), "}{", Var2MathJ(K_s.x.name), "+", Var2MathJ(substrate), "}\\left(1-\\frac{", Var2MathJ(species.x), "+", Var2MathJ(alpha.xy.name), Var2MathJ(species.y), "}{", Var2MathJ(Kc.name), "}\\right)-", Var2MathJ(Y_y.name), "*", Var2MathJ(mu_max.y.name), Var2MathJ(species.y), "\\frac{", Var2MathJ(substrate), "}{", Var2MathJ(K_s.y.name), "+", Var2MathJ(substrate), "}\\left(1-\\frac{", Var2MathJ(species.y), "+", Var2MathJ(alpha.yx.name), Var2MathJ(species.x), "}{", Var2MathJ(Kc.name), "}\\right)",
+                              "\\end{aligned}")
+      }
+      eqn.d       <- "Competitive Monod growth between two species on shared substrate"
+    }
+    
+    rate.law    <- rate.law.x
+    p.rate.law  <- rate.law.x
+    latex.law   <- rate.law.x
+    mathml.law  <- NA
+    content.ml  <- NA
+  }
+  else if (eqn.reaction.law == "predator_prey") {
+    reaction.id  <- NA
+    eqn.display  <- "Predator–Prey"
+    backend.call <- "predator_prey"
+    modifiers    <- NA
+    modifiers.id <- NA
+    reactants    <- NA
+    reactants.id <- NA
+    products     <- NA
+    products.id  <- NA
+    isReversible <- FALSE
+    
+    # Species
+    species.x    <- input$PI_pred_prey_prey_edit
+    species.y    <- input$PI_pred_prey_predator_edit
+    if (is.null(species.x) || species.x == "" || is.null(species.y) || species.y == "") {
+      return()
+    }
+    species.id.x <- FindId(species.x)
+    species.id.y <- FindId(species.y)
+    species      <- c(species.x, species.y)
+    species.id   <- c(species.id.x, species.id.y)
+    
+    # Parameters
+    r.name <- input$TI_pred_prey_r_edit
+    r.val  <- input$NI_pred_prey_r_value_edit
+    a.name <- input$TI_pred_prey_a_edit
+    a.val  <- input$NI_pred_prey_a_value_edit
+    b.name <- input$TI_pred_prey_b_edit
+    b.val  <- input$NI_pred_prey_b_value_edit
+    d.name <- input$TI_pred_prey_d_edit
+    d.val  <- input$NI_pred_prey_d_value_edit
+    
+    unit.description.r <- "num <div> time"
+    base.unit.r        <- paste0("1/", rv.UNITS$units.base$Duration)
+    unit.r             <- paste0("1/", rv.UNITS$units.selected$Duration)
+    
+    addParam <- function(name, val, unit, base.unit, unit.desc, desc){
+      if (unit != base.unit) {
+        base.val <- UnitConversion(unit.desc, unit, base.unit, as.numeric(val))
+      } else { base.val <- val }
+      list(name=name,val=val,unit=unit,base.unit=base.unit,unit.desc=unit.desc,
+           base.val=base.val, desc=desc)
+    }
+    
+    p.r <- addParam(r.name, r.val, unit.r, base.unit.r, unit.description.r,
+                    paste0("Prey growth rate for ", species.x))
+    p.a <- addParam(a.name, a.val, unit.r, base.unit.r, unit.description.r,
+                    paste0("Attack rate (loss of ", species.x, " due to ", species.y, ")"))
+    p.b <- addParam(b.name, b.val, unit.r, base.unit.r, unit.description.r,
+                    paste0("Conversion rate (gain of ", species.y, " from consuming ", species.x, ")"))
+    p.d <- addParam(d.name, d.val, unit.r, base.unit.r, unit.description.r,
+                    paste0("Predator death rate for ", species.y))
+    
+    pack <- list(p.r, p.a, p.b, p.d)
+    for (p in pack){
+      parameters         <- c(parameters, p$name)
+      param.vals         <- c(param.vals, p$val)
+      param.units        <- c(param.units, p$unit)
+      unit.descriptions  <- c(unit.descriptions, p$unit.desc)
+      param.descriptions <- c(param.descriptions, p$desc)
+      base.units         <- c(base.units, p$base.unit)
+      base.values        <- c(base.values, p$base.val)
+    }
+    
+    # Rate laws (net right-hand sides)
+    rate.law.x <- paste0(r.name, "*", species.x, "-", a.name, "*", species.x, "*", species.y)
+    rate.law.y <- paste0(b.name, "*", species.x, "*", species.y, "-", d.name, "*", species.y)
+    
+    mathjax.law <- paste0("\\begin{aligned}",
+                          "\\frac{d", Var2MathJ(species.x), "}{dt} &= ", Var2MathJ(r.name), Var2MathJ(species.x),
+                          "-", Var2MathJ(a.name), Var2MathJ(species.x), Var2MathJ(species.y), " \\\\",
+                          "\\frac{d", Var2MathJ(species.y), "}{dt} &= ", Var2MathJ(b.name), Var2MathJ(species.x), Var2MathJ(species.y),
+                          "-", Var2MathJ(d.name), Var2MathJ(species.y),
+                          "\\end{aligned}")
+    rate.law    <- rate.law.x
+    p.rate.law  <- rate.law.x
+    latex.law   <- rate.law.x
+    mathml.law  <- NA
+    content.ml  <- NA
+    eqn.d       <- paste0("Predator–prey interaction between ", species.x, " (prey) and ", species.y, " (predator)")
+    eqn.text    <- paste0(species.x, " <-->(predator-prey) ", species.y)
+  }
+  else if (eqn.reaction.law == "logistic_competition") {
+    # Check if single species mode (only X grows competitively)
+    single.species.mode <- isTruthy(input$CB_log_comp_single_species_edit)
+    
+    reaction.id  <- NA
+    eqn.display  <- if (single.species.mode) "Logistic Competition (Single Species)" else "Logistic Competition"
+    backend.call <- "logistic_competition"
+    modifiers    <- NA
+    modifiers.id <- NA
+    reactants    <- NA
+    reactants.id <- NA
+    products     <- NA
+    products.id  <- NA
+    isReversible <- FALSE
+    
+    # Use different input IDs based on mode
+    if (single.species.mode) {
+      species.x    <- input$PI_log_comp_species_x_edit_2
+      species.y    <- input$PI_log_comp_species_y_edit_2
+    } else {
+      species.x    <- input$PI_log_comp_species_x_edit
+      species.y    <- input$PI_log_comp_species_y_edit
+    }
+    species.id.x <- FindId(species.x)
+    species.id.y <- FindId(species.y)
+    
+    if (single.species.mode) {
+      # Only X grows competitively, Y is a modifier
+      species      <- species.x
+      species.id   <- species.id.x
+      modifiers    <- species.y
+      modifiers.id <- species.id.y
+    } else {
+      # Both species compete
+      species      <- c(species.x, species.y)
+      species.id   <- c(species.id.x, species.id.y)
+    }
+    
+    # parameters
+    r.x.name  <- input$TI_log_comp_r_x_edit
+    r.x.val   <- input$NI_log_comp_r_x_value_edit
+    a.xy.name <- input$TI_log_comp_alpha_xy_edit
+    a.xy.val  <- input$NI_log_comp_alpha_xy_value_edit
+    Kc.name   <- input$TI_log_comp_Kc_edit
+    Kc.val    <- input$NI_log_comp_Kc_value_edit
+    
+    unit.description.r  <- "num <div> time"
+    base.unit.r         <- paste0("1/", rv.UNITS$units.base$Duration)
+    unit.r              <- paste0("1/", rv.UNITS$units.selected$Duration)
+    
+    addParam <- function(name, val, unit, base.unit, unit.desc, desc){
+      if (unit != base.unit) {
+        base.val <- UnitConversion(unit.desc, unit, base.unit, as.numeric(val))
+      } else { base.val <- val }
+      list(name=name,val=val,unit=unit,base.unit=base.unit,unit.desc=unit.desc,
+           base.val=base.val, desc=desc)
+    }
+    
+    p.r.x <- addParam(r.x.name, r.x.val, unit.r, base.unit.r, unit.description.r,
+                      paste0("Growth rate of ", species.x))
+    p.a.xy<- addParam(a.xy.name, a.xy.val, "dimensionless", "dimensionless",
+                      "dimensionless", paste0("Effect of ", species.y, " on ", species.x))
+    unit.Kc <- rv.UNITS$units.selected$For.Var
+    base.Kc <- rv.UNITS$units.base$For.Var
+    p.Kc <- addParam(Kc.name, Kc.val, unit.Kc, base.Kc,
+                     paste0("conc (", base.Kc, ")"),
+                     "Community carrying capacity")
+    
+    if (single.species.mode) {
+      # Single species mode: only X parameters
+      pack <- list(p.r.x, p.a.xy, p.Kc)
+    } else {
+      # Both species mode: need r.y and alpha.yx
+      r.y.name  <- input$TI_log_comp_r_y_edit
+      r.y.val   <- input$NI_log_comp_r_y_value_edit
+      a.yx.name <- input$TI_log_comp_alpha_yx_edit
+      a.yx.val  <- input$NI_log_comp_alpha_yx_value_edit
+      
+      p.r.y <- addParam(r.y.name, r.y.val, unit.r, base.unit.r, unit.description.r,
+                        paste0("Growth rate of ", species.y))
+      p.a.yx<- addParam(a.yx.name, a.yx.val, "dimensionless", "dimensionless",
+                        "dimensionless", paste0("Effect of ", species.x, " on ", species.y))
+      pack <- list(p.r.x, p.r.y, p.a.xy, p.a.yx, p.Kc)
+    }
+    
+    for (p in pack){
+      parameters         <- c(parameters, p$name)
+      param.vals         <- c(param.vals, p$val)
+      param.units        <- c(param.units, p$unit)
+      unit.descriptions  <- c(unit.descriptions, p$unit.desc)
+      param.descriptions <- c(param.descriptions, p$desc)
+      base.units         <- c(base.units, p$base.unit)
+      base.values        <- c(base.values, p$base.val)
+    }
+    
+    rate.law.x <- paste0(r.x.name,"*",species.x,"*(1-(",species.x,"+",a.xy.name,"*",species.y,")/",Kc.name,")")
+    
+    if (single.species.mode) {
+      # Only X equation
+      rate.law.y <- NA
+      rate.law   <- rate.law.x
+      p.rate.law <- rate.law.x
+      latex.law  <- rate.law.x
+      mathjax.law<- paste0("\\frac{d", Var2MathJ(species.x), "}{dt} = ", Var2MathJ(r.x.name), Var2MathJ(species.x), "\\left(1-\\frac{", Var2MathJ(species.x), "+", Var2MathJ(a.xy.name), Var2MathJ(species.y), "}{", Var2MathJ(Kc.name), "}\\right)")
+      eqn.d      <- paste0("Logistic competition: ", species.x, " grows competitively with ", species.y, " as competitor")
+    } else {
+      # Both species equations
+      r.y.name  <- input$TI_log_comp_r_y_edit
+      a.yx.name <- input$TI_log_comp_alpha_yx_edit
+      rate.law.y <- paste0(r.y.name,"*",species.y,"*(1-(",species.y,"+",a.yx.name,"*",species.x,")/",Kc.name,")")
+      rate.law   <- paste(rate.law.x, rate.law.y, sep=" ; ")
+      p.rate.law <- rate.law
+      latex.law  <- rate.law
+      mathjax.law<- paste0("\\begin{aligned}",
+                            "\\frac{d", Var2MathJ(species.x), "}{dt} &= ", Var2MathJ(r.x.name), Var2MathJ(species.x), "\\left(1-\\frac{", Var2MathJ(species.x), "+", Var2MathJ(a.xy.name), Var2MathJ(species.y), "}{", Var2MathJ(Kc.name), "}\\right) \\\\",
+                            "\\frac{d", Var2MathJ(species.y), "}{dt} &= ", Var2MathJ(r.y.name), Var2MathJ(species.y), "\\left(1-\\frac{", Var2MathJ(species.y), "+", Var2MathJ(a.yx.name), Var2MathJ(species.x), "}{", Var2MathJ(Kc.name), "}\\right)",
+                            "\\end{aligned}")
+      eqn.d      <- "Logistic competition between two species"
+    }
+    
+    mathml.law <- NA
+    content.ml <- NA
+  }
   else if (eqn.reaction.law == "mass_action_w_reg") {
     reaction.id <- NA
     eqn.display <- "Regulated Mass Action"
@@ -1947,10 +3017,33 @@ observeEvent(input$modal_editEqn_edit_button, {
     base.units          <- c(base.units, base.unit)
     base.values         <- c(base.values, base.val)
     
+    # Add krel parameter if products are being produced AND relative formation is checked
+    krel.param <- NA
+    krel.param.id <- NA
+    if (input$CB_degradation_rate_toProducts_edit && isTruthy(input$CB_degradation_rate_relative_formation_edit)) {
+      krel.param         <- input$TI_degradation_rate_krel_edit
+      krel.param.val     <- input$NI_degradation_rate_krel_value_edit
+      krel.base.unit     <- "dimensionless"
+      krel.param.unit    <- "dimensionless"
+      krel.unit.desc     <- "dimensionless"
+      krel.param.desc    <- paste0("Product yield fraction for degradation of ", deg.species)
+      
+      parameters          <- c(parameters, krel.param)
+      param.vals          <- c(param.vals, krel.param.val)
+      param.units         <- c(param.units, krel.param.unit)
+      unit.descriptions   <- c(unit.descriptions, krel.unit.desc)
+      param.descriptions  <- c(param.descriptions, krel.param.desc)
+      base.units          <- c(base.units, krel.base.unit)
+      base.values         <- c(base.values, krel.param.val)
+    }
+    
     # Store Rate Law
     laws <- Degradation_By_Rate(parameter, ConcDep, deg.species)
   }
   else if (eqn.reaction.law == "degradation_by_enzyme") {
+    print("DEBUG: ===== ENTERING degradation_by_enzyme block =====")
+    print(paste("DEBUG: eqn.ID =", eqn.ID))
+    print(paste("DEBUG: length(parameters) at start =", length(parameters)))
     
     eqn.d       <- "Degrdation by enzyme"
     eqn.display <- "Degradation (By Enzyme)"
@@ -2139,6 +3232,42 @@ observeEvent(input$modal_editEqn_edit_button, {
       # Store Rate Law
       laws <- Degradation_By_Enzyme_no_Vmax(deg.species, Km, kcat, enzyme)
     }
+    
+    # Add krel parameter if products are being produced AND relative formation is checked
+    print("DEBUG: degradation_by_enzyme - checking for krel")
+    print(paste("DEBUG: CB_degradation_enzyme_toProducts_edit =", input$CB_degradation_enzyme_toProducts_edit))
+    print(paste("DEBUG: CB_degradation_enzyme_relative_formation_edit =", isTruthy(input$CB_degradation_enzyme_relative_formation_edit)))
+    print(paste("DEBUG: length(parameters) before krel =", length(parameters)))
+    
+    krel.param <- NA
+    krel.param.id <- NA
+    if (input$CB_degradation_enzyme_toProducts_edit && isTruthy(input$CB_degradation_enzyme_relative_formation_edit)) {
+      print("DEBUG: Adding krel parameter to parameters vector")
+      krel.param         <- input$TI_degradation_enzyme_krel_edit
+      krel.param.val     <- input$NI_degradation_enzyme_krel_value_edit
+      krel.base.unit     <- "dimensionless"
+      krel.param.unit    <- "dimensionless"
+      krel.unit.desc     <- "dimensionless"
+      krel.param.desc    <- paste0("Product yield fraction for degradation of ", deg.species)
+      
+      parameters          <- c(parameters, krel.param)
+      param.vals          <- c(param.vals, krel.param.val)
+      param.units         <- c(param.units, krel.param.unit)
+      unit.descriptions   <- c(unit.descriptions, krel.unit.desc)
+      param.descriptions  <- c(param.descriptions, krel.param.desc)
+      base.units          <- c(base.units, krel.base.unit)
+      base.values         <- c(base.values, krel.param.val)
+      print(paste("DEBUG: length(parameters) after krel =", length(parameters)))
+      print(paste("DEBUG: krel.param =", krel.param))
+    }
+    
+    # Extract reaction laws 
+    rate.law    <- laws$string
+    p.rate.law  <- laws$pretty.string
+    latex.law   <- laws$latex
+    mathjax.law <- laws$mj
+    mathml.law  <- laws$mathml
+    content.ml  <- laws$content.ml
   }
   else if (eqn.reaction.law == "michaelis_menten") {
     # Initialize vars that are pathway dependent to NA
@@ -2330,22 +3459,31 @@ observeEvent(input$modal_editEqn_edit_button, {
   #                                         rv.SPECIES$species.names,
   #                                         names(rv.PARAMETERS$parameters))
   # passed.error.check <- error.check[[1]]
+  print(paste("DEBUG: passed.error.check =", passed.error.check))
+  print(paste("DEBUG: length(parameters) =", length(parameters)))
   if (passed.error.check) {
+    print("DEBUG: Creating par.ids vector")
     par.ids <- c()
     # Check to see if parameter names have changed (meaning new parameter)
     if (length(setdiff(old.params, parameters)) == 0) {
-      # parameter names have not changed
-      for (i in seq_along(parameters)) {
-        par.id <- FindId(parameters[i])
+      # parameter names have not changed (may be reordered)
+      # Map and update parameters by name to avoid index-shift bugs
+      for (i in seq_along(old.params)) {
+        par.name <- old.params[i]
+        # find index in the current parameters vector
+        idx <- which(parameters == par.name)
+        if (length(idx) == 0) {
+          # fallback: skip if not found
+          next
+        }
+        par.id <- FindId(par.name)
         par.ids <- c(par.ids, par.id)
-        rv.PARAMETERS$parameters[[par.id]]$Value <- as.numeric(param.vals[i])
-        rv.PARAMETERS$parameters[[par.id]]$Unit <- param.units[i]
-        rv.PARAMETERS$parameters[[par.id]]$UnitDescription <- 
-          unit.descriptions[i]
-        rv.PARAMETERS$parameters[[par.id]]$BaseUnit <- base.units[i]
-        rv.PARAMETERS$parameters[[par.id]]$BaseValue <- 
-          as.numeric(base.values[i])
-        rv.PARAMETERS$parameters[[par.id]]$Description <- param.descriptions[i]
+        rv.PARAMETERS$parameters[[par.id]]$Value <- as.numeric(param.vals[idx])
+        rv.PARAMETERS$parameters[[par.id]]$Unit <- param.units[idx]
+        rv.PARAMETERS$parameters[[par.id]]$UnitDescription <- unit.descriptions[idx]
+        rv.PARAMETERS$parameters[[par.id]]$BaseUnit <- base.units[idx]
+        rv.PARAMETERS$parameters[[par.id]]$BaseValue <- as.numeric(base.values[idx])
+        rv.PARAMETERS$parameters[[par.id]]$Description <- param.descriptions[idx]
       }
     } else {
       # Parameter names have changed 
@@ -2353,104 +3491,119 @@ observeEvent(input$modal_editEqn_edit_button, {
       params.to.del  <- setdiff(old.params, parameters)
       same.params    <- intersect(old.params, parameters)
       
-      # Edit same params
+      # Edit same params: map by name into current `parameters` vector
       for (i in seq_along(same.params)) {
-        par.id <- FindId(same.params[i])
+        par.name <- same.params[i]
+        par.id <- FindId(par.name)
+        # find index in the current parameters vector
+        idx <- which(parameters == par.name)
+        if (length(idx) == 0) next
         par.ids <- c(par.ids, par.id)
-        
-        ids.used.in <- c(rv.PARAMETERS$parameters[[par.id]]$Used.In, 
-                         eqn.ID)
-        types <- c(rv.PARAMETERS$parameters[[par.id]]$Type, 
-                   "Reaction")
-        type.n <- c(rv.PARAMETERS$parameters[[par.id]]$Type.Note,
-                    eqn.reaction.law)
+
+        ids.used.in <- c(rv.PARAMETERS$parameters[[par.id]]$Used.In, eqn.ID)
+        types <- c(rv.PARAMETERS$parameters[[par.id]]$Type, "Reaction")
+        type.n <- c(rv.PARAMETERS$parameters[[par.id]]$Type.Note, eqn.reaction.law)
         is.custom <- rv.PARAMETERS$parameters[[par.id]]$Custom
-        
-        
-        # Write out to parameter
-        to.par.list <- list("Name"            = same.params[i],
+
+        # Write out to parameter using the mapped index
+        to.par.list <- list("Name"            = par.name,
                             "ID"              = par.id,
-                            "Value"           = as.numeric(param.vals[i]),
-                            "Unit"            = param.units[i],
-                            "UnitDescription" = unit.descriptions[i],
-                            "BaseUnit"        = base.units[i],
-                            "BaseValue"       = as.numeric(base.values[i]),
-                            "Description"     = param.descriptions[i],
+                            "Value"           = as.numeric(param.vals[idx]),
+                            "Unit"            = param.units[idx],
+                            "UnitDescription" = unit.descriptions[idx],
+                            "BaseUnit"        = base.units[idx],
+                            "BaseValue"       = as.numeric(base.values[idx]),
+                            "Description"     = param.descriptions[idx],
                             "Type"            = collapseVector(types),
                             "Type.Note"       = collapseVector(type.n),
                             "Used.In"         = collapseVector(ids.used.in),
                             "Custom"          = is.custom
         )
-        
+
         # Append parameter entry
         rv.PARAMETERS$parameters[[par.id]] <- to.par.list
       }
-      
+
+      # Add new params: map by name into current `parameters` vector
       for (i in seq_along(params.to.add)) {
-        
-        # Check if completely new param
-        if (params.to.add[i] %in% rv.PARAMETERS$parameters.names) {
-          # Find parameter id
-          par.id <- FindId(params.to.add[i])
-          par.ids <- c(par.ids, par.id)
-          
-          ids.used.in <- c(rv.PARAMETERS$parameters[[par.id]]$Used.In, 
-                           eqn.ID)
-          types <- c(rv.PARAMETERS$parameters[[par.id]]$Type, 
-                     "Reaction")
-          type.n <- c(rv.PARAMETERS$parameters[[par.id]]$Type.Note,
-                      eqn.reaction.law)
-          is.custom <- rv.PARAMETERS$parameters[[par.id]]$Custom
-          
-          
-          # Write out to parameter
-          to.par.list <- list("Name"            = params.to.add[i],
-                              "ID"              = par.id,
-                              "Value"           = as.numeric(param.vals[i]),
-                              "Unit"            = param.units[i],
-                              "UnitDescription" = unit.descriptions[i],
-                              "BaseUnit"        = base.units[i],
-                              "BaseValue"       = as.numeric(base.values[i]),
-                              "Description"     = param.descriptions[i],
-                              "Type"            = collapseVector(types),
-                              "Type.Note"       = collapseVector(type.n),
-                              "Used.In"         = collapseVector(ids.used.in),
-                              "Custom"          = is.custom
-                              )
-          
-          # Append parameter entry
-          rv.PARAMETERS$parameters[[par.id]] <- to.par.list
-          
-        } 
-        else {
+        orig.pname <- params.to.add[i]
+        idx <- which(parameters == orig.pname)
+        pname <- orig.pname
+        # If the desired name already exists globally, check whether it's used by other equations.
+        # If it is used elsewhere, generate a unique suffixed name instead of reusing the existing parameter.
+        if (pname %in% rv.PARAMETERS$parameters.names) {
+          existing.id <- FindId(pname)
+          used.in.raw <- rv.PARAMETERS$parameters[[existing.id]]$Used.In
+          existing.used.in <- if (is.na(used.in.raw) || used.in.raw == "") character(0) else strsplit(used.in.raw, ", ")[[1]]
+          # If the existing parameter is associated with any id other than this equation, create a new unique name
+          if (length(existing.used.in) > 0 && !(length(existing.used.in) == 1 && existing.used.in == eqn.ID)) {
+            base <- pname
+            n <- 2L
+            new.pname <- paste0(base, "_", n)
+            while (new.pname %in% rv.PARAMETERS$parameters.names) {
+              n <- n + 1L
+              new.pname <- paste0(base, "_", n)
+            }
+            pname <- new.pname
+            par.gen <- GenerateId(rv.ID$id.param.seed, "parameter")
+            rv.ID$id.param.seed <- par.gen$seed
+            par.id <- par.gen$id
+            # Store ID to database using the new unique name
+            idx.to.add <- nrow(rv.ID$id.df) + 1
+            rv.ID$id.df[idx.to.add, ] <- c(par.id, pname)
+          } else {
+            par.id <- existing.id
+          }
+        } else {
           par.gen <- GenerateId(rv.ID$id.param.seed, "parameter")
           rv.ID$id.param.seed <- par.gen$seed
           par.id <- par.gen$id
-        
-          par.ids <- c(par.ids, par.id)
-          
           # Store ID to database
           idx.to.add <- nrow(rv.ID$id.df) + 1
-          rv.ID$id.df[idx.to.add, ] <- c(par.id, params.to.add[i])
-          
-          # Write out to parameter
-          to.par.list <- list("Name"            = params.to.add[i],
-                              "ID"              = par.id,
-                              "Value"           = as.numeric(param.vals[i]),
-                              "Unit"            = param.units[i],
-                              "UnitDescription" = unit.descriptions[i],
-                              "BaseUnit"        = base.units[i],
-                              "BaseValue"       = as.numeric(base.values[i]),
-                              "Description"     = param.descriptions[i],
-                              "Type"            = "Reaction",
-                              "Type.Note"       = eqn.reaction.law,
-                              "Used.In"         = eqn.ID,
-                              "Custom"          = FALSE)
-          
-          rv.PARAMETERS$parameters[[par.id]] <- to.par.list
+          rv.ID$id.df[idx.to.add, ] <- c(par.id, pname)
         }
+        par.ids <- c(par.ids, par.id)
+
+        # Compose parameter entry using mapped index (if available)
+        if (length(idx) == 0) {
+          val <- NA; unit <- NA; udesc <- NA; bunit <- NA; bval <- NA; desc <- NA
+        } else {
+          val <- as.numeric(param.vals[idx])
+          unit <- param.units[idx]
+          udesc <- unit.descriptions[idx]
+          bunit <- base.units[idx]
+          bval <- as.numeric(base.values[idx])
+          desc <- param.descriptions[idx]
+        }
+
+        if (pname %in% rv.PARAMETERS$parameters.names) {
+          ids.used.in <- c(rv.PARAMETERS$parameters[[par.id]]$Used.In, eqn.ID)
+          types <- c(rv.PARAMETERS$parameters[[par.id]]$Type, "Reaction")
+          type.n <- c(rv.PARAMETERS$parameters[[par.id]]$Type.Note, eqn.reaction.law)
+          is.custom <- rv.PARAMETERS$parameters[[par.id]]$Custom
+        } else {
+          ids.used.in <- eqn.ID
+          types <- "Reaction"
+          type.n <- eqn.reaction.law
+          is.custom <- FALSE
+        }
+
+        to.par.list <- list("Name"            = pname,
+                            "ID"              = par.id,
+                            "Value"           = val,
+                            "Unit"            = unit,
+                            "UnitDescription" = udesc,
+                            "BaseUnit"        = bunit,
+                            "BaseValue"       = bval,
+                            "Description"     = desc,
+                            "Type"            = collapseVector(types),
+                            "Type.Note"       = collapseVector(type.n),
+                            "Used.In"         = collapseVector(ids.used.in),
+                            "Custom"          = is.custom)
+
+        rv.PARAMETERS$parameters[[par.id]] <- to.par.list
       }
-      
+
       for (i in seq_along(params.to.del)) {
         
         par.id <- FindId(params.to.del[i])
@@ -2481,6 +3634,16 @@ observeEvent(input$modal_editEqn_edit_button, {
           rv.PARAMETERS$parameters[[par.id]]$Type      <- new.type
           rv.PARAMETERS$parameters[[par.id]]$Type.Note <- new.type.note
           rv.PARAMETERS$parameters[[par.id]]$Used.In   <- new.used.in
+        }
+      }
+
+      # After deletions, rebuild par.ids in the order of current `parameters`
+      par.ids <- c()
+      if (length(parameters) > 0) {
+        for (i in seq_along(parameters)) {
+          # Only include parameters that still exist in rv.PARAMETERS
+          pid <- FindId(parameters[i])
+          par.ids <- c(par.ids, pid)
         }
       }
     }
@@ -2525,13 +3688,15 @@ observeEvent(input$modal_editEqn_edit_button, {
       }
     }
     
-    # Extract reaction laws 
-    rate.law    <- laws$string
-    p.rate.law  <- laws$pretty.string
-    latex.law   <- laws$latex
-    mathjax.law <- laws$mj
-    mathml.law  <- laws$mathml
-    content.ml  <- laws$content.ml
+    # Extract reaction laws (skip for reactions that already define these variables)
+    if (!eqn.reaction.law %in% c("predator_prey", "logistic_competition", "competitive_monod")) {
+      rate.law    <- laws$string
+      p.rate.law  <- laws$pretty.string
+      latex.law   <- laws$latex
+      mathjax.law <- laws$mj
+      mathml.law  <- laws$mathml
+      content.ml  <- laws$content.ml
+    }
     
     # We need to collapse these vector terms otherwise when the list is 
     # converted to a dataframe there will be errors
@@ -2575,19 +3740,36 @@ observeEvent(input$modal_editEqn_edit_button, {
       "MathJax.Rate.Law" = mathjax.law,
       "MathMl.Rate.Law"  = mathml.law,
       "Content.MathMl"   = content.ml,
-      "Reversible"       = isReversible
+      "Reversible"       = isReversible,
+      "Show.In.Table"    = if (eqn.reaction.law %in% c("competitive_monod", "logistic_competition", "predator_prey")) FALSE else TRUE
     )
     
-    rv.REACTIONS$reactions[[eqn.ID]] <- reaction.entry
+    # For competitive_monod, logistic_competition, and predator_prey, don't update the main entry
+    # as they use separate internal entries
+    if (!eqn.reaction.law %in% c("competitive_monod", "logistic_competition", "predator_prey")) {
+      rv.REACTIONS$reactions[[eqn.ID]] <- reaction.entry
+    }
     
     # Build specific reaction type reactive variable
+    print(paste("DEBUG: Building specific reaction type for", eqn.reaction.law))
+    print(paste("DEBUG: exists('par.ids') before reaction type block =", exists("par.ids")))
+    if (exists("par.ids")) {
+      print(paste("DEBUG: length(par.ids) =", length(par.ids)))
+    } else {
+      print("DEBUG: ERROR - par.ids does not exist in reaction type block!")
+    }
+    
     if (eqn.reaction.law == "mass_action") {
-      if (length(par.ids) == 1) {
+      if (exists("par.ids") && length(par.ids) >= 1) {
         kf.id = par.ids[1]
-        kr.id = NA
+        if (length(par.ids) >= 2) {
+          kr.id = par.ids[2]
+        } else {
+          kr.id = NA
+        }
       } else {
-        kf.id = par.ids[1]
-        kr.id = par.ids[2]
+        kf.id = NA
+        kr.id = NA
       }
       
       sub.entry <- list(
@@ -2609,6 +3791,415 @@ observeEvent(input$modal_editEqn_edit_button, {
       # Add to mass action RV
       rv.REACTIONS$massAction[[eqn.ID]] <- sub.entry
     } 
+    else if (eqn.reaction.law == "exponential_growth") {
+      mu.id <- if (exists("par.ids") && length(par.ids) >= 1) par.ids[1] else NA
+      sub.entry <- list(
+        "ID"            = eqn.ID,
+        "Reaction.Law"  = eqn.reaction.law,
+        "Species"       = species,
+        "Species.id"    = species.id,
+        "Mu"            = parameters[1],
+        "Mu.id"         = mu.id,
+        "Mu.val"        = param.vals[1],
+        "Mu.unit"       = param.units[1],
+        "Mu.unit.desc"  = unit.descriptions[1],
+        "Mu.base.unit"  = base.units[1],
+        "Mu.base.val"   = base.values[1]
+      )
+      rv.REACTIONS$exponentialGrowth[[eqn.ID]] <- sub.entry
+    }
+    else if (eqn.reaction.law == "monod_growth") {
+      mu_max.id <- if (exists("par.ids") && length(par.ids) >= 1) par.ids[1] else NA
+      K_s.id    <- if (exists("par.ids") && length(par.ids) >= 2) par.ids[2] else NA
+      sub.entry <- list(
+        "ID"            = eqn.ID,
+        "Reaction.Law"  = eqn.reaction.law,
+        "Species"       = growth.species,
+        "Species.id"    = growth.species.id,
+        "Substrate"     = substrate,
+        "Substrate.id"  = substrate.id,
+        "Mu_max"        = parameters[1],
+        "Mu_max.id"     = mu_max.id,
+        "Mu_max.val"    = param.vals[1],
+        "Mu_max.unit"   = param.units[1],
+        "Mu_max.unit.desc" = unit.descriptions[1],
+        "Mu_max.base.unit" = base.units[1],
+        "Mu_max.base.val"  = base.values[1],
+        "K_s"           = parameters[2],
+        "K_s.id"        = K_s.id,
+        "K_s.val"       = param.vals[2],
+        "K_s.unit"      = param.units[2],
+        "K_s.unit.desc" = unit.descriptions[2],
+        "K_s.base.unit" = base.units[2],
+        "K_s.base.val"  = base.values[2]
+      )
+      rv.REACTIONS$monodGrowth[[eqn.ID]] <- sub.entry
+    }
+    else if (eqn.reaction.law == "competitive_monod") {
+      # Create three reaction entries: X, Y, and S (similar to create handler)
+      # Update existing entries with new rate laws
+      # First, find the three reaction IDs (X, Y, S)
+      # They should be linked to the species
+      species.x.id <- FindId(species.x)
+      species.y.id <- FindId(species.y)
+      substrate.id <- FindId(substrate)
+      
+      # Find reaction IDs for each species
+      x.reaction.ids <- strsplit(rv.SPECIES$species[[species.x.id]]$Reaction.ids, ", ")[[1]]
+      y.reaction.ids <- strsplit(rv.SPECIES$species[[species.y.id]]$Reaction.ids, ", ")[[1]]
+      s.reaction.ids <- strsplit(rv.SPECIES$species[[substrate.id]]$Reaction.ids, ", ")[[1]]
+      
+      # Find the competitive_monod reaction IDs (they should have this reaction law)
+      x.id <- NA; y.id <- NA; s.x.id <- NA; s.y.id <- NA
+      for (rid in x.reaction.ids) {
+        if (rv.REACTIONS$reactions[[rid]]$Reaction.Law == "competitive_monod") {
+          x.id <- rid
+          break
+        }
+      }
+      for (rid in y.reaction.ids) {
+        if (rv.REACTIONS$reactions[[rid]]$Reaction.Law == "competitive_monod" && rid != x.id) {
+          y.id <- rid
+          break
+        }
+      }
+      # Find both substrate reaction entries
+      s.found <- 0
+      for (rid in s.reaction.ids) {
+        if (rv.REACTIONS$reactions[[rid]]$Reaction.Law == "competitive_monod" && rid != x.id && rid != y.id) {
+          if (s.found == 0) {
+            s.x.id <- rid
+            s.found <- s.found + 1
+          } else {
+            s.y.id <- rid
+            break
+          }
+        }
+      }
+      
+      # Update reaction entries with new rate laws
+      if (!is.na(x.id)) {
+        rv.REACTIONS$reactions[[x.id]]$String.Rate.Law  <- rate.law.x
+        rv.REACTIONS$reactions[[x.id]]$Pretty.Rate.Law  <- rate.law.x
+        rv.REACTIONS$reactions[[x.id]]$Latex.Rate.Law   <- rate.law.x
+        rv.REACTIONS$reactions[[x.id]]$MathJax.Rate.Law <- ConvertRateLaw(rate.law.x)$mathjax
+        rv.REACTIONS$reactions[[x.id]]$Species          <- species.x
+        rv.REACTIONS$reactions[[x.id]]$Species.id       <- species.id.x
+        rv.REACTIONS$reactions[[x.id]]$Reactants        <- substrate
+        rv.REACTIONS$reactions[[x.id]]$Reactants.id     <- substrate.id
+        rv.REACTIONS$reactions[[x.id]]$Products         <- species.x
+        rv.REACTIONS$reactions[[x.id]]$Products.id      <- species.id.x
+        rv.REACTIONS$reactions[[x.id]]$Show.In.Table    <- TRUE  # Main entry to show in table
+        if (single.species.mode) {
+          rv.REACTIONS$reactions[[x.id]]$Modifiers        <- species.y
+          rv.REACTIONS$reactions[[x.id]]$Modifiers.id     <- species.id.y
+        } else {
+          rv.REACTIONS$reactions[[x.id]]$Modifiers        <- NA
+          rv.REACTIONS$reactions[[x.id]]$Modifiers.id     <- NA
+        }
+      }
+      if (!is.na(y.id) && !single.species.mode) {
+        # Only update Y entry if not in single species mode
+        rv.REACTIONS$reactions[[y.id]]$String.Rate.Law  <- rate.law.y
+        rv.REACTIONS$reactions[[y.id]]$Pretty.Rate.Law  <- rate.law.y
+        rv.REACTIONS$reactions[[y.id]]$Latex.Rate.Law   <- rate.law.y
+        rv.REACTIONS$reactions[[y.id]]$MathJax.Rate.Law <- ConvertRateLaw(rate.law.y)$mathjax
+        rv.REACTIONS$reactions[[y.id]]$Species          <- species.y
+        rv.REACTIONS$reactions[[y.id]]$Species.id       <- species.id.y
+        rv.REACTIONS$reactions[[y.id]]$Reactants        <- substrate
+        rv.REACTIONS$reactions[[y.id]]$Reactants.id     <- substrate.id
+        rv.REACTIONS$reactions[[y.id]]$Products         <- species.y
+        rv.REACTIONS$reactions[[y.id]]$Products.id      <- species.id.y
+        rv.REACTIONS$reactions[[y.id]]$Modifiers        <- NA
+        rv.REACTIONS$reactions[[y.id]]$Modifiers.id     <- NA
+        rv.REACTIONS$reactions[[y.id]]$Show.In.Table    <- FALSE  # Hide from table - internal only
+      }
+      if (!is.na(s.x.id)) {
+        rv.REACTIONS$reactions[[s.x.id]]$String.Rate.Law  <- rate.law.s.x
+        rv.REACTIONS$reactions[[s.x.id]]$Pretty.Rate.Law  <- rate.law.s.x
+        rv.REACTIONS$reactions[[s.x.id]]$Latex.Rate.Law   <- rate.law.s.x
+        rv.REACTIONS$reactions[[s.x.id]]$MathJax.Rate.Law <- ConvertRateLaw(rate.law.s.x)$mathjax
+        rv.REACTIONS$reactions[[s.x.id]]$Species          <- substrate
+        rv.REACTIONS$reactions[[s.x.id]]$Species.id       <- substrate.id
+        rv.REACTIONS$reactions[[s.x.id]]$Reactants        <- substrate
+        rv.REACTIONS$reactions[[s.x.id]]$Reactants.id     <- substrate.id
+        rv.REACTIONS$reactions[[s.x.id]]$Products         <- NA
+        rv.REACTIONS$reactions[[s.x.id]]$Products.id      <- NA
+        rv.REACTIONS$reactions[[s.x.id]]$Modifiers        <- NA
+        rv.REACTIONS$reactions[[s.x.id]]$Modifiers.id     <- NA
+        rv.REACTIONS$reactions[[s.x.id]]$Show.In.Table    <- FALSE  # Hide from table - internal only
+      }
+      if (!is.na(s.y.id) && !single.species.mode) {
+        # Only update S from Y entry if not in single species mode
+        rv.REACTIONS$reactions[[s.y.id]]$String.Rate.Law  <- rate.law.s.y
+        rv.REACTIONS$reactions[[s.y.id]]$Pretty.Rate.Law  <- rate.law.s.y
+        rv.REACTIONS$reactions[[s.y.id]]$Latex.Rate.Law   <- rate.law.s.y
+        rv.REACTIONS$reactions[[s.y.id]]$MathJax.Rate.Law <- ConvertRateLaw(rate.law.s.y)$mathjax
+        rv.REACTIONS$reactions[[s.y.id]]$Species          <- substrate
+        rv.REACTIONS$reactions[[s.y.id]]$Species.id       <- substrate.id
+        rv.REACTIONS$reactions[[s.y.id]]$Reactants        <- substrate
+        rv.REACTIONS$reactions[[s.y.id]]$Reactants.id     <- substrate.id
+        rv.REACTIONS$reactions[[s.y.id]]$Products         <- NA
+        rv.REACTIONS$reactions[[s.y.id]]$Products.id      <- NA
+        rv.REACTIONS$reactions[[s.y.id]]$Modifiers        <- NA
+        rv.REACTIONS$reactions[[s.y.id]]$Modifiers.id     <- NA
+        rv.REACTIONS$reactions[[s.y.id]]$Show.In.Table    <- FALSE  # Hide from table - internal only
+      }
+      
+      # Update competitiveMonod sub-entry
+      mu_max.x.id  <- par.ids[1]
+      K_s.x.id     <- par.ids[2]
+      alpha.xy.id  <- par.ids[3]
+      Kc.id        <- par.ids[4]
+      Y_x.id       <- par.ids[5]
+      
+      if (single.species.mode) {
+        sub.entry <- list(
+          "ID"           = eqn.ID,
+          "Reaction.Law" = eqn.reaction.law,
+          "Single.Species.Mode" = TRUE,
+          "No.Substrate.Restriction" = no.substrate.restriction,
+          "Species.X"    = species.x,
+          "Species.X.id" = species.id.x,
+          "Species.Y"    = species.y,
+          "Species.Y.id" = species.id.y,
+          "Substrate"    = substrate,
+          "Substrate.id" = substrate.id,
+          "mu_max.x"     = parameters[1],
+          "mu_max.x.id"  = mu_max.x.id,
+          "K_s.x"        = parameters[2],
+          "K_s.x.id"     = K_s.x.id,
+          "alpha.xy"     = parameters[3],
+          "alpha.xy.id"  = alpha.xy.id,
+          "Kc"           = parameters[4],
+          "Kc.id"        = Kc.id,
+          "Y_x"          = parameters[5],
+          "Y_x.id"       = Y_x.id
+        )
+      } else {
+        mu_max.y.id  <- par.ids[2]
+        K_s.y.id     <- par.ids[4]
+        alpha.yx.id  <- par.ids[6]
+        Y_y.id       <- par.ids[9]
+        sub.entry <- list(
+          "ID"           = eqn.ID,
+          "Reaction.Law" = eqn.reaction.law,
+          "Single.Species.Mode" = FALSE,
+          "No.Substrate.Restriction" = no.substrate.restriction,
+          "Species.X"    = species.x,
+          "Species.X.id" = species.id.x,
+          "Species.Y"    = species.y,
+          "Species.Y.id" = species.id.y,
+          "Substrate"    = substrate,
+          "Substrate.id" = substrate.id,
+          "mu_max.x"     = parameters[1],
+          "mu_max.x.id"  = mu_max.x.id,
+          "mu_max.y"     = parameters[2],
+          "mu_max.y.id"  = mu_max.y.id,
+          "K_s.x"        = parameters[3],
+          "K_s.x.id"     = K_s.x.id,
+          "K_s.y"        = parameters[4],
+          "K_s.y.id"     = K_s.y.id,
+          "alpha.xy"     = parameters[5],
+          "alpha.xy.id"  = alpha.xy.id,
+          "alpha.yx"     = parameters[6],
+          "alpha.yx.id"  = alpha.yx.id,
+          "Kc"           = parameters[7],
+          "Kc.id"        = Kc.id,
+          "Y_x"          = parameters[8],
+          "Y_x.id"       = Y_x.id,
+          "Y_y"          = parameters[9],
+          "Y_y.id"       = Y_y.id
+        )
+      }
+      rv.REACTIONS$competitiveMonod[[eqn.ID]] <- sub.entry
+    }
+    else if (eqn.reaction.law == "logistic_competition") {
+      # Check if single species mode
+      single.species.mode <- isTruthy(input$CB_log_comp_single_species_edit)
+      
+      # Find reaction entries for X and Y
+      x.reaction.ids <- strsplit(rv.SPECIES$species[[species.id.x]]$Reaction.ids, ", ")[[1]]
+      x.id <- NA
+      for (rid in x.reaction.ids) {
+        if (rv.REACTIONS$reactions[[rid]]$Reaction.Law == "logistic_competition" && rv.REACTIONS$reactions[[rid]]$Species == species.x) {
+          x.id <- rid
+          break
+        }
+      }
+      
+      # Update reaction entry for X
+      if (!is.na(x.id)) {
+        rv.REACTIONS$reactions[[x.id]]$String.Rate.Law  <- rate.law.x
+        rv.REACTIONS$reactions[[x.id]]$Pretty.Rate.Law  <- rate.law.x
+        rv.REACTIONS$reactions[[x.id]]$Latex.Rate.Law   <- rate.law.x
+        rv.REACTIONS$reactions[[x.id]]$MathJax.Rate.Law <- ConvertRateLaw(rate.law.x)$mathjax
+        rv.REACTIONS$reactions[[x.id]]$Species          <- species.x
+        rv.REACTIONS$reactions[[x.id]]$Species.id       <- species.id.x
+        rv.REACTIONS$reactions[[x.id]]$Modifiers        <- if (single.species.mode) species.y else NA
+        rv.REACTIONS$reactions[[x.id]]$Modifiers.id     <- if (single.species.mode) species.id.y else NA
+        rv.REACTIONS$reactions[[x.id]]$Eqn.Display.Type <- eqn.display
+        rv.REACTIONS$reactions[[x.id]]$Description      <- eqn.d
+        rv.REACTIONS$reactions[[x.id]]$Equation.Text    <- if (single.species.mode) 
+                                                             paste0("logistic competition (", species.x, " with ", species.y, " as competitor)") 
+                                                           else 
+                                                             paste0("logistic competition (", species.x, ",", species.y, ")")
+        rv.REACTIONS$reactions[[x.id]]$Equation.MathJax <- mathjax.law
+        rv.REACTIONS$reactions[[x.id]]$Show.In.Table    <- TRUE  # Main entry to show in table
+      }
+      
+      if (!single.species.mode) {
+        # Both species mode: find and update Y reaction entry
+        y.reaction.ids <- strsplit(rv.SPECIES$species[[species.id.y]]$Reaction.ids, ", ")[[1]]
+        y.id <- NA
+        for (rid in y.reaction.ids) {
+          if (rv.REACTIONS$reactions[[rid]]$Reaction.Law == "logistic_competition" && rv.REACTIONS$reactions[[rid]]$Species == species.y) {
+            y.id <- rid
+            break
+          }
+        }
+        
+        if (!is.na(y.id)) {
+          rv.REACTIONS$reactions[[y.id]]$String.Rate.Law  <- rate.law.y
+          rv.REACTIONS$reactions[[y.id]]$Pretty.Rate.Law  <- rate.law.y
+          rv.REACTIONS$reactions[[y.id]]$Latex.Rate.Law   <- rate.law.y
+          rv.REACTIONS$reactions[[y.id]]$MathJax.Rate.Law <- ConvertRateLaw(rate.law.y)$mathjax
+          rv.REACTIONS$reactions[[y.id]]$Species          <- species.y
+          rv.REACTIONS$reactions[[y.id]]$Species.id       <- species.id.y
+          rv.REACTIONS$reactions[[y.id]]$Modifiers        <- NA
+          rv.REACTIONS$reactions[[y.id]]$Modifiers.id     <- NA
+          rv.REACTIONS$reactions[[y.id]]$Show.In.Table    <- FALSE  # Hide from table - internal only
+        }
+      }
+      
+      # Update logisticCompetition sub-entry
+      r.x.id      <- par.ids[1]
+      alpha.xy.id <- par.ids[2]
+      Kc.id       <- par.ids[3]
+      
+      if (single.species.mode) {
+        lc.entry <- list(
+          "ID"           = eqn.ID,
+          "Reaction.Law" = eqn.reaction.law,
+          "Single.Species.Mode" = TRUE,
+          "Species.X"    = species.x,
+          "Species.X.id" = species.id.x,
+          "Species.Y"    = species.y,
+          "Species.Y.id" = species.id.y,
+          "r.x"          = parameters[1],
+          "r.x.id"       = r.x.id,
+          "alpha.xy"     = parameters[2],
+          "alpha.xy.id"  = alpha.xy.id,
+          "Kc"           = parameters[3],
+          "Kc.id"        = Kc.id
+        )
+      } else {
+        r.y.id      <- par.ids[2]
+        alpha.yx.id <- par.ids[4]
+        lc.entry <- list(
+          "ID"           = eqn.ID,
+          "Reaction.Law" = eqn.reaction.law,
+          "Single.Species.Mode" = FALSE,
+          "Species.X"    = species.x,
+          "Species.X.id" = species.id.x,
+          "Species.Y"    = species.y,
+          "Species.Y.id" = species.id.y,
+          "r.x"          = parameters[1],
+          "r.x.id"       = r.x.id,
+          "r.y"          = parameters[2],
+          "r.y.id"       = r.y.id,
+          "alpha.xy"     = parameters[3],
+          "alpha.xy.id"  = alpha.xy.id,
+          "alpha.yx"     = parameters[4],
+          "alpha.yx.id"  = alpha.yx.id,
+          "Kc"           = parameters[5],
+          "Kc.id"        = Kc.id
+        )
+      }
+      rv.REACTIONS$logisticCompetition[[eqn.ID]] <- lc.entry
+    }
+    else if (eqn.reaction.law == "predator_prey") {
+      # Find reaction entries for prey and predator
+      species.x.id <- FindId(species.x)
+      species.y.id <- FindId(species.y)
+      
+      x.reaction.ids <- strsplit(rv.SPECIES$species[[species.x.id]]$Reaction.ids, ", ")[[1]]
+      y.reaction.ids <- strsplit(rv.SPECIES$species[[species.y.id]]$Reaction.ids, ", ")[[1]]
+      
+      x.id <- NA; y.id <- NA
+      for (rid in x.reaction.ids) {
+        if (rv.REACTIONS$reactions[[rid]]$Reaction.Law == "predator_prey" && rv.REACTIONS$reactions[[rid]]$Species.id == species.x.id) {
+          x.id <- rid
+          break
+        }
+      }
+      for (rid in y.reaction.ids) {
+        if (rv.REACTIONS$reactions[[rid]]$Reaction.Law == "predator_prey" && rv.REACTIONS$reactions[[rid]]$Species.id == species.y.id) {
+          y.id <- rid
+          break
+        }
+      }
+      
+      # Update reaction entry for prey (X)
+      if (!is.na(x.id)) {
+        rv.REACTIONS$reactions[[x.id]]$String.Rate.Law  <- rate.law.x
+        rv.REACTIONS$reactions[[x.id]]$Pretty.Rate.Law  <- rate.law.x
+        rv.REACTIONS$reactions[[x.id]]$Latex.Rate.Law   <- rate.law.x
+        rv.REACTIONS$reactions[[x.id]]$MathJax.Rate.Law <- ConvertRateLaw(rate.law.x)$mathjax
+        rv.REACTIONS$reactions[[x.id]]$Species          <- species.x
+        rv.REACTIONS$reactions[[x.id]]$Species.id       <- species.id.x
+        rv.REACTIONS$reactions[[x.id]]$Parameters       <- collapseVector(parameters)
+        rv.REACTIONS$reactions[[x.id]]$Parameters.id     <- collapseVector(par.ids)
+        rv.REACTIONS$reactions[[x.id]]$Description      <- eqn.d
+        rv.REACTIONS$reactions[[x.id]]$Equation.Text    <- eqn.text
+        rv.REACTIONS$reactions[[x.id]]$Equation.MathJax <- mathjax.law
+      }
+      
+      # Update reaction entry for predator (Y)
+      if (!is.na(y.id)) {
+        rv.REACTIONS$reactions[[y.id]]$String.Rate.Law  <- rate.law.y
+        rv.REACTIONS$reactions[[y.id]]$Pretty.Rate.Law  <- rate.law.y
+        rv.REACTIONS$reactions[[y.id]]$Latex.Rate.Law   <- rate.law.y
+        rv.REACTIONS$reactions[[y.id]]$MathJax.Rate.Law <- ConvertRateLaw(rate.law.y)$mathjax
+        rv.REACTIONS$reactions[[y.id]]$Species          <- species.y
+        rv.REACTIONS$reactions[[y.id]]$Species.id       <- species.id.y
+        rv.REACTIONS$reactions[[y.id]]$Parameters       <- collapseVector(parameters)
+        rv.REACTIONS$reactions[[y.id]]$Parameters.id     <- collapseVector(par.ids)
+        rv.REACTIONS$reactions[[y.id]]$Description      <- eqn.d
+      }
+      
+      # Update predatorPrey reactive value entry
+      if (exists("par.ids") && length(par.ids) >= 4) {
+        r.id <- par.ids[1]
+        a.id <- par.ids[2]
+        b.id <- par.ids[3]
+        d.id <- par.ids[4]
+      } else {
+        r.id <- NA; a.id <- NA; b.id <- NA; d.id <- NA
+      }
+      
+      pp.entry <- list(
+        "ID"           = eqn.ID,
+        "Reaction.Law" = eqn.reaction.law,
+        "Prey"         = species.x,
+        "Prey.id"      = species.id.x,
+        "Predator"     = species.y,
+        "Predator.id"  = species.id.y,
+        "r"            = parameters[1],
+        "r.id"         = r.id,
+        "r.val"        = param.vals[1],
+        "a"            = parameters[2],
+        "a.id"         = a.id,
+        "a.val"        = param.vals[2],
+        "b"            = parameters[3],
+        "b.id"         = b.id,
+        "b.val"        = param.vals[3],
+        "d"            = parameters[4],
+        "d.id"         = d.id,
+        "d.val"        = param.vals[4]
+      )
+      rv.REACTIONS$predatorPrey[[eqn.ID]] <- pp.entry
+    }
     else if (eqn.reaction.law == "mass_action_w_reg") {
       
       pc <- 1
@@ -2690,6 +4281,24 @@ observeEvent(input$modal_editEqn_edit_button, {
       
     }
     else if (eqn.reaction.law == "degradation_rate") {
+      print("DEBUG: degradation_rate sub.entry creation block")
+      print(paste("DEBUG: exists('par.ids') =", exists("par.ids")))
+      if (exists("par.ids")) {
+        print(paste("DEBUG: length(par.ids) =", length(par.ids)))
+      }
+      
+      # Determine krel.param.id - it will be par.ids[2] if products exist AND relative formation is checked, otherwise NA
+      krel.param.id <- NA
+      if (input$CB_degradation_rate_toProducts_edit && isTruthy(input$CB_degradation_rate_relative_formation_edit) && exists("par.ids") && length(par.ids) >= 2) {
+        krel.param.id <- par.ids[2]
+      }
+      
+      # Check if par.ids exists before accessing it
+      rate.constant.id <- NA
+      if (exists("par.ids") && length(par.ids) >= 1) {
+        rate.constant.id <- par.ids[1]
+      }
+      
       sub.entry <- list(
         "ID"               = eqn.ID,
         "Reaction.Law"     = input$eqnCreate_reaction_law,
@@ -2697,26 +4306,73 @@ observeEvent(input$modal_editEqn_edit_button, {
         "VarDeg.id"        = deg.species.id,
         "ConcDep"          = ConcDep,
         "Rate.Constant"    = parameter,
-        "Rate.Constant.id" = par.ids[1],
+        "Rate.Constant.id" = rate.constant.id,
         "Products"         = products.collapsed,
-        "Products.id"      = products.id.collapsed
+        "Products.id"      = products.id.collapsed,
+        "krel"             = krel.param,
+        "krel.id"          = krel.param.id
       )
       
-      # Add to mass action RV
-      n <- length(rv.REACTIONS$degradation.by.rate)
-      rv.REACTIONS$degradation.by.rate[[n+1]] <- sub.entry
-      names(rv.REACTIONS$degradation.by.rate)[n+1] <- eqn.ID
+      # Update existing entry instead of adding new one
+      rv.REACTIONS$degradation.by.rate[[eqn.ID]] <- sub.entry
     }
     else if (eqn.reaction.law == "degradation_by_enzyme") {
+      print("DEBUG: degradation_by_enzyme sub.entry creation block")
+      print(paste("DEBUG: exists('par.ids') =", exists("par.ids")))
+      if (exists("par.ids")) {
+        print(paste("DEBUG: length(par.ids) =", length(par.ids)))
+        print(paste("DEBUG: par.ids =", paste(par.ids, collapse = ", ")))
+      } else {
+        print("DEBUG: ERROR - par.ids does not exist!")
+      }
+      
       # Gets ids based on use.Vmax
+      # Check if par.ids exists and has elements before accessing it
       Vmax.id <- NA
       kcat.id <- NA
-      Km.id   <- par.ids[1]
+      Km.id   <- NA
       
-      if (Use.Vmax) {
-        Vmax.id <- par.ids[2]
+      if (exists("par.ids") && length(par.ids) >= 1) {
+        print("DEBUG: Accessing par.ids[1] for Km.id")
+        Km.id <- par.ids[1]
+        
+        if (Use.Vmax) {
+          if (length(par.ids) >= 2) {
+            print("DEBUG: Accessing par.ids[2] for Vmax.id")
+            Vmax.id <- par.ids[2]
+          }
+        } else {
+          if (length(par.ids) >= 2) {
+            print("DEBUG: Accessing par.ids[2] for kcat.id")
+            kcat.id <- par.ids[2]
+          }
+        }
       } else {
-        kcat.id <- par.ids[2]
+        print("DEBUG: WARNING - par.ids not available or empty, setting IDs to NA")
+      }
+      
+      # Determine krel.param.id - it will be the last parameter ID if krel exists
+      # Check if krel was added: if we have 3 parameters (Km, Vmax/kcat, krel), then krel is the last one
+      krel.param.id <- NA
+      krel.param.value <- NA
+      print(paste("DEBUG: Checking for krel - toProducts =", input$CB_degradation_enzyme_toProducts_edit))
+      print(paste("DEBUG: Checking for krel - relative_formation =", isTruthy(input$CB_degradation_enzyme_relative_formation_edit)))
+      if (input$CB_degradation_enzyme_toProducts_edit && isTruthy(input$CB_degradation_enzyme_relative_formation_edit)) {
+        # krel.param was added to parameters, so it should be the last one
+        # Check if par.ids exists and has enough elements
+        print(paste("DEBUG: krel conditions met, checking par.ids - exists =", exists("par.ids")))
+        if (exists("par.ids")) {
+          print(paste("DEBUG: length(par.ids) =", length(par.ids)))
+        }
+        if (exists("par.ids") && length(par.ids) >= 3) {
+          print("DEBUG: Accessing par.ids[length(par.ids)] for krel.param.id")
+          krel.param.id <- par.ids[length(par.ids)]
+          krel.param.value <- input$TI_degradation_enzyme_krel_edit
+          print(paste("DEBUG: krel.param.id =", krel.param.id))
+          print(paste("DEBUG: krel.param.value =", krel.param.value))
+        } else {
+          print("DEBUG: WARNING - par.ids not available or doesn't have 3+ elements for krel")
+        }
       }
       
       sub.entry <- list(
@@ -2734,24 +4390,33 @@ observeEvent(input$modal_editEqn_edit_button, {
         "kcat"             = kcat,
         "kcat.id"          = kcat.id,
         "Products"         = products.collapsed,
-        "Products.id"      = products.id.collapsed
+        "Products.id"      = products.id.collapsed,
+        "krel"             = krel.param.value,
+        "krel.id"          = krel.param.id
       )
       
-      # Add to mass action RV
-      n <- length(rv.REACTIONS$degradation.by.enzyme)
-      rv.REACTIONS$degradation.by.enzyme[[n+1]] <- sub.entry
-      names(rv.REACTIONS$degradation.by.enzyme)[n+1] <- eqn.ID
+      # Update existing entry instead of adding new one
+      rv.REACTIONS$degradation.by.enzyme[[eqn.ID]] <- sub.entry
     }
     else if (eqn.reaction.law == "michaelis_menten") {
+      print("DEBUG: michaelis_menten sub.entry creation block")
       # Gets ids based on use.Vmax
       Vmax.id <- NA
       kcat.id <- NA
-      Km.id   <- par.ids[1]
+      Km.id   <- NA
       
-      if (Use.Vmax) {
-        Vmax.id <- par.ids[2]
-      } else {
-        kcat.id <- par.ids[2]
+      if (exists("par.ids") && length(par.ids) >= 1) {
+        Km.id <- par.ids[1]
+        
+        if (Use.Vmax) {
+          if (length(par.ids) >= 2) {
+            Vmax.id <- par.ids[2]
+          }
+        } else {
+          if (length(par.ids) >= 2) {
+            kcat.id <- par.ids[2]
+          }
+        }
       }
       
       sub.entry <- list(
@@ -2778,9 +4443,21 @@ observeEvent(input$modal_editEqn_edit_button, {
       names(rv.REACTIONS$michaelisMenten)[n+1] <- eqn.ID
     }
     
+    if (exists("par.ids")) {
+      print(paste("DEBUG: Final par.ids after all parameter processing - length =", length(par.ids)))
+      if (length(par.ids) > 0) {
+        print(paste("DEBUG: Final par.ids =", paste(par.ids, collapse = ", ")))
+      }
+    } else {
+      print("DEBUG: ERROR - par.ids was never created! passed.error.check must have been FALSE")
+    }
+    
     # Resolve Diffeqs
     solveForDiffEqs()
     
+  } else {
+    print("DEBUG: ERROR - passed.error.check is FALSE, so par.ids was never created!")
+    print("DEBUG: This means we should not be accessing par.ids anywhere!")
   }
   # # Remove Parameters if they were changed
   # params.to.remove <- setdiff(old.params, p.add)

@@ -657,19 +657,23 @@ CalcDiffEqnsForSyn <- function(synInfo, searchVar) {
 
 CalcDiffEqnsForDeg <- function(degInfo, searchVar) {
     # Unpack Information
+    # Handle both old column names (RC, Prods, Law) and new ones (Rate.Constant, Products, Reaction.Law)
     ID      <- degInfo$ID[1]
-    Law     <- degInfo$Law[1]
+    Law     <- if ("Law" %in% names(degInfo)) degInfo$Law[1] else degInfo$Reaction.Law[1]
     VarDeg  <- degInfo$VarDeg[1]
     ConcDep <- degInfo$ConcDep[1]
-    RC      <- degInfo$RC[1]
+    RC      <- if ("RC" %in% names(degInfo)) degInfo$RC[1] else degInfo$Rate.Constant[1]
     Km      <- degInfo$Km[1]
     Enz     <- degInfo$Enz[1]
     Vmax    <- degInfo$Vmax[1]
-    Product <- degInfo$Prods[1]
+    Product <- if ("Prods" %in% names(degInfo)) degInfo$Prods[1] else degInfo$Products[1]
+    krel    <- if ("krel" %in% names(degInfo)) degInfo$krel[1] else NA
     is.Prod <- FALSE
     # Create Products if they exist
-    if (!is.na(Product)) {
-        Product <- str_split(Product, " ")[[1]]
+    # Products are stored as comma-separated string like "product1, product2"
+    if (!is.na(Product) && Product != "") {
+        Product <- str_split(Product, ", ")[[1]]
+        Product <- trimws(Product)  # Remove any extra whitespace
         if (searchVar %in% Product) {
             is.Prod <- TRUE
         }
@@ -678,11 +682,18 @@ CalcDiffEqnsForDeg <- function(degInfo, searchVar) {
     if (Law == "rate") {
         # if species being degraded
         if (is.Prod) {
-            diff.eqn <- ifelse(ConcDep,
-                               paste0(RC, "*", VarDeg),
-                               paste0(RC))
+            # Product formation: include krel if it exists and is not empty
+            if (!is.na(krel) && krel != "" && !is.null(krel)) {
+                diff.eqn <- ifelse(ConcDep,
+                                   paste0(RC, "*", krel, "*", VarDeg),
+                                   paste0(RC, "*", krel))
+            } else {
+                diff.eqn <- ifelse(ConcDep,
+                                   paste0(RC, "*", VarDeg),
+                                   paste0(RC))
+            }
         } else {
-            # if species being generated
+            # if species being degraded (negative term stays the same)
             diff.eqn <- ifelse(ConcDep,
                                paste0("-", RC, "*", VarDeg),
                                paste0("-", RC))

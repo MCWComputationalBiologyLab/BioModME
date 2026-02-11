@@ -1,6 +1,9 @@
 TAB_CREATE_CUSTOM_EQN <-
   tabItem(
     tabName = "TAB_CREATE_CUSTOM_EQN",
+    # Source Modals
+    source(file.path(".", "ui", "modal_custom_eqn_edit.R"), local = TRUE)$value,
+    source(file.path(".", "ui", "modal_custom_eqn_delete.R"), local = TRUE)$value,
     fluidRow(
       column(
         width = 12,
@@ -57,7 +60,41 @@ TAB_CREATE_CUSTOM_EQN <-
           )
         ),
         hr(),
-        rHandsontableOutput("RHT_custom_eqn_display_existing")
+        fluidRow(
+          column(
+            width = 12,
+            box(
+              width = 12,
+              title = "Custom Equations",
+              fluidRow(
+                column(
+                  width = 12,
+                  rHandsontableOutput("RHT_custom_eqn_display_existing")
+                )
+              ),
+              hr(),
+              fluidRow(
+                column(
+                  width = 6,
+                  actionButton(
+                    inputId = "bttn_custom_eqn_edit",
+                    label = "Edit Equation",
+                    icon = icon("edit")
+                  )
+                ),
+                column(
+                  width = 6,
+                  align = "right",
+                  actionButton(
+                    inputId = "bttn_custom_eqn_delete",
+                    label = "Delete Equation",
+                    icon = icon("trash")
+                  )
+                )
+              )
+            )
+          )
+        )
       )
     )
   )

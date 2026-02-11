@@ -317,9 +317,16 @@ observeEvent(input$load_model, {
                     ,"Inout_delete_IO_eqn"
                     ,choices = seq(IO$n.IO))
 
+  if (length(eqns$main) == 0) {
+    edit_choices <- character(0)
+  } else {
+    labels <- paste0("(", seq_along(eqns$main), ") ", eqns$main)
+    edit_choices <- setNames(as.character(seq_along(eqns$main)), labels)
+  }
+  message("DEBUG(server_load_model): updating eqnCreate_edit_select_equation with labels:", paste(names(edit_choices), collapse = " | "))
   updatePickerInput(session,
-                    'eqnCreate_edit_select_equation'
-                    ,choices = seq(length(eqns$main)))
+                    'eqnCreate_edit_select_equation',
+                    choices = edit_choices)
   
   updatePickerInput(session
                     ,"enzyme_deg_enzyme"#updates output enzyme choices for enzyme degradation
