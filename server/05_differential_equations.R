@@ -1,16 +1,5 @@
 ############################## DiffEQ Server #################################
 
-# Expose a flag to UI: true if exactly one compartment exists
-output$single_compartment_bool <- renderText({
-  if (isTruthy(rv.COMPARTMENTS$compartments.df)) {
-    if (nrow(rv.COMPARTMENTS$compartments.df) == 1) {
-      return("true")
-    }
-  }
-  return("false")
-})
-outputOptions(output, "single_compartment_bool", suspendWhenHidden = FALSE)
-
 # Function to solve and extract diffeqs ----------------------------------------
 solveForDiffEqs <- function() {
   # Solve the differential equations using RVs.
@@ -126,15 +115,13 @@ output$diffeq_display_diffEqs_MathJax <- renderUI({
   pretty.bool  <- FALSE
   pretty.df    <- NULL
   
-  # Get species names for removing subscripts (always needed)
-  species.names <- unname(sapply(rv.SPECIES$species, get, x = "Name"))
-  
   # Check for conversion
   if (input$CBI_diffeq_show_unit_types) {
     
     convert.bool <- TRUE
     # Create conversion df
     # Need - species, and parameters
+    species.names <- unname(sapply(rv.SPECIES$species, get, x = "Name"))
     param.names   <- unname(sapply(rv.PARAMETERS$parameters, get, x = "Name"))
     species.units <- unname(sapply(rv.SPECIES$species, get, x = "BaseUnit"))
     param.units   <- unname(
@@ -145,6 +132,7 @@ output$diffeq_display_diffEqs_MathJax <- renderUI({
   } else if (input$CBI_diffeq_pretty_equations) {
     pretty.bool <- TRUE
     # set up df
+    species.names <- unname(sapply(rv.SPECIES$species, get, x = "Name"))
     param.names   <- unname(sapply(rv.PARAMETERS$parameters, get, x = "Name"))
     type <- c(rep("species", length(species.names)), 
               rep("param", length(param.names))
@@ -154,15 +142,6 @@ output$diffeq_display_diffEqs_MathJax <- renderUI({
   }
   
   lapply(seq(length(rv.DE$de.equations.list)), function(i){
-    # Determine if we should hide volume: only if single compartment and option enabled
-    hide.volume <- FALSE
-    if (isTruthy(rv.COMPARTMENTS$compartments.df)) {
-      if (nrow(rv.COMPARTMENTS$compartments.df) == 1 && isTruthy(input$CBI_diffeq_hide_volume)) {
-        hide.volume <- TRUE
-      }
-    }
-    # Optional extra cleanup
-    clean.paren <- isTruthy(input$CBI_diffeq_clean_parenthesis)
     div(
       style = "overflow-y:auto",
       withMathJax(
@@ -173,38 +152,11 @@ output$diffeq_display_diffEqs_MathJax <- renderUI({
                         convert.vars = convert.bool,
                         convert.df = convert.df,
                         pretty.vars = pretty.bool,
-                        pretty.df = pretty.df,
-                        hide.volume = hide.volume,
-                        clean.paren = clean.paren,
-                        species.names = species.names)
+                        pretty.df = pretty.df)
       )
     )
   })
 })
-
-# Helper: remove subscripts from species names in MathJax strings
-# Keeps parameters subscripted, only removes subscripts from species
-remove_species_subscripts <- function(mj.string, species.names) {
-  if (!isTruthy(mj.string) || !isTruthy(species.names)) {
-    return(mj.string)
-  }
-  
-  # Process each species name
-  for (species.name in species.names) {
-    # Only process species names that have underscores (would be subscripted)
-    if (grepl("_", species.name, fixed = TRUE)) {
-      # Convert species name to its subscripted MathJax form
-      species.mj <- Var2MathJ(species.name)
-      # Replace the subscripted version with the plain version (underscore, not subscript)
-      # Use word boundaries to avoid partial matches
-      # Escape special regex characters in the MathJax version
-      species.mj.escaped <- gsub("([{}()*+?.\\^$|\\[\\]])", "\\\\\\1", species.mj, perl = TRUE)
-      mj.string <- gsub(species.mj.escaped, species.name, mj.string, fixed = FALSE)
-    }
-  }
-  
-  return(mj.string)
-}
 
 buildMathjaxEqn <- function(de.entry, 
                             iter, 
@@ -213,10 +165,7 @@ buildMathjaxEqn <- function(de.entry,
                             convert.vars = FALSE,
                             pretty.vars = FALSE,
                             convert.df = NULL,
-                            pretty.df = NULL,
-                            hide.volume = FALSE,
-                            clean.paren = FALSE,
-                            species.names = NULL) {
+                            pretty.df = NULL) {
   # Takes in the differential equation structures and builds an expression to 
   # display in the mathjax builder.
   # Inputs: 
@@ -230,7 +179,7 @@ buildMathjaxEqn <- function(de.entry,
   # @pretty.df - df, rows: term, type
   
   if (newline.reaction.parts) {
-    separator <- " \\ "
+    separator <- " \\\\ "
     aligner   <- "&"
   } else {
     separator <- ""
@@ -238,19 +187,13 @@ buildMathjaxEqn <- function(de.entry,
   }
   
 
+
   
   if (newline.reaction.parts) {
-    if (hide.volume) {
-      begin.frac <- paste0("(", iter, ")  ",
-                           "\\frac{d",
-                           de.entry$Name,
-                           "}{dt} = ")
-    } else {
-      begin.frac <- paste0("(", iter, ")  ", Var2MathJ(comp.vol),
-                           "\\frac{d",
-                           de.entry$Name,
-                           "}{dt} = ")
-    }
+    begin.frac <- paste0("(", iter, ") \\: \\: ", Var2MathJ(comp.vol),
+                         "\\frac{d",
+                         de.entry$Name,
+                         "}{dt} = ")
     
     if (isTruthy(de.entry$ODES.mathjax.vector)) {
       # Create align function
@@ -260,36 +203,6 @@ buildMathjaxEqn <- function(de.entry,
       for (j in seq_along(de.entry$ODES.mathjax.vector)) {
         
         mj.expression <- de.entry$ODES.mathjax.vector[j]
-        
-        # If hiding volume, strip the leading volume factor from each term
-        if (hide.volume) {
-          vol.mj <- Var2Latex(comp.vol)
-          # Remove direct occurrences of 'vol*(...' and 'vol∗(...'
-          mj.expression <- gsub(paste0(vol.mj, "*("), "(", mj.expression, fixed = TRUE)
-          mj.expression <- gsub(paste0(vol.mj, "\u2217("), "(", mj.expression, fixed = TRUE)
-          # Also remove simple 'vol*' or 'vol∗' anywhere it appears
-          mj.expression <- gsub(paste0(vol.mj, "*"), "", mj.expression, fixed = TRUE)
-          mj.expression <- gsub(paste0(vol.mj, "\u2217"), "", mj.expression, fixed = TRUE)
-          # Clean up duplicate parentheses and duplicated left/right markers
-          mj.expression <- gsub("\\\\left\\(\\\\left\\(", "\\\\left(", mj.expression)
-          mj.expression <- gsub("\\\\right\\)\\\\right\\)", "\\\\right)", mj.expression)
-          mj.expression <- gsub("((", "(", mj.expression, fixed = TRUE)
-          mj.expression <- gsub("))", ")", mj.expression, fixed = TRUE)
-          # Remove leftover whitespace
-          mj.expression <- gsub("[\t\n\r ]+", "", mj.expression)
-        }
-        # Optional extra parenthesis cleanup
-        if (clean.paren) {
-          # Remove a single wrapping pair of parentheses, if present
-          mj.expression <- sub("^\\((.*)\\)$", "\\1", mj.expression, perl = TRUE)
-          # Robust cleanup/balancing
-          mj.expression <- clean_parentheses_string(mj.expression)
-        }
-        
-        # Remove subscripts from species names (keep parameters subscripted)
-        if (isTruthy(species.names)) {
-          mj.expression <- remove_species_subscripts(mj.expression, species.names)
-        }
         
         # Convert the terms of the differential equations
         if (convert.vars) {
@@ -322,43 +235,30 @@ buildMathjaxEqn <- function(de.entry,
         
         current.diff <- paste0(current.diff,
                                "&",
-                               mj.expression)
+                               mj.expression,
+                               " ")
         # Add the newline for all equations that aren't the last one
         if (j != length(de.entry$ODES.mathjax.vector)) {
           current.diff <- paste0(current.diff, " \\\\ ")
         }
       }
-      # If hiding volume, strip only actual whitespace (not \\ or & which are LaTeX markers)
-      if (hide.volume || clean.paren) {
-        # Remove spaces but preserve \\ and &
-        current.diff <- gsub(" +", " ", current.diff)  # Collapse multiple spaces to one
-        current.diff <- gsub("^ +| +$", "", current.diff)  # Trim leading/trailing spaces
-        if (clean.paren) current.diff <- clean_parentheses_string(current.diff)
-      }
     } else {
       current.diff <- "0"
     }
     
-    out <- paste0("\\begin{aligned}", 
+    out <- paste0("\\begin{aligned}[t]", 
                   begin.frac, 
                   current.diff, 
                   "\\end{aligned}")
     } else {
-      # begin.frac <- paste0("(", iter, ") \\ \: \: ", Var2MathJ(comp.vol),
+      # begin.frac <- paste0("(", iter, ") \\: \\: ", Var2MathJ(comp.vol),
       #                      "\\frac{d[",
       #                      de.entry$Name,
       #                      "]}{dt} = ")
-      if (hide.volume) {
-        begin.frac <- paste0("(", iter, ")  ",
-                             "\\frac{d",
-                             de.entry$Name,
-                             "}{dt} = ")
-      } else {
-        begin.frac <- paste0("(", iter, ")  ", Var2MathJ(comp.vol),
-                             "\\frac{d",
-                             de.entry$Name,
-                             "}{dt} = ")
-      }
+      begin.frac <- paste0("(", iter, ") \\: \\: ", Var2MathJ(comp.vol),
+                           "\\frac{d",
+                           de.entry$Name,
+                           "}{dt} = ")
       
       if (isTruthy(de.entry$ODES.mathjax.vector)) {
         # Create align function
@@ -366,28 +266,6 @@ buildMathjaxEqn <- function(de.entry,
         current.diff <- ""
         for (j in seq_along(de.entry$ODES.mathjax.vector)) {
           mj.expression <- de.entry$ODES.mathjax.vector[j]
-          if (hide.volume) {
-            vol.mj <- Var2Latex(comp.vol)
-            mj.expression <- gsub(paste0(vol.mj, "*("), "(", mj.expression, fixed = TRUE)
-            mj.expression <- gsub(paste0(vol.mj, "\u2217("), "(", mj.expression, fixed = TRUE)
-            mj.expression <- gsub(paste0(vol.mj, "*"), "", mj.expression, fixed = TRUE)
-            mj.expression <- gsub(paste0(vol.mj, "\u2217"), "", mj.expression, fixed = TRUE)
-            mj.expression <- gsub("\\\\left\\(\\\\left\\(", "\\\\left(", mj.expression)
-            mj.expression <- gsub("\\\\right\\)\\\\right\\)", "\\\\right)", mj.expression)
-            mj.expression <- gsub("((", "(", mj.expression, fixed = TRUE)
-            mj.expression <- gsub("))", ")", mj.expression, fixed = TRUE)
-            mj.expression <- gsub("[\t\n\r ]+", "", mj.expression)
-          }
-          if (clean.paren) {
-            mj.expression <- sub("^\\((.*)\\)$", "\\1", mj.expression, perl = TRUE)
-            mj.expression <- clean_parentheses_string(mj.expression)
-          }
-          
-          # Remove subscripts from species names (keep parameters subscripted)
-          if (isTruthy(species.names)) {
-            mj.expression <- remove_species_subscripts(mj.expression, species.names)
-          }
-          
           # Convert the terms of the differential equations
           if (convert.vars) {
             term <- mj.expression
@@ -418,17 +296,12 @@ buildMathjaxEqn <- function(de.entry,
           }
           
           current.diff <- paste0(current.diff,
-                                 mj.expression)
+                                 mj.expression,
+                                 " ")
           # Add the newline for all equations that aren't the last one
           if (j != length(de.entry$ODES.mathjax.vector)) {
             current.diff <- paste0(current.diff, separator)
           }
-        }
-        # If hiding volume, clean up only actual whitespace (preserve LaTeX structure)
-        if (hide.volume || clean.paren) {
-          current.diff <- gsub(" +", " ", current.diff)  # Collapse multiple spaces
-          current.diff <- gsub("^ +| +$", "", current.diff)  # Trim leading/trailing spaces
-          if (clean.paren) current.diff <- clean_parentheses_string(current.diff)
         }
       } else {
         current.diff <- "0"
@@ -710,46 +583,3 @@ output$dbttn_download_diffequations_specific <- downloadHandler(
     }
   }
 )
-
-# Helper: robust parenthesis cleanup while preserving LaTeX markers
-clean_parentheses_string <- function(x) {
-  if (!isTruthy(x)) return(x)
-  # Normalize duplicated brackets first
-  old <- NULL
-  new <- x
-  # Preserve LaTeX left/right markers by temporarily removing them
-  new <- gsub("\\\\left\\(", "__L__", new)
-  new <- gsub("\\\\right\\)", "__R__", new)
-  # Collapse duplicated parentheses
-  repeat {
-    old <- new
-    new <- gsub("\\)\\)", ")", new)
-    new <- gsub("\\(\\(", "(", new)
-    if (identical(new, old)) break
-  }
-  # Balance parentheses: remove unmatched closing ones
-  chars <- strsplit(new, "")[[1]]
-  out <- character(length(chars))
-  balance <- 0L
-  k <- 0L
-  for (ch in chars) {
-    if (ch == "(") {
-      balance <- balance + 1L
-      k <- k + 1L; out[k] <- ch
-    } else if (ch == ")") {
-      if (balance > 0L) {
-        balance <- balance - 1L
-        k <- k + 1L; out[k] <- ch
-      } else {
-        # skip unmatched ')'
-      }
-    } else {
-      k <- k + 1L; out[k] <- ch
-    }
-  }
-  if (k > 0L) new <- paste0(out[seq_len(k)], collapse = "") else new <- ""
-  # Restore LaTeX markers
-  new <- gsub("__L__", "\\\\left(", new)
-  new <- gsub("__R__", "\\\\right)", new)
-  new
-}

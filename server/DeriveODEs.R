@@ -176,40 +176,11 @@ DeriveEquationBasedODEs <- function(species.list.entry,
     for (eqn.id in reactions) {
       # Extract equation by ID and appropriate laws
       eqn        <- reactions.rv$reactions[[eqn.id]]
+      rate       <- eqn$String.Rate.Law
+      latex.rate <- eqn$Latex.Rate.Law
+      mj.rate    <- eqn$MathJax.Rate.Law
       law        <- eqn$Reaction.Law
-      
-      # Special handling for substrate_synthesis_competition
-      # Only process the main entry (species synthesis), skip substrate consumption entries
-      if (law == "substrate_synthesis_competition") {
-        # Check if this is a substrate consumption entry (starts with "SSC_S_")
-        if (grepl("^SSC_S_", eqn.id)) {
-          # Skip substrate consumption entries - they should only affect the substrate
-          next
-        }
-        # For the main entry, extract rate law from the entry itself
-        rate       <- eqn$String.Rate.Law
-        latex.rate <- eqn$Latex.Rate.Law
-        mj.rate    <- eqn$MathJax.Rate.Law
-        descript   <- eqn$Description
-      } else if (law == "predator_prey") {
-        # For predator-prey, each species has its own reaction entry
-        # Only use the rate law if this reaction entry's Species.id matches the current species
-        if (!is.na(eqn$Species.id) && eqn$Species.id == id) {
-          rate       <- eqn$String.Rate.Law
-          latex.rate <- eqn$Latex.Rate.Law
-          mj.rate    <- ConvertRateLaw(eqn$String.Rate.Law)$mathjax
-          descript   <- eqn$Description
-        } else {
-          # This reaction entry is for a different species, skip it
-          next
-        }
-      } else {
-        # Standard processing for other reaction types
-        rate       <- eqn$String.Rate.Law
-        latex.rate <- eqn$Latex.Rate.Law
-        mj.rate    <- eqn$MathJax.Rate.Law
-        descript   <- eqn$Description
-      }
+      descript   <- eqn$Description
       
       applyMultiple <- FALSE
       multiple      <- "1"
@@ -273,74 +244,8 @@ DeriveEquationBasedODEs <- function(species.list.entry,
         }
       } 
       
-      # Check if this is a degradation reaction with products and krel
-      # If species is a product, we need to include krel in the rate law
-      krel <- NA
-      if ((law == "degradation_rate" || law == "degradation_by_enzyme") && !inReactant) {
-        # Species is a product, check if krel exists
-        if (law == "degradation_rate" && eqn.id %in% names(reactions.rv$degradation.by.rate)) {
-          degInfo <- reactions.rv$degradation.by.rate[[eqn.id]]
-          if ("krel" %in% names(degInfo) && !is.na(degInfo$krel) && degInfo$krel != "") {
-            krel <- degInfo$krel
-          }
-        } else if (law == "degradation_by_enzyme" && eqn.id %in% names(reactions.rv$degradation.by.enzyme)) {
-          degInfo <- reactions.rv$degradation.by.enzyme[[eqn.id]]
-          if ("krel" %in% names(degInfo) && !is.na(degInfo$krel) && degInfo$krel != "") {
-            krel <- degInfo$krel
-          }
-        }
-      }
-      
       # Build ODE expression 
       if (inReactant) {sign <- "-"} else {sign <- "+"}
-      
-      # Modify rate law to include krel if it exists and species is a product
-      if (!is.na(krel)) {
-        # Insert krel into the rate law
-        # For degradation_rate: V_1*(k_d1*species_1) -> V_1*(k_d1*krel*species_1)
-        # For degradation_by_enzyme: V_1*(Vmax*species_1/(Km+species_1)) -> V_1*(Vmax*krel*species_1/(Km+species_1))
-        # Strategy: Insert *krel after the first term (rate constant or Vmax/kcat*enzyme) but before division or next multiplication
-        
-        # Check if this is enzyme degradation (has division)
-        has.division <- grepl("/", rate)
-        
-        if (has.division) {
-          # Enzyme degradation: Insert *krel after the species variable but before the division
-          # Format: V_1*(Vmax*species_1/(Km+species_1)) -> V_1*(Vmax*species_1*krel/(Km+species_1))
-          # Format: V_1*(kcat*enzyme*species_1/(Km+species_1)) -> V_1*(kcat*enzyme*species_1*krel/(Km+species_1))
-          # Pattern: match *variable/ and replace with *variable*krel/
-          # The pattern (\\*[^/]+)(/) matches *something/ where something is everything up to /
-          rate <- sub("(\\*[^/]+)(/)", paste0("\\1*", krel, "\\2"), rate)
-          if (grepl("/", latex.rate)) {
-            # For latex, try the same pattern
-            latex.rate <- sub("(\\*[^/]+)(/)", paste0("\\1*", krel, "\\2"), latex.rate)
-          }
-          if (grepl("/", mj.rate)) {
-            # For mathjax, try the same pattern
-            mj.rate <- sub("(\\*[^/]+)(/)", paste0("\\1*", krel, "\\2"), mj.rate)
-          }
-        } else {
-          # Rate-based degradation: Insert *krel after rate constant
-          if (grepl("\\*", rate)) {
-            # Has multiplication: insert *krel after rate constant (before the *)
-            rate <- sub("(\\([^\\*]+)(\\*)", paste0("\\1*", krel, "\\2"), rate)
-          } else {
-            # No multiplication: append *krel before closing paren
-            rate <- sub("(\\))", paste0("*", krel, "\\1"), rate)
-          }
-          # Apply same logic to latex and mathjax
-          if (grepl("\\*", latex.rate)) {
-            latex.rate <- sub("(\\([^\\*]+)(\\*)", paste0("\\1*", krel, "\\2"), latex.rate)
-          } else {
-            latex.rate <- sub("(\\))", paste0("*", krel, "\\1"), latex.rate)
-          }
-          if (grepl("\\*", mj.rate)) {
-            mj.rate <- sub("(\\([^\\*]+)(\\*)", paste0("\\1*", krel, "\\2"), mj.rate)
-          } else {
-            mj.rate <- sub("(\\))", paste0("*", krel, "\\1"), mj.rate)
-          }
-        }
-      }
       
       if (applyMultiple) {
         ODE <- c(ODE, 

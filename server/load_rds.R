@@ -249,18 +249,9 @@ observeEvent(rv.LOADBUTTONS$LB.count, {
                     "Inout_delete_IO_eqn",
                     choices = seq(rv.IO$n.IO))
 
-  visible <- lapply(rv.REACTIONS$reactions, function(r) { if (is.null(r$Show.In.Table) || isTRUE(r$Show.In.Table)) return(r) else return(NULL) })
-  visible <- visible[!vapply(visible, is.null, FUN.VALUE = logical(1))]
-  if (length(visible) == 0) {
-    edit_choices <- character(0)
-  } else {
-    labels <- vapply(seq_along(visible), function(i) paste0("(", i, ") ", visible[[i]]$Equation.Text), FUN.VALUE = "")
-    edit_choices <- setNames(as.character(seq_len(length(visible))), labels)
-  }
-  message("DEBUG(load_rds): updating eqnCreate_edit_select_equation with labels:", paste(names(edit_choices), collapse = " | "))
   updatePickerInput(session,
                     'eqnCreate_edit_select_equation',
-                    choices = edit_choices)
+                    choices = seq(length(rv.REACTIONS$reactions)))
   
   #updates output enzyme choices for enzyme degradation
   updatePickerInput(session,

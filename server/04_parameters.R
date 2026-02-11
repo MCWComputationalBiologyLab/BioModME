@@ -61,9 +61,16 @@ output$parameters_DT <- renderRHandsontable({
       manualColumnMove = FALSE,
       manualColumnResize = TRUE,
       halign = "htCenter",
-      valign = "htMiddle"
-    ) %>%
-    hot_col("Value", renderer = "function (instance, td, row, col, prop, value, cellProperties) {\n  Handsontable.renderers.TextRenderer.apply(this, arguments);\n  if (value !== null && value !== undefined && value !== '' && !isNaN(value)) {\n    var v = parseFloat(value);\n    if (v !== 0 && Math.abs(v) < 0.001) {\n      td.innerHTML = v.toExponential(2);\n    } else {\n      td.innerHTML = v;\n    }\n  }\n  if (row % 2 == 0) { td.style.background = '#f9f9f9'; } else { td.style.background = 'white'; }\n}") %>%
+      valign = "htMiddle",
+      renderer = "
+           function (instance, td, row, col, prop, value, cellProperties) {
+             Handsontable.renderers.NumericRenderer.apply(this, arguments);
+             if (row % 2 == 0) {
+              td.style.background = '#f9f9f9';
+             } else {
+              td.style.background = 'white';
+             };
+           }") %>%
     #hot_col("Parameter", readOnly = TRUE) %>%
     #hot_col("Description", halign = "htLeft", valign = "htMiddle") %>%
     hot_rows(rowHeights = 30) %>%

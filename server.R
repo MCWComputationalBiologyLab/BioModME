@@ -35,12 +35,8 @@ server <- shinyServer(function(input, output, session) {
   table.header <- reactiveValues(bg = "#3c8dbc",color = 'white')
   options(shiny.sanitize.errors = FALSE)
   
-  fxn.sources <- file.path("functions", list.files("functions", pattern = "\\.R$", full.names = FALSE))
+  fxn.sources <- file.path("functions", list.files("functions"))
   sapply(fxn.sources, source)
-  
-  # Source rate law functions from subdirectory
-  rateLaw.sources <- file.path("functions", "rateLaws", list.files("functions/rateLaws", pattern = "\\.R$", full.names = FALSE))
-  sapply(rateLaw.sources, source)
   
   source(file.path("server", "helpers.R"))
   source(file.path("server", "helper_prep_ODEs_for_solver.R"))
@@ -78,7 +74,6 @@ server <- shinyServer(function(input, output, session) {
   source(file.path("server", "41_summary.R"), local = TRUE)$value
   source(file.path("server", "51_parameter_estimation.R"), local = TRUE)$value
   source(file.path("server", "51_create_custom_eqn.R"), local = TRUE)$value
-  source(file.path("server", "51_edit_delete_custom_eqn.R"), local = TRUE)$value
   source(file.path("server", "build_custom_law.R"), local = TRUE)$value
   source(file.path("server", "61_global_options.R"), local = TRUE)$value
   source(file.path("server", "71_import_server.R"), local = TRUE)$value
@@ -190,5 +185,3 @@ server <- shinyServer(function(input, output, session) {
   #updateBox("create_eqn_info_box", action = "toggle")
   
 })#end of server
-
-

@@ -89,9 +89,7 @@ CreatePlot <- function(modelResults,
                        optionOverlayData,
                        dataToOverlay, 
                        overlayX,
-                       overlayY,
-                       optionXLogScale = FALSE,
-                       optionYLogScale = FALSE
+                       overlayY
 
 ) {
   # Inputs
@@ -148,30 +146,28 @@ CreatePlot <- function(modelResults,
   
   # use gather on incoming results to put them into a plottable data structure
   selectedData <- gatherData(modelResults, concentrations)
-  # Ensure the Variable factor levels preserve the requested order from
-  # `concentrations` (if provided) so that legend order and color/linetype
-  # mappings remain consistent between on-screen and downloaded plots.
-  if (!is.null(concentrations)) {
-    levs <- intersect(concentrations, unique(selectedData$Variable))
-    if (length(levs) == 0) levs <- unique(selectedData$Variable)
-  } else {
-    levs <- unique(selectedData$Variable)
-  }
-  selectedData$Variable <- factor(selectedData$Variable, levels = levs)
-  n <- length(levs)
+  n <- length(unique(selectedData$Variable))
   
   # gather vector of selected line type inputs and evaluate to vector
-    # Build the linetype vector in the same order as the factor levels.
-    id_names <- gsub(" ", "_", levels(selectedData$Variable))
-    type_line <- paste0("c(", paste0("input$line_type", id_names, collapse = ", "), ")")
-    type_line <- eval(parse(text = type_line))
+  type_line <- paste0("c(", 
+                      paste0("input$line_type", 
+                            unique(sort(selectedData$Variable)), 
+                            collapse = ", "),
+                      ")"
+                )
+  
+  type_line <- eval(parse(text = type_line))
   
   # Find selected color palletes and create
   cols_line <- color_palettes(colorPalette, n)
   # rewrite with the custom values if user chose custom
   if (cols_line[1] == "CUSTOM") {
-    cols_ids <- gsub(" ", "_", levels(selectedData$Variable))
-    cols_line <- paste0("c(", paste0("input$cols_line", cols_ids, collapse = ", "), ")")
+    cols_line <-
+      paste0("c(",
+             paste0("input$cols_line", 
+                    unique(sort(selectedData$Variable)), 
+                    collapse = ", "),
+             ")")
     cols_line <- eval(parse(text = cols_line))
   }
   
@@ -213,12 +209,12 @@ CreatePlot <- function(modelResults,
   g_line <- g_line + 
     # Select the colors of the lines
     scale_color_manual(name = legendTitle,
-               values = cols_line,
-               labels = levels(selectedData$Variable)) +
+                       values = cols_line,
+                       labels = unique(selectedData$Variable)) +
     # Select the show type of the lines
     scale_linetype_manual(name = legendTitle,
-                values = type_line,
-                labels = levels(selectedData$Variable)) +
+                          values = type_line,
+                          labels = unique(selectedData$Variable)) +
     #this adds title, xlabel, and ylabel to graph based upon text inputs
     labs(
       title = plotTitle,
@@ -252,55 +248,23 @@ CreatePlot <- function(modelResults,
   
   # Options for Custom Axis Choices
   if (optionCustomAxis) {
-    if (optionXLogScale && xAxisMin > 0) {
-      # Use log scale with custom limits
-      g_line <-
-        g_line + scale_x_log10(
-          limits = c(xAxisMin, xAxisMax)
+    g_line <-
+      g_line + scale_x_continuous(
+        limits = c(xAxisMin, xAxisMax),
+        breaks = seq(
+          from = xAxisMin,
+          to = xAxisMax,
+          by = xAxisStep
         )
-    } else if (optionXLogScale) {
-      # Log scale requested but min <= 0, use default log scale
-      g_line <- g_line + scale_x_log10()
-    } else {
-      g_line <-
-        g_line + scale_x_continuous(
-          limits = c(xAxisMin, xAxisMax),
-          breaks = seq(
-            from = xAxisMin,
-            to = xAxisMax,
-            by = xAxisStep
-          )
+      ) +
+      scale_y_continuous(
+        limits = c(yAxisMin, yAxisMax),
+        breaks = seq(
+          from = yAxisMin,
+          to = yAxisMax,
+          by = yAxisStep
         )
-    }
-    
-    if (optionYLogScale && yAxisMin > 0) {
-      # Use log scale with custom limits
-      g_line <-
-        g_line + scale_y_log10(
-          limits = c(yAxisMin, yAxisMax)
-        )
-    } else if (optionYLogScale) {
-      # Log scale requested but min <= 0, use default log scale
-      g_line <- g_line + scale_y_log10()
-    } else {
-      g_line <-
-        g_line + scale_y_continuous(
-          limits = c(yAxisMin, yAxisMax),
-          breaks = seq(
-            from = yAxisMin,
-            to = yAxisMax,
-            by = yAxisStep
-          )
-        )
-    }
-  } else {
-    # Apply log scales even when custom axis is not enabled
-    if (optionXLogScale) {
-      g_line <- g_line + scale_x_log10()
-    }
-    if (optionYLogScale) {
-      g_line <- g_line + scale_y_log10()
-    }
+      )
   }
   
   if (is.null(concentrations)) {
@@ -346,21 +310,24 @@ CreatePlot <- function(modelResults,
 plotLineplotInput <- function(data) {
   #calls data function and stores it to selectedData
   selectedData <- data
-  # Preserve ordering of variables as they appear so legend order matches
-  # the plotted traces.
-  levs <- unique(selectedData$Variable)
-  selectedData$Variable <- factor(selectedData$Variable, levels = levs)
-  n = length(levs)
-  id_names <- gsub(" ", "_", levels(selectedData$Variable))
-  type_line <- paste0("c(", paste0("input$line_type", id_names, collapse = ", "), ")")
+  n = length(unique(selectedData$Variable))
+  #n = length(unique(selectedData$variable))
+  type_line <-
+    paste0("c(", paste0("input$line_type", 
+                        unique(sort(data$Variable)), 
+                        collapse = ", "), ")")
   type_line <- eval(parse(text = type_line))
   #create vector of cols for lines
   
   cols_line <- color_palettes(input$choose_color_palette, n)
   # rewrite with the custom values if user chose custom
   if (cols_line[1] == "CUSTOM") {
-    cols_ids <- gsub(" ", "_", levels(selectedData$Variable))
-    cols_line <- paste0("c(", paste0("input$cols_line", cols_ids, collapse = ", "), ")")
+    cols_line <-
+      paste0("c(",
+             paste0("input$cols_line", 
+                    unique(sort(data$Variable)), 
+                    collapse = ", "),
+             ")")
     cols_line <- eval(parse(text = cols_line))
   }
   
@@ -372,11 +339,9 @@ plotLineplotInput <- function(data) {
     #scale_fill_brewer(palette = "Dark2") + 
     #scale_color_viridis(discrete = FALSE, option = "D") + 
     scale_color_manual(name = input$line_legend_title,
-               values = cols_line,
-               labels = levels(selectedData$Variable)) +
+                       values = cols_line) +
     scale_linetype_manual(name = input$line_legend_title,
-                values = type_line,
-                labels = levels(selectedData$Variable))
+                          values = type_line)
   
   if (input$line_show_dots) {
     g_line <- g_line + geom_point()
@@ -386,55 +351,25 @@ plotLineplotInput <- function(data) {
   }
   
   if (input$line_axis_confirm) {
-    if (input$line_xaxis_log && input$line_xaxis_min > 0) {
-      # Use log scale with custom limits
-      g_line <-
-        g_line + scale_x_log10(
-          limits = c(input$line_xaxis_min, input$line_xaxis_max)
+    g_line <-
+      g_line + scale_x_continuous(
+        limits = c(input$line_xaxis_min, input$line_xaxis_max),
+        breaks = seq(
+          from = input$line_xaxis_min,
+          to = input$line_xaxis_max,
+          by = input$line_xstep
         )
-    } else if (input$line_xaxis_log) {
-      # Log scale requested but min <= 0, use default log scale
-      g_line <- g_line + scale_x_log10()
-    } else {
-      g_line <-
-        g_line + scale_x_continuous(
-          limits = c(input$line_xaxis_min, input$line_xaxis_max),
-          breaks = seq(
-            from = input$line_xaxis_min,
-            to = input$line_xaxis_max,
-            by = input$line_xstep
-          )
+      ) +
+      scale_y_continuous(
+        limits = c(input$line_yaxis_min, input$line_yaxis_max),
+        breaks = seq(
+          input$line_yaxis_min,
+          input$line_yaxis_max,
+          input$line_ystep
         )
-    }
-    
-    if (input$line_yaxis_log && input$line_yaxis_min > 0) {
-      # Use log scale with custom limits
-      g_line <-
-        g_line + scale_y_log10(
-          limits = c(input$line_yaxis_min, input$line_yaxis_max)
-        )
-    } else if (input$line_yaxis_log) {
-      # Log scale requested but min <= 0, use default log scale
-      g_line <- g_line + scale_y_log10()
-    } else {
-      g_line <-
-        g_line + scale_y_continuous(
-          limits = c(input$line_yaxis_min, input$line_yaxis_max),
-          breaks = seq(
-            input$line_yaxis_min,
-            input$line_yaxis_max,
-            input$line_ystep
-          )
-        )
-    }
-  } else {
-    # Apply log scales even when custom axis is not enabled
-    if (input$line_xaxis_log) {
-      g_line <- g_line + scale_x_log10()
-    }
-    if (input$line_yaxis_log) {
-      g_line <- g_line + scale_y_log10()
-    }
+      )
+  } else{
+    g_line <- g_line
   }
   
   if (is.null(input$lineplot_yvar)) {
@@ -685,9 +620,7 @@ output$main_lineplot <- renderPlot({
                           input$show_overlay_data,
                           data.scatter(),
                           input$plot_data_import_x,
-                          input$plot_data_import_y,
-                          input$line_xaxis_log,
-                          input$line_yaxis_log)
+                          input$plot_data_import_y)
     return(to.plot)
   } else {
     plot(1, 1, type="n", xlab="", ylab="", xaxt='n', yaxt='n')
@@ -733,9 +666,7 @@ output$lineplot_plotly <- renderPlotly({
                           input$show_overlay_data,
                           data.scatter(),
                           input$plot_data_import_x,
-                          input$plot_data_import_y,
-                          input$line_xaxis_log,
-                          input$line_yaxis_log
+                          input$plot_data_import_y
     )
     ggplotly(to.plot,
              tooltip = c("x", "y", "colour"))
