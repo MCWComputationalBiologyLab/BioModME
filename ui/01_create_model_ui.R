@@ -170,7 +170,7 @@ TAB_VAR_CREATE <-
                 #   "Popout"
                 # ),
                 div(
-                  rHandsontableOutput("myVariables_DT"),
+                  DTOutput("myVariables_DT", width = "100%"),
                   br(),
                   fluidRow(
                     column(

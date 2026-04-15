@@ -524,7 +524,7 @@ observeEvent(input$createVar_deleteVarButton, {
 })
 
 # Table Render for Variables ---------------------------------------------------
-output$myVariables_DT <- renderRHandsontable({
+output$myVariables_DT <- renderDT({
   # Table override value
   override <- rv.REFRESH$refresh.species.table 
   
@@ -533,30 +533,23 @@ output$myVariables_DT <- renderRHandsontable({
                          to compartment."))
     temp <- transpose(temp)
     colnames(temp) <- c("Instructions")
-    rhandsontable(temp,
-                  rowHeaders = NULL,
-                  overflow = "visible",
-                  colHeaderWidth = 100,
-                  stretchH = "all",
-                  readOnly = TRUE
-    ) %>%
-      hot_cols(manualColumnMove = FALSE,
-               manualColumnResize = FALSE,
-               halign = "htCenter",
-               valign = "htMiddle",
-               renderer = "
-           function (instance, td, row, col, prop, value, cellProperties) {
-             Handsontable.renderers.NumericRenderer.apply(this, arguments);
-             if (row % 2 == 0) {
-              td.style.background = '#f9f9f9';
-             } else {
-              td.style.background = 'white';
-             };
-           }") %>%
-      hot_rows(rowHeights = 30) %>%
-      hot_context_menu(allowRowEdit = FALSE,
-                       allowColEdit = FALSE
+    datatable(
+      temp,
+      rownames = FALSE,
+      editable = FALSE,
+      selection = "none",
+      options = list(
+        dom = "t",
+        paging = FALSE,
+        ordering = FALSE,
+        searching = FALSE,
+        info = FALSE,
+        autoWidth = FALSE,
+        columnDefs = list(
+          list(className = "dt-center", targets = "_all")
+        )
       )
+    )
   } else {
     
     if (input$createVar_show_active_compartment_only) {
@@ -586,44 +579,56 @@ output$myVariables_DT <- renderRHandsontable({
     )
     rv.SPECIES$plotted.var.table <- df.by.comp
     
-    rhandsontable(df.by.comp,
-                  overflow = "visible",
-                  # rowHeaders = NULL,
-                  selectCallback = TRUE,
-                  colHeaderWidth = 100,
-                  stretchH = "all",
-                  fillHandle = FALSE
-    ) %>%
-      hot_cols(
-        colWidth = c(30, 20, 20, 30, 60),
-        manualColumnMove = FALSE,
-        manualColumnResize = TRUE,
-        halign = "htCenter",
-        valign = "htMiddle",
-        renderer = "
-           function (instance, td, row, col, prop, value, cellProperties) {
-             Handsontable.renderers.NumericRenderer.apply(this, arguments);
-             if (row % 2 == 0) {
-              td.style.background = '#f9f9f9';
-             } else {
-              td.style.background = 'white';
-             };
-           }") %>%
-      hot_col("Compartment", readOnly = TRUE) %>%
-      hot_rows(rowHeights = 30) %>%
-      hot_context_menu(allowRowEdit = FALSE,
-                       allowColEdit = FALSE
+    datatable(
+      df.by.comp,
+      rownames = FALSE,
+      editable = "cell",
+      selection = list(mode = "single", target = "cell"),
+      callback = DT::JS(
+        "table.on('draw.dt', function(){",
+        "  $(table.table().header()).find('th').css('text-align', 'center');",
+        "});"
+      ),
+      options = list(
+        dom = "t",
+        paging = FALSE,
+        ordering = FALSE,
+        searching = FALSE,
+        info = FALSE,
+        scrollX = FALSE,
+        autoWidth = FALSE,
+        columnDefs = list(
+          list(className = "dt-center", targets = "_all"),
+          list(width = "16%", targets = 0),
+          list(width = "14%", targets = 1),
+          list(width = "14%", targets = 2),
+          list(width = "18%", targets = 3),
+          list(width = "38%", targets = 4)
+        )
       )
+    )
   }
 })
 
-# Variable Input Rhandsontable: cell Change ------------------------------------
-observeEvent(input$myVariables_DT$changes$changes, {
-  # browser()
-  xi = input$myVariables_DT$changes$changes[[1]][[1]]
-  yi = input$myVariables_DT$changes$changes[[1]][[2]]
-  old = input$myVariables_DT$changes$changes[[1]][[3]]
-  new = input$myVariables_DT$changes$changes[[1]][[4]]
+# Variable Input DT: cell Change -----------------------------------------------
+observeEvent(input$myVariables_DT_cell_edit, {
+  info <- input$myVariables_DT_cell_edit
+  xi <- as.integer(info$row) - 1
+  yi <- as.integer(info$col)
+  old <- rv.SPECIES$plotted.var.table[xi + 1, yi + 1, drop = TRUE]
+  new <- DT::coerceValue(info$value, old)
+
+  # Keep Compartment read-only to match previous behavior
+  if (yi == 3) {
+    sendSweetAlert(
+      session = session,
+      title = "Not editable",
+      text = "Compartment is read-only in this table.",
+      type = "warning"
+    )
+    rv.REFRESH$refresh.species.table <- rv.REFRESH$refresh.species.table + 1
+    return(NULL)
+  }
 
     # Find which variable is being changed
   var.name  <- rv.SPECIES$plotted.var.table[xi+1, 1]
@@ -748,11 +753,14 @@ observeEvent(input$myVariables_DT$changes$changes, {
   
 })
 
-observeEvent(input$myVariables_DT_select$select$r, {
+observeEvent(input$myVariables_DT_cells_selected, {
+  req(!is.null(input$myVariables_DT_cells_selected))
+  req(nrow(input$myVariables_DT_cells_selected) > 0)
   
   req(length(rv.SPECIES$species.names > 0))
-  cat("Selected Row", input$myVariables_DT_select$select$r)
-  cat('\nSelected Column:',input$myVariables_DT_select$select$c)
+  selected <- input$myVariables_DT_cells_selected[1, ]
+  cat("Selected Row", selected[[1]])
+  cat('\nSelected Column:', selected[[2]])
 })
 
 # Events that change on variable change ----------------------------------------

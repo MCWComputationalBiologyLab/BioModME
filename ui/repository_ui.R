@@ -9,7 +9,7 @@ TAB_MODEL_REPOSITORY <-
         selectInput(
           inputId = "SI_repos_base_choices",
           label = "Select Model To Load:",
-          choices <- c(),
+          choices = list.files(file.path(".", "base_models")),
           selectize = FALSE,
           size = 12
         ),
