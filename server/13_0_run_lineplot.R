@@ -1164,19 +1164,29 @@ observeEvent(input$plot_data_import, {
                       value = TRUE)
 })
 
-output$plot_import_data_table <- renderRHandsontable({
+output$plot_import_data_table <- renderDT({
   
   rows.in.table <- nrow(data.scatter())
   
   # Set table message if no data loaded
   if (rows.in.table == 0) {
-    
+    return(NULL)
   } else {
-    # Load parameter table with appropriate parameters
-    rhandsontable(
+    datatable(
       data.scatter(),
-      readOnly = TRUE
+      rownames = FALSE,
+      editable = FALSE,
+      selection = "none",
+      options = list(
+        dom = "t",
+        paging = TRUE,
+        ordering = TRUE,
+        searching = TRUE,
+        info = TRUE,
+        autoWidth = TRUE,
+        scrollX = TRUE
       )
+    )
   }
   
 })

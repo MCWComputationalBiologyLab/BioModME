@@ -24,7 +24,7 @@ shinyBS::bsModal(
         fluidRow(
           column(
             width = 12,
-            rHandsontableOutput("deleteEquations_table_viewer")
+            DTOutput("deleteEquations_table_viewer")
           )
         )
       )

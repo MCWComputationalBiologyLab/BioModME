@@ -270,16 +270,29 @@ observe({
   }
 })
 # Parameter Estimate Output Table ----------------------------------------------
-output$pe_import_data_table <- renderRHandsontable({
+output$pe_import_data_table <- renderDT({
   
   rows.in.table <- nrow(data.for.estimation())
   
   # Set table message if no data loaded
   if (rows.in.table == 0) {
+    return(NULL)
   } else {
-    # Load parameter table with appropriate parameters
-    rhandsontable(data.for.estimation(),
-                  readOnly = TRUE)
+    datatable(
+      data.for.estimation(),
+      rownames = FALSE,
+      editable = FALSE,
+      selection = "none",
+      options = list(
+        dom = "t",
+        paging = TRUE,
+        ordering = TRUE,
+        searching = TRUE,
+        info = TRUE,
+        autoWidth = TRUE,
+        scrollX = TRUE
+      )
+    )
   }
 
 })

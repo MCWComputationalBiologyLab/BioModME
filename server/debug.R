@@ -215,8 +215,20 @@ output$debug_text_view <- renderPrint(
   print(rv.LOGS$variable.debug.button)
 )
 
-output$debug_table_view <- renderRHandsontable(
-  rhandsontable(rv.LOGS$variable.debug.table,
-                width = "100%",
-                readOnly = TRUE)
-)
+output$debug_table_view <- renderDT({
+  datatable(
+    rv.LOGS$variable.debug.table,
+    rownames = FALSE,
+    editable = FALSE,
+    selection = "none",
+    options = list(
+      dom = "t",
+      paging = TRUE,
+      ordering = TRUE,
+      searching = TRUE,
+      info = TRUE,
+      autoWidth = TRUE,
+      scrollX = TRUE
+    )
+  )
+})

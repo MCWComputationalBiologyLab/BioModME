@@ -2328,7 +2328,7 @@ output$eqnCreate_showAdditionalEquations <- renderText({
 })
 
 # Delete Equations -------------------------------------------------------------
-output$deleteEquations_table_viewer <- renderRHandsontable({
+output$deleteEquations_table_viewer <- renderDT({
   
   eqn.num <- as.numeric(input$eqnCreate_delete_select_equation)
   myindex = eqn.num - 1
@@ -2342,18 +2342,30 @@ output$deleteEquations_table_viewer <- renderRHandsontable({
   colnames(df.to.show) <- c("Equation", 
                             "Type",
                             "Compartment")
-  rhandsontable(df.to.show,
-                myindex = myindex) %>%
-    hot_cols(renderer = 
-     "function(instance, td, row, col, prop, value, cellProperties) {
-       Handsontable.renderers.TextRenderer.apply(this, arguments);
-       if (instance.params) {
-       mhrows = instance.params.myindex;
-       mhrows = mhrows instanceof Array ? mhrows : [mhrows];
-       }
-       if (instance.params && mhrows.includes(row)) td.style.background = '#FFCCCB';
-      }"
+  datatable(
+    df.to.show,
+    rownames = FALSE,
+    editable = FALSE,
+    selection = "none",
+    callback = DT::JS(
+      sprintf(
+        "table.on('draw.dt', function(){\n  var idx = %d;\n  table.rows().every(function(i){\n    if (i === idx) { $(this.node()).css('background-color', '#FFCCCB'); }\n  });\n});",
+        myindex
+      )
+    ),
+    options = list(
+      dom = "t",
+      paging = FALSE,
+      ordering = FALSE,
+      searching = FALSE,
+      info = FALSE,
+      autoWidth = FALSE,
+      scrollX = FALSE,
+      columnDefs = list(
+        list(className = "dt-center", targets = "_all")
+      )
     )
+  )
 })
 
 observeEvent(input$modal_delete_eqn_button, {

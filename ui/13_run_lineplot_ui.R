@@ -644,7 +644,7 @@ TAB_RUN_LINEPLOT <- tabItem(
         fluidRow(
           column(
             width = 12, 
-            rHandsontableOutput(
+            DTOutput(
               outputId = "plot_import_data_table"
             )
           )

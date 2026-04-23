@@ -172,9 +172,21 @@ observeEvent({rv.COUNTS$loading.model
 #   return(model.to.use)
 # })
 # DataTable --------------------------------------------------------------------
-output$pp_data_table <- renderRHandsontable({
-  rhandsontable(ModelToUse(),
-                readOnly = TRUE, 
-                contextMenu = FALSE)
+output$pp_data_table <- renderDT({
+  datatable(
+    ModelToUse(),
+    rownames = FALSE,
+    editable = FALSE,
+    selection = "none",
+    options = list(
+      dom = "t",
+      paging = FALSE,
+      ordering = FALSE,
+      searching = FALSE,
+      info = FALSE,
+      autoWidth = TRUE,
+      scrollX = TRUE
+    )
+  )
 })
 

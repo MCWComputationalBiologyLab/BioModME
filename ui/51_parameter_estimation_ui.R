@@ -24,7 +24,7 @@ TAB_PARAMETER_ESTIMATION <-
       ),
       conditionalPanel(
         condition = "input.pe_show_imported_datatable",
-        rHandsontableOutput(
+        DTOutput(
           outputId = "pe_import_data_table"
           
         )

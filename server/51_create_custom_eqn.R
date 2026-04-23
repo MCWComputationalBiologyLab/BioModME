@@ -417,7 +417,7 @@ output$RHT_custom_eqn_params_new <- renderRHandsontable({
 })
 
 # Render Table to show current additional equans
-output$RHT_custom_eqn_display_existing <- renderRHandsontable({
+output$RHT_custom_eqn_display_existing <- renderDT({
   
   if (length(rv.CUSTOM.EQNS$ce.equations) != 0) {
     additional.equations <- unname(sapply(rv.CUSTOM.EQNS$ce.equations,
@@ -426,30 +426,45 @@ output$RHT_custom_eqn_display_existing <- renderRHandsontable({
     
     df <- data.frame(additional.equations)
     colnames(df) <- "Equations"
-    hot <- 
-      rhandsontable(df,
-                    stretchH = "all",
-                    overflow = "visible") %>% 
-      hot_col(col = "Equations", readOnly = TRUE)
+    datatable(
+      df,
+      rownames = FALSE,
+      editable = FALSE,
+      selection = "none",
+      options = list(
+        dom = "t",
+        paging = FALSE,
+        ordering = FALSE,
+        searching = FALSE,
+        info = FALSE,
+        autoWidth = FALSE,
+        scrollX = TRUE,
+        columnDefs = list(
+          list(className = "dt-center", targets = "_all")
+        )
+      )
+    )
   } else {
-    temp <- data.frame(c("Added equations will be shown here"))
-    temp <- transpose(temp)
-    colnames(temp) <- c("Equations")
-    hot <- rhandsontable(temp,
-                         overflow = "visible",
-                         stretchH = "all",
-                         readOnly = TRUE,
-                         rowHeaders = NULL,
-                         height = 200
-    ) %>%
-      hot_cols(manualColumnMove = FALSE,
-               manualColumnResize = FALSE,
-               halign = "htCenter",
-               valign = "htMiddle")
+    temp <- data.frame(Equations = c("Added equations will be shown here"))
+    datatable(
+      temp,
+      rownames = FALSE,
+      editable = FALSE,
+      selection = "none",
+      options = list(
+        dom = "t",
+        paging = FALSE,
+        ordering = FALSE,
+        searching = FALSE,
+        info = FALSE,
+        autoWidth = FALSE,
+        scrollX = TRUE,
+        columnDefs = list(
+          list(className = "dt-center", targets = "_all")
+        )
+      )
+    )
   }
-  
-  
-  hot
 })
 
 # Build Mathjax Expression

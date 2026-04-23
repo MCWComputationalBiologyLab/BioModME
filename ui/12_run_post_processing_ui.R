@@ -7,6 +7,6 @@ TAB_run_post_processing <- tabItem(tabName = "TAB_run_post_processing",
                                    ,"However, a custom option is provided it you are truly daring"
 
                                    ,hr()
-                                   ,rHandsontableOutput("pp_data_table")
+                                   ,DTOutput("pp_data_table")
                                    
 )

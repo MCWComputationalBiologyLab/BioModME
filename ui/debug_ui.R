@@ -54,7 +54,7 @@ TAB_DEBUG <-
         ),
         conditionalPanel(
           condition = "input.debug_text_or_table == 'Table'",
-          rHandsontableOutput("debug_table_view")
+          DTOutput("debug_table_view")
         )
         
       )
