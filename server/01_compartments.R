@@ -3,7 +3,7 @@
 
 
 # Table Render -----------------------------------------------------------------
-output$createVar_compartment_table <- renderRHandsontable({
+output$createVar_compartment_table <- renderDT({
   req(nrow(rv.COMPARTMENTS$compartments.df) > 0)
 
   # This value changes to rerender table in instances that R messes it up
@@ -16,49 +16,49 @@ output$createVar_compartment_table <- renderRHandsontable({
   colnames(for.table) <- c("Name", "Volume", "Value", "Unit", "Description")
   
 
-  rhandsontable(for.table,
-                rowHeaders = NULL,
-                overflow = "visible",
-                selectCallback = TRUE,
-                colHeaderWidth = 100,
-                stretchH = "all",
-                fillHandle = FALSE
-  ) %>%
-    hot_cols(
-      colWidth = c(30, 30, 20, 20, 40),
-      manualColumnMove = FALSE,
-      manualColumnResize = TRUE,
-      halign = "htCenter",
-      valign = "htMiddle",
-      renderer = "
-         function (instance, td, row, col, prop, value, cellProperties) {
-           Handsontable.renderers.NumericRenderer.apply(this, arguments);
-           if (row % 2 == 0) {
-            td.style.background = '#f9f9f9';
-           } else {
-            td.style.background = 'white';
-           };
-         }") %>%
-    #hot_col("Variable Name", readOnly = TRUE) %>%
-    hot_rows(rowHeights = 30) %>%
-    hot_context_menu(allowRowEdit = FALSE,
-                     allowColEdit = FALSE
+  datatable(
+    for.table,
+    rownames = FALSE,
+    editable = "cell",
+    selection = list(mode = "single", target = "cell"),
+    callback = DT::JS(
+      "table.on('draw.dt', function(){",
+      "  $(table.table().header()).find('th').css('text-align', 'center');",
+      "});"
+    ),
+    options = list(
+      dom = "t",
+      paging = FALSE,
+      ordering = FALSE,
+      searching = FALSE,
+      info = FALSE,
+      scrollX = FALSE,
+      autoWidth = FALSE,
+      columnDefs = list(
+        list(className = "dt-center", targets = "_all"),
+        list(width = "16%", targets = 0),
+        list(width = "16%", targets = 1),
+        list(width = "16%", targets = 2),
+        list(width = "16%", targets = 3),
+        list(width = "36%", targets = 4)
+      )
     )
+  )
 })
 
-# Rhandsontable: Cell Change ---------------------------------------------------
-observeEvent(input$createVar_compartment_table$changes$changes, {
-  # browser()
-  xi  = input$createVar_compartment_table$changes$changes[[1]][[1]]
-  yi  = input$createVar_compartment_table$changes$changes[[1]][[2]]
-  old = input$createVar_compartment_table$changes$changes[[1]][[3]]
-  new = input$createVar_compartment_table$changes$changes[[1]][[4]]
+# DT: Cell Change --------------------------------------------------------------
+observeEvent(input$createVar_compartment_table_cell_edit, {
+  info <- input$createVar_compartment_table_cell_edit
+  xi <- as.integer(info$row) - 1
+  yi <- as.integer(info$col)
   
   # Find which variable is being changed
   # Set up dataframe for table
   for.table <- rv.COMPARTMENTS$compartments.df %>%
     select("Name", "Volume", "Value", "Unit", "Description")
-  comp.name <- as.character(for.table[xi+1, 1])
+  old <- for.table[xi + 1, yi + 1, drop = TRUE]
+  new <- DT::coerceValue(info$value, old)
+  comp.name <- as.character(for.table[xi + 1, 1])
   comp.id   <- FindId(comp.name)
   if (yi == 0) {
     

@@ -1282,7 +1282,7 @@ observeEvent(input$modal_delete_io_button, {
   
 })
 
-output$deleteIO_table_viewer <- renderRHandsontable({
+output$deleteIO_table_viewer <- renderDT({
   
   io.num <- as.numeric(input$PI_delete_select_io)
   myindex = io.num - 1
@@ -1303,18 +1303,30 @@ output$deleteIO_table_viewer <- renderRHandsontable({
                          "Parameters")
   
 
-  rhandsontable(to.show,
-                myindex = myindex) %>%
-    hot_cols(renderer = 
-               "function(instance, td, row, col, prop, value, cellProperties) {
-       Handsontable.renderers.TextRenderer.apply(this, arguments);
-       if (instance.params) {
-       mhrows = instance.params.myindex;
-       mhrows = mhrows instanceof Array ? mhrows : [mhrows];
-       }
-       if (instance.params && mhrows.includes(row)) td.style.background = '#FFCCCB';
-      }"
+  datatable(
+    to.show,
+    rownames = FALSE,
+    editable = FALSE,
+    selection = "none",
+    callback = DT::JS(
+      sprintf(
+        "table.on('draw.dt', function(){\n  var idx = %d;\n  table.rows().every(function(i){\n    if (i === idx) { $(this.node()).css('background-color', '#FFCCCB'); }\n  });\n});",
+        myindex
+      )
+    ),
+    options = list(
+      dom = "t",
+      paging = FALSE,
+      ordering = FALSE,
+      searching = FALSE,
+      info = FALSE,
+      scrollX = FALSE,
+      autoWidth = FALSE,
+      columnDefs = list(
+        list(className = "dt-center", targets = "_all")
+      )
     )
+  )
 })
 
 
@@ -1333,17 +1345,29 @@ output$CIO_IO_Logs <- renderText({
 })
 
 # Table Render: IO -------------------------------------------------------------
-output$createModel_IO_logs_table <- renderRHandsontable(
+output$createModel_IO_logs_table <- renderDT(
   
   if (length(rv.IO$IO.df) == 0) {
     temp <- data.frame(c("Logs for Input/Output will appear here."))
     temp <- transpose(temp)
     colnames(temp) <- c("Instructions")
-    rhandsontable(temp,
-                  rowHeaders = NULL,
-                  colHeaderWidth = 100,
-                  stretchH = "all",
-                  readOnly = TRUE
+    datatable(
+      temp,
+      rownames = FALSE,
+      editable = FALSE,
+      selection = "none",
+      options = list(
+        dom = "t",
+        paging = FALSE,
+        ordering = FALSE,
+        searching = FALSE,
+        info = FALSE,
+        scrollX = FALSE,
+        autoWidth = FALSE,
+        columnDefs = list(
+          list(className = "dt-center", targets = "_all")
+        )
+      )
     )
   } else {
     to.show <- rv.IO$IO.df %>%
@@ -1361,29 +1385,28 @@ output$createModel_IO_logs_table <- renderRHandsontable(
                            "Species In",
                            "Parameters")
     
-    rhandsontable(to.show, 
-                  width = "100%",
-                  readOnly = TRUE,
-                  stretchH = "all",
-                  fillHandle = FALSE) %>%
-      hot_cols(
-        manualColumnMove = FALSE,
-        manualColumnResize = TRUE,
-        halign = "htCenter",
-        valign = "htMiddle",
-        renderer = "
-           function (instance, td, row, col, prop, value, cellProperties) {
-             Handsontable.renderers.NumericRenderer.apply(this, arguments);
-             if (row % 2 == 0) {
-              td.style.background = '#f9f9f9';
-             } else {
-              td.style.background = 'white';
-             };
-           }"
-      ) %>%
-      hot_context_menu(
-        allowRowEdit = FALSE,
-        allowColEdit = FALSE
+    datatable(
+      to.show,
+      rownames = FALSE,
+      editable = FALSE,
+      selection = "none",
+      callback = DT::JS(
+        "table.on('draw.dt', function(){",
+        "  $(table.table().header()).find('th').css('text-align', 'center');",
+        "});"
+      ),
+      options = list(
+        dom = "t",
+        paging = FALSE,
+        ordering = FALSE,
+        searching = FALSE,
+        info = FALSE,
+        scrollX = FALSE,
+        autoWidth = FALSE,
+        columnDefs = list(
+          list(className = "dt-center", targets = "_all")
+        )
       )
+    )
   }
 )

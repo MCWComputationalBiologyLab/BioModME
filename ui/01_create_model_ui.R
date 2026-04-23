@@ -76,7 +76,7 @@ TAB_VAR_CREATE <-
             title = "Compartments",
             collapsible = TRUE,
             
-              rHandsontableOutput("createVar_compartment_table"),
+              DTOutput("createVar_compartment_table"),
               # fluidRow(
               #   column(
               #     offset = 9,
@@ -252,12 +252,16 @@ TAB_VAR_CREATE <-
               column(
                 width = 12,
                 div(
-                  rHandsontableOutput(outputId = "main_eqns_table"),
+                  DTOutput(outputId = "main_eqns_table"),
                   ## Eqn Display -----------------------------------------------
                   br(),
                   fluidRow(
                     column(
                       width = 12,
+                      actionButton(
+                        inputId = "eqns_edit_open_modal",
+                        label = "Edit"
+                      ),
                       actionButton(
                         inputId = "eqns_add_open_modal",
                         label = "Add"
@@ -315,7 +319,7 @@ TAB_VAR_CREATE <-
             fluidRow(
               column(
                 width = 12, 
-                rHandsontableOutput("createModel_IO_logs_table")
+                DTOutput("createModel_IO_logs_table")
               )
             ),
             br(),
@@ -392,7 +396,7 @@ TAB_VAR_CREATE <-
               column(
                 width = 12,
                 div(
-                  rHandsontableOutput("parameters_DT")
+                  DTOutput("parameters_DT")
                 )
               )
             )

@@ -30,7 +30,7 @@ observeEvent(input$parameters_filter_type, {
 }) 
 
 # Parameter Table RHandsontable ------------------------------------------------
-output$parameters_DT <- renderRHandsontable({
+output$parameters_DT <- renderDT({
   req(length(rv.PARAMETERS$parameters) > 0)
   
   # Override storage used to rerender table when table edits are rejected.
@@ -50,42 +50,40 @@ output$parameters_DT <- renderRHandsontable({
   for.table <- for.table %>%
     select("Name", "Value", "Unit", "Description")
   
-  # rhandsontable(for.table)
-  rhandsontable(for.table,
-                #rowHeaders = NULL,
-                colHeaderWidth = 100,
-                stretchH = "all"
-                #overflow = "visible"
-  ) %>%
-    hot_cols(colWidth = c(30, 15, 15, 90),
-      manualColumnMove = FALSE,
-      manualColumnResize = TRUE,
-      halign = "htCenter",
-      valign = "htMiddle",
-      renderer = "
-           function (instance, td, row, col, prop, value, cellProperties) {
-             Handsontable.renderers.NumericRenderer.apply(this, arguments);
-             if (row % 2 == 0) {
-              td.style.background = '#f9f9f9';
-             } else {
-              td.style.background = 'white';
-             };
-           }") %>%
-    #hot_col("Parameter", readOnly = TRUE) %>%
-    #hot_col("Description", halign = "htLeft", valign = "htMiddle") %>%
-    hot_rows(rowHeights = 30) %>%
-    hot_context_menu(allowRowEdit = FALSE,
-                     allowColEdit = FALSE
-    ) %>%
-    hot_validate_numeric(col = 2, min = 0)
+  datatable(
+    for.table,
+    rownames = FALSE,
+    editable = "cell",
+    selection = list(mode = "single", target = "cell"),
+    callback = DT::JS(
+      "table.on('draw.dt', function(){",
+      "  $(table.table().header()).find('th').css('text-align', 'center');",
+      "});"
+    ),
+    options = list(
+      dom = "t",
+      paging = FALSE,
+      ordering = FALSE,
+      searching = FALSE,
+      info = FALSE,
+      scrollX = FALSE,
+      autoWidth = FALSE,
+      columnDefs = list(
+        list(className = "dt-center", targets = "_all"),
+        list(width = "22%", targets = 0),
+        list(width = "18%", targets = 1),
+        list(width = "18%", targets = 2),
+        list(width = "42%", targets = 3)
+      )
+    )
+  )
 })
 
 # Event: Parameter table value changes -----------------------------------------
-observeEvent(input$parameters_DT$changes$changes, {
-  xi  = input$parameters_DT$changes$changes[[1]][[1]]
-  yi  = input$parameters_DT$changes$changes[[1]][[2]]
-  old = input$parameters_DT$changes$changes[[1]][[3]]
-  new = input$parameters_DT$changes$changes[[1]][[4]]
+observeEvent(input$parameters_DT_cell_edit, {
+  info <- input$parameters_DT_cell_edit
+  xi <- as.integer(info$row) - 1
+  yi <- as.integer(info$col)
 
   # Find parameter name that was changed
   
@@ -103,8 +101,10 @@ observeEvent(input$parameters_DT$changes$changes, {
   
   plotted.table <- plotted.table %>%
     select("Name", "Value", "Unit", "Description")
+  old <- plotted.table[xi + 1, yi + 1, drop = TRUE]
+  new <- DT::coerceValue(info$value, old)
   
-  par.name <- unname(unlist(plotted.table[xi+1, 1]))
+  par.name <- unname(unlist(plotted.table[xi + 1, 1]))
   par.id   <- FindId(par.name)
   
   if (yi == 0) {

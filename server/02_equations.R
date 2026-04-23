@@ -2138,7 +2138,7 @@ observeEvent(input$eqnCreate_addEqnToVector, {
 
 
 # Equation Main Table Render ---------------------------------------------------
-output$main_eqns_table <- renderRHandsontable({
+output$main_eqns_table <- renderDT({
   override <- rv.REFRESH$refresh.eqn.table
   df <- as_tibble(do.call(rbind, rv.REACTIONS$reactions))
   # df <- bind_rows(rv.REACTIONS$reactions)
@@ -2148,29 +2148,23 @@ output$main_eqns_table <- renderRHandsontable({
                        to compartment."))
     temp <- transpose(temp)
     colnames(temp) <- c("Instructions")
-    rhandsontable(temp,
-                  rowHeaders = NULL,
-                  overflow = "visible",
-                  colHeaderWidth = 100,
-                  stretchH = "all",
-                  readOnly = TRUE
-    ) %>%
-      hot_cols(manualColumnMove = FALSE,
-               manualColumnResize = FALSE,
-               halign = "htCenter",
-               valign = "htMiddle",
-               renderer = "
-         function (instance, td, row, col, prop, value, cellProperties) {
-           Handsontable.renderers.NumericRenderer.apply(this, arguments);
-           if (row % 2 == 0) {
-            td.style.background = '#f9f9f9';
-           } else {
-            td.style.background = 'white';
-           };
-         }") %>%
-      hot_rows(rowHeights = 30) %>%
-      hot_context_menu(allowRowEdit = FALSE,
-                       allowColEdit = FALSE
+    datatable(
+      temp,
+      rownames = FALSE,
+      editable = FALSE,
+      selection = "none",
+      options = list(
+        dom = "t",
+        paging = FALSE,
+        ordering = FALSE,
+        searching = FALSE,
+        info = FALSE,
+        scrollX = FALSE,
+        autoWidth = FALSE,
+        columnDefs = list(
+          list(className = "dt-center", targets = "_all")
+        )
+      )
       )
     } else {
     df.to.show <- select(df,
@@ -2183,127 +2177,28 @@ output$main_eqns_table <- renderRHandsontable({
                               "Type", 
                               "Compartment")
     
-    hot <- rhandsontable(df.to.show,
-                  overflow = "visible",
-                  readOnly = TRUE,
-                  selectCallback = TRUE,
-                  colHeaderWidth = 100,
-                  stretchH = "all",
-                  fillHandle = FALSE
-    ) %>%
-      hot_cols(
-        colWidth = c(60, 20, 20, 20),
-        manualColumnMove = FALSE,
-        manualColumnResize = TRUE,
-        halign = "htCenter",
-        valign = "htMiddle",
-        renderer = "
-           function (instance, td, row, col, prop, value, cellProperties) {
-             Handsontable.renderers.NumericRenderer.apply(this, arguments);
-             if (row % 2 == 0) {
-              td.style.background = '#f9f9f9';
-              td.style.color = 'black';
-             } else {
-              td.style.background = 'white';
-              td.style.color = 'black';
-             };
-           }") %>%
-      #hot_col("Variable Name", readOnly = TRUE) %>%
-      hot_rows(rowHeights = 30) %>%
-      hot_context_menu(
-        allowRowEdit = FALSE,
-        allowColEdit = FALSE
-      )
-    csv = list(
-      name = "Download",
-      callback  = htmlwidgets::JS(
-        "function (key, options) {
-           var csv = csvString(this, sep=',', dec='.');
-           var link = document.createElement('a');
-           link.setAttribute('href', 'data:text/plain;charset=utf-8,' +
-             encodeURIComponent(csv));
-           link.setAttribute('download', 'equations.csv');
-           document.body.appendChild(link);
-           link.click();
-           document.body.removeChild(link);
-         }"
+    datatable(
+      df.to.show,
+      rownames = FALSE,
+      editable = FALSE,
+      selection = list(mode = "single", target = "row"),
+      options = list(
+        dom = "t",
+        paging = FALSE,
+        ordering = FALSE,
+        searching = FALSE,
+        info = FALSE,
+        scrollX = FALSE,
+        autoWidth = FALSE,
+        columnDefs = list(
+          list(className = "dt-center", targets = "_all"),
+          list(width = "64%", targets = 0),
+          list(width = "18%", targets = 1),
+          list(width = "18%", targets = 2)
+        )
       )
     )
-    
-    # context menu callback has 3 inputs, key, selection, clickevent
-    eqnEdit = list(
-      name = "Edit",
-      callback = htmlwidgets::JS(
-        "function(key, options) {
-                Shiny.setInputValue('edit_equation_menu_item', options);
-              }"
-      )
-    )
-    
-    eqnAdd = list(
-      name = "Add",
-      callback = htmlwidgets::JS(
-        "function(key, options) {
-                Shiny.setInputValue('add_equation_menu_item', options);
-              }"
-      )
-    )
-    
-    eqnDel = list(
-      name = "Delete",
-      callback = htmlwidgets::JS(
-        "function(key, options) {
-                Shiny.setInputValue('delete_equation_menu_item', options);
-              }"
-      )
-    )
-    
-    hot$x$contextMenu <- list(items = list(eqnAdd, 
-                                           eqnEdit,
-                                           eqnDel,
-                                           csv))
-    hot
   }
-})
-
-observeEvent(input$add_equation_menu_item, {
-  toggleModal(
-    session = session,
-    modalId = "modal_create_equations",
-    toggle = "open"
-  )
-})
-
-observeEvent(input$delete_equation_menu_item, {
-  toggleModal(
-    session = session,
-    modalId = "modal_delete_equations",
-    toggle = "open"
-  )
-})
-
-observeEvent(input$edit_equation_menu_item, {
-
-  start.row <- input$edit_equation_menu_item[[1]]
-  start.col <- input$edit_equation_menu_item[[2]]
-  end.row   <- input$edit_equation_menu_item[[3]]
-  end.col   <- input$edit_equation_menu_item[[4]]
-  
-  # Update equation number with row from edit
-  updatePickerInput(
-    session = session, 
-    inputId = "eqnCreate_edit_select_equation",
-    selected = as.character(start.row+1)
-  )
-  
-  # Open Edit Equation Modal
-  toggleModal(
-    session = session,
-    modalId = "modal_edit_equations",
-    toggle = "open"
-  )
-  
-  
 })
 
 # Rate Equation Store Parameter/Time Dependent ---------------------------------

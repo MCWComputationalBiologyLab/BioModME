@@ -24,7 +24,7 @@ shinyBS::bsModal(
         fluidRow(
           column(
             width = 12,
-            rHandsontableOutput("deleteIO_table_viewer")
+            DTOutput("deleteIO_table_viewer")
           )
         )
       )
