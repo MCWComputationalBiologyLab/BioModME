@@ -28,12 +28,13 @@ TAB_CREATE_CUSTOM_EQN <-
             column(
               width = 6,
               "Existing Variables",
-              rHandsontableOutput("RHT_custom_eqn_params_existing")
+              DTOutput("RHT_custom_eqn_params_existing")
             ),
             column(
               width = 6,
               "New Variables",
-              rHandsontableOutput("RHT_custom_eqn_params_new"),
+              DTOutput("RHT_custom_eqn_params_new"),
+              uiOutput("CE_new_type_editor")
             )
           ),
           hr(),

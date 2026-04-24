@@ -9,7 +9,6 @@ library(shinyjs)
 library(DT)
 library(tidyverse)
 library(dplyr)
-library(rhandsontable)
 library(data.table)
 library(ggpmisc)
 library(colourpicker)
@@ -34,7 +33,6 @@ library(katex)
 library(reshape2)
 library(clipr)
 library(mathml)
-library(reactable)
 
 
 UNIT_MAPPING <- c(

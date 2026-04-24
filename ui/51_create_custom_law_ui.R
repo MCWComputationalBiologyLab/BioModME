@@ -50,8 +50,9 @@ TAB_CREATE_CUSTOM_LAW <-
               )
             ),
             column(
-              width = 9, 
-              rHandsontableOutput("TO_CC_parameter_table")
+              width = 9,
+              DTOutput("TO_CC_parameter_table"),
+              uiOutput("TO_CC_type_editor")
             )
           ),
           hr(),

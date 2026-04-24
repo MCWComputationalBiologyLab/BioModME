@@ -55,7 +55,7 @@ TAB_PARAMETER_ESTIMATION <-
         column(
           width = 8,
           offset = 1,
-          rHandsontableOutput(
+          DTOutput(
             outputId = "pe_parameter_value_table"
           )
         )

@@ -195,77 +195,100 @@ observeEvent(input$pe_select_par, {
   }
 })
 
-# Generate Rhandsontable for parameters to estimate ----------------------------
-output$pe_parameter_value_table <- renderRHandsontable({
-  print("PE table gen")
-  # Make first column uneditable
-  # Make second column needs to be numeric between certain values
-  # Bound columns need to be same as last with Infs
-  # Make Calculated Column uneditable
-  
-  # Create df from parameter estimation (pe) RV
-  df <- data.frame(rv.PAR.ESTIMATION$pe.parameters,
-                   rv.PAR.ESTIMATION$pe.initial.guess,
-                   rv.PAR.ESTIMATION$pe.lb,
-                   rv.PAR.ESTIMATION$pe.ub,
-                   rv.PAR.ESTIMATION$pe.calculated.values)
-  colnames(df) <- c("Parameters", 
+# DT render for parameters-to-estimate -----------------------------------------
+output$pe_parameter_value_table <- renderDT({
+  # Touch refresh counter so rejected edits can force a re-render.
+  override <- rv.REFRESH$refresh.pe.table
+
+  df <- data.frame(
+    rv.PAR.ESTIMATION$pe.parameters,
+    rv.PAR.ESTIMATION$pe.initial.guess,
+    rv.PAR.ESTIMATION$pe.lb,
+    rv.PAR.ESTIMATION$pe.ub,
+    rv.PAR.ESTIMATION$pe.calculated.values,
+    stringsAsFactors = FALSE
+  )
+  colnames(df) <- c("Parameters",
                     "Initial Guess",
                     "Lower Bound",
-                    "Upper Bound", 
+                    "Upper Bound",
                     "Calculated")
-  
-  rhandsontable(df) %>%
-    hot_col(col = c(1, 5), readOnly = TRUE) %>%
-    hot_validate_numeric(cols = 2, min = 0) %>%
-    hot_validate_numeric(cols = c(3,4))
-})
 
-# Edit and save changed to pe parameter value table (rhandontable) -------------
-observeEvent(input$pe_parameter_value_table$changes$changes, {
+  datatable(
+    df,
+    rownames = FALSE,
+    # Columns 0 (Parameters) and 4 (Calculated) are readonly.
+    editable = list(target = "cell", disable = list(columns = c(0, 4))),
+    selection = "none",
+    class = "cell-border stripe",
+    options = list(
+      dom = "t",
+      paging = FALSE,
+      ordering = FALSE,
+      searching = FALSE,
+      info = FALSE,
+      language = list(
+        zeroRecords = "Select parameters above to estimate.",
+        emptyTable  = "Select parameters above to estimate."
+      )
+    )
+  )
+}, server = FALSE)
 
-  # xi, yi are table coordinates (remember js starts at 0, so we add 1 for R)
-  # xi is 
-  # old, new are the old value in that cell and the new value in the cell
-  xi  <- input$pe_parameter_value_table$changes$changes[[1]][[1]] + 1
-  yi  <- input$pe_parameter_value_table$changes$changes[[1]][[2]] + 1
-  old <- input$pe_parameter_value_table$changes$changes[[1]][[3]]
-  new <- input$pe_parameter_value_table$changes$changes[[1]][[4]] 
+# Consume edits and validate per column ----------------------------------------
+observeEvent(input$pe_parameter_value_table_cell_edit, {
+  info <- input$pe_parameter_value_table_cell_edit
+  xi   <- as.integer(info$row)      # DT gives 1-based row
+  yi   <- as.integer(info$col)      # 0-based column (rownames = FALSE)
+  raw  <- info$value
 
-  # Change effect based on which row is changed (remember js starts at 0)
-  
-  if (yi == 2) {
-    # Store initial guess
-    rv.PAR.ESTIMATION$pe.initial.guess[xi] <- new
+  # Readonly columns should never fire edits, but guard anyway.
+  if (yi == 0 || yi == 4) {
+    rv.REFRESH$refresh.pe.table <- rv.REFRESH$refresh.pe.table + 1
+    return(NULL)
+  }
+
+  # Parse the incoming value. All three editable columns are numeric; Inf/-Inf
+  # are valid for bounds (cols 2, 3) but not for the initial guess (col 1).
+  parsed <- suppressWarnings(as.numeric(raw))
+
+  reject <- function(msg) {
+    sendSweetAlert(
+      session = session,
+      title   = "Invalid value",
+      text    = msg,
+      type    = "warning"
+    )
+    rv.REFRESH$refresh.pe.table <- rv.REFRESH$refresh.pe.table + 1
+  }
+
+  if (is.na(parsed)) {
+    reject("Enter a numeric value.")
+    return(NULL)
+  }
+
+  if (yi == 1) {
+    # Initial Guess: must be finite and non-negative.
+    if (!is.finite(parsed) || parsed < 0) {
+      reject("Initial guess must be a non-negative number.")
+      return(NULL)
+    }
+    rv.PAR.ESTIMATION$pe.initial.guess[xi] <- parsed
+  } else if (yi == 2) {
+    # Lower Bound: any numeric, Inf allowed.
+    rv.PAR.ESTIMATION$pe.lb[xi] <- parsed
   } else if (yi == 3) {
-    # Store lower bound
-    rv.PAR.ESTIMATION$pe.lb[xi] <- new
-    # if (is.numeric(new)) {
-    #   if (new == "-Inf" | new == "Inf") {new = -Inf}
-    #   rv.PAR.ESTIMATION$pe.lb[xi] <- new
-    # } else {
-    #   rv.PAR.ESTIMATION$pe.lb[xi] <- old
-    # }
-    
-  } else if (yi == 4) {
-    # Store upper bound 
-    rv.PAR.ESTIMATION$pe.ub[xi] <- new
-    # if (is.numeric(new)) {
-    #   rv.PAR.ESTIMATION$pe.ub[xi] <- new 
-    # } else {
-    #   rv.PAR.ESTIMATION$pe.ub[xi] <- old
-    # }
+    # Upper Bound: any numeric, Inf allowed.
+    rv.PAR.ESTIMATION$pe.ub[xi] <- parsed
   }
 })
 
-# Turn on/off rhandsontable ----------------------------------------------------
+# Show/hide parameter table based on whether anything is selected -------------
 observe({
   n <- length(input$pe_select_par)
   if (n == 0) {
-    # hide table
     shinyjs::hide("pe_parameter_value_table")
   } else {
-    # show table
     shinyjs::show("pe_parameter_value_table")
   }
 })

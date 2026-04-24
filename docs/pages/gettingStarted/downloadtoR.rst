@@ -62,7 +62,7 @@ these repositories, you can run the following:
 
     # Vector of package names to install
     load.lib <- c("shinydashboard", "bs4Dash", "shiny", "ggplot2", "gridExtra","shinythemes",
-                "shinyWidgets", "shinyjs", "DT", "tidyverse", "dplyr", "rhandsontable", "data.table",
+                "shinyWidgets", "shinyjs", "DT", "tidyverse", "dplyr", "data.table",
                 "ggpmisc", "colourpicker", "shinyBS", "shinyjqui", "bsplus", "deSolve", "plotly",
                 "Deriv", "viridis", "ggpubr", "shinycssloaders", "waiter", "fresh", "readxl",
                 "minpack.lm", "measurements", "qdapRegex")

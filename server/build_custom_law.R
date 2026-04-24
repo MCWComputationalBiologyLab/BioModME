@@ -73,8 +73,8 @@ observeEvent(input$bttn_store_custom_reaction, {
   # VALID - STORE AND PROCESS LAW
   if (valid.custom.law) {
     
-    # Grab Parameters For Law From RhandsonTable
-    par.table <- hot_to_r(input$TO_CC_parameter_table)
+    # Grab Parameters For Law from the DT shadow reactive
+    par.table  <- rv.CL.BUILDER$param.df
     parameters <- par.table %>% pull(Variables)
     par.type   <- par.table %>% pull(Type)
     
@@ -260,57 +260,133 @@ observeEvent(input$bttn_store_custom_reaction, {
   }
 })
 
-# Table render for custom equation build showing parameters
-output$TO_CC_parameter_table <- renderRHandsontable({
-  
-  # Grab variables for reactants, products, modifiers
-  reactants <- trimws(strsplit(input$PI_CC_reactants, ",")[[1]], which = "both")
-  products  <- trimws(strsplit(input$PI_CC_products,  ",")[[1]], which = "both")
-  modifiers <- trimws(strsplit(input$PI_CC_modifiers, ",")[[1]], which = "both")
-  
+CC_TYPE_OPTIONS <- c("Parameter", "Volume", "Time")
+
+# Derive the current list of parameter variables from the reactants / products
+# / modifiers and the entered rate law. Kept as a reactive so both the shadow
+# updater and the picker renderer can share the same source.
+TO_CC_parameter_vars <- reactive({
+  safe <- function(x) if (is.null(x)) "" else x
+  reactants <- trimws(strsplit(safe(input$PI_CC_reactants), ",")[[1]])
+  products  <- trimws(strsplit(safe(input$PI_CC_products),  ",")[[1]])
+  modifiers <- trimws(strsplit(safe(input$PI_CC_modifiers), ",")[[1]])
   species.var <- c(reactants, products, modifiers)
-  
-  a <- parse_string_expression(input$TI_CC_enter_rate_law)
-  
+
+  a <- parse_string_expression(safe(input$TI_CC_enter_rate_law))
   valid <- a$valid.terms
-  
-  # # Remove species from valid Terms
-  Variables <- valid[!valid %in% species.var]
-  type.options <- c("Parameter", "Volume", "Time")
-  
-  Type <- rep("Parameter", length(Variables))
-  # Type <- factor(rep(par.types[1], length(Variables)), levels = par.types)
-  if (isTruthy(Variables)) {
-    df.to.show <- data.frame(Variables,
-                             Type
-    ) 
-    colnames(df.to.show) <- c("Variables", "Type")
-    hot <- rhandsontable(df.to.show,
-                         height = 200,
-                         stretchH = "all",
-                         overflow = "visible"
-    ) %>%
-      hot_col(col = "Type", type = "dropdown", source = type.options) %>%
-      hot_col(col = "Variables", readOnly = TRUE)
-    
-  } else {
-    temp <- data.frame(c("Parameters will be extracted from above rate 
-                         law here"))
-    temp <- transpose(temp)
-    colnames(temp) <- c("Reaction Parameters")
-    hot <- rhandsontable(temp,
-                         overflow = "visible",
-                         stretchH = "all",
-                         readOnly = TRUE,
-                         rowHeaders = NULL,
-                         height = 200
-    ) %>%
-      hot_cols(manualColumnMove = FALSE,
-               manualColumnResize = FALSE,
-               halign = "htCenter",
-               valign = "htMiddle")
-  }
-  
-  hot
-  
+
+  vars <- valid[!valid %in% species.var]
+  vars[nzchar(vars)]
 })
+
+# Treat an empty or NULL selection uniformly as NULL.
+normalize_sel <- function(sel) {
+  if (is.null(sel) || length(sel) == 0) return(NULL)
+  as.integer(sel[1])
+}
+
+# Keep rv.CL.BUILDER$param.df in sync with the derived Variables. User-selected
+# Types are preserved for variables that still exist; new variables default to
+# "Parameter".
+observe({
+  vars <- TO_CC_parameter_vars()
+  prev <- isolate(rv.CL.BUILDER$param.df)
+
+  if (length(vars) == 0) {
+    rv.CL.BUILDER$param.df <- data.frame(
+      Variables = character(),
+      Type      = character(),
+      stringsAsFactors = FALSE
+    )
+    rv.CL.BUILDER$selected.row <- NULL
+    return()
+  }
+
+  carried.types <- prev$Type[match(vars, prev$Variables)]
+  carried.types[is.na(carried.types)] <- "Parameter"
+
+  rv.CL.BUILDER$param.df <- data.frame(
+    Variables = vars,
+    Type      = carried.types,
+    stringsAsFactors = FALSE
+  )
+
+  # Clear selection if the previously-selected row is gone.
+  sel <- normalize_sel(isolate(rv.CL.BUILDER$selected.row))
+  if (!is.null(sel) && sel > nrow(rv.CL.BUILDER$param.df)) {
+    rv.CL.BUILDER$selected.row <- NULL
+  }
+})
+
+# DT render of the parameter table (Type is display-only here; edited via
+# the picker below when a row is selected).
+output$TO_CC_parameter_table <- renderDT({
+  df <- rv.CL.BUILDER$param.df
+
+  if (is.null(df) || nrow(df) == 0) {
+    placeholder <- data.frame(
+      "Reaction Parameters" = "Parameters will be extracted from above rate law here.",
+      check.names = FALSE,
+      stringsAsFactors = FALSE
+    )
+    return(datatable(
+      placeholder,
+      rownames = FALSE,
+      selection = "none",
+      options = list(
+        dom = "t",
+        paging = FALSE,
+        ordering = FALSE,
+        searching = FALSE,
+        info = FALSE
+      )
+    ))
+  }
+
+  datatable(
+    df,
+    rownames = FALSE,
+    selection = list(mode = "single", target = "row"),
+    class = "cell-border stripe",
+    options = list(
+      dom = "t",
+      paging = FALSE,
+      ordering = FALSE,
+      searching = FALSE,
+      info = FALSE
+    )
+  )
+}, server = FALSE)
+
+# Track row selection
+observeEvent(input$TO_CC_parameter_table_rows_selected, {
+  rv.CL.BUILDER$selected.row <- normalize_sel(input$TO_CC_parameter_table_rows_selected)
+}, ignoreNULL = FALSE)
+
+# Render the Type editor (pickerInput) when a row is selected
+output$TO_CC_type_editor <- renderUI({
+  sel <- normalize_sel(rv.CL.BUILDER$selected.row)
+  df  <- rv.CL.BUILDER$param.df
+  if (is.null(sel) || is.null(df) || nrow(df) == 0 || sel > nrow(df)) {
+    return(helpText("Click a row above to change its Type."))
+  }
+  current.var  <- df$Variables[sel]
+  current.type <- df$Type[sel]
+
+  pickerInput(
+    inputId  = "TO_CC_type_picker",
+    label    = paste0("Type for \"", current.var, "\":"),
+    choices  = CC_TYPE_OPTIONS,
+    selected = current.type
+  )
+})
+
+# Apply picker changes back to the shadow data.frame
+observeEvent(input$TO_CC_type_picker, {
+  sel <- normalize_sel(rv.CL.BUILDER$selected.row)
+  if (is.null(sel)) return(NULL)
+  if (sel > nrow(rv.CL.BUILDER$param.df)) return(NULL)
+  new.type <- input$TO_CC_type_picker
+  if (!(new.type %in% CC_TYPE_OPTIONS)) return(NULL)
+  rv.CL.BUILDER$param.df$Type[sel] <- new.type
+}, ignoreInit = TRUE)

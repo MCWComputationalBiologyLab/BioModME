@@ -76,7 +76,7 @@ observeEvent(input$bttn_custom_eqn_enter, {
     eqn.id <- unique.id
     
 # Extract existing variables info ______________________________________________
-    existing.vars <- hot_to_r(input$RHT_custom_eqn_params_existing)
+    existing.vars <- rv.CE.BUILDER$existing.df
     existing.species <- existing.vars %>%
       filter(Type == "Species") %>%
       pull(Variables)
@@ -122,7 +122,7 @@ observeEvent(input$bttn_custom_eqn_enter, {
     }
     
 # Extract new variables info ___________________________________________________
-    new.vars      <- hot_to_r(input$RHT_custom_eqn_params_new)
+    new.vars    <- rv.CE.BUILDER$new.df
     new.species <- new.vars %>%
       filter(Type == "Species") %>%
       pull(Variables)
@@ -251,170 +251,184 @@ observeEvent(input$bttn_custom_eqn_enter, {
 
 })
 
-# Render Parameter Table
-output$RHT_custom_eqn_params_existing <- renderRHandsontable({
-  
-  # Grab Expression Information
-  LHS.var <- RemoveWS(input$TI_custom_eqn_LHS)
-  RHS.exp <- RemoveWS(input$TI_custom_eqn_RHS)
-  
-  # Determine which variables are new or which are already species/parameters
-  
-  # Vars to check with 
-  species.names <- rv.SPECIES$species.names
-  param.names   <- rv.PARAMETERS$parameters.names
-  
-  # Check is LHS.var is valid
-  LHS.valid <- variableCheck(LHS.var, 
-                             species.names, 
-                             param.names, 
-                             TRUE,
-                             TRUE)[[1]]
-  
-  # Extract all variables from expression and find valid terms
-  a <- parse_string_expression(RHS.exp)
-  valid <- a$valid.terms
-  
-  if (LHS.valid) {
-    valid <- c(valid, LHS.var)
-  }
-  
-  # See if valid term in species/param or brand new
-  df <- data.frame(matrix(ncol = 2, nrow = 0))
-  for (term in valid) {
-    exists.already <- FALSE
-    type   <- "Parameter"
-    
-    if (term == "t" || term == "time") {
-      exists.already <- TRUE
-      type <- "Time"
-    }
-    if (term %in% species.names) {
-      exists.already <- TRUE
-      type <- "Species"
-    } else if (term %in% param.names) {
-      exists.already <- TRUE
-      type <- "Parameter"
-    }
-    
-    if (exists.already) {
-      row.to.add <- c(term, type)
-      df[nrow(df) + 1, ] <- row.to.add
-    }
-    
-  }
-  colnames(df) <- c("Variables", "Type")
-  # Build Table
-  if (isTruthy(valid)) {
-    hot <- rhandsontable(df,
-                         stretchH = "all",
-                         overflow = "visible") %>%
-      hot_col(col = "Variables", readOnly = TRUE)
-  } else {
-    temp <- data.frame(c("Variables will be extracted from above expression 
-                         above"))
-    temp <- transpose(temp)
-    colnames(temp) <- c("Equation Variables")
-    hot <- rhandsontable(temp,
-                         overflow = "visible",
-                         stretchH = "all",
-                         readOnly = TRUE,
-                         rowHeaders = NULL,
-                         height = 200
-    ) %>%
-      hot_cols(manualColumnMove = FALSE,
-               manualColumnResize = FALSE,
-               halign = "htCenter",
-               valign = "htMiddle")
-  }
-  
-  hot
-  
-})
+CE_NEW_TYPE_OPTIONS <- c("Parameter", "Species")
 
-# Render Parameter Table
-output$RHT_custom_eqn_params_new <- renderRHandsontable({
-  
-  # Grab Expression Information
-  LHS.var <- RemoveWS(input$TI_custom_eqn_LHS)
-  RHS.exp <- RemoveWS(input$TI_custom_eqn_RHS)
-  
-  # Vars to check with 
+# Treat empty/NULL selection as NULL.
+ce_normalize_sel <- function(sel) {
+  if (is.null(sel) || length(sel) == 0) return(NULL)
+  as.integer(sel[1])
+}
+
+# Derive the partitioned variable set (existing vs. new) from LHS/RHS inputs
+# and keep both shadow data.frames in sync. User-selected Types in the "new"
+# table are preserved across edits for variables that still exist.
+observe({
+  safe <- function(x) if (is.null(x)) "" else x
+  LHS.var <- RemoveWS(safe(input$TI_custom_eqn_LHS))
+  RHS.exp <- RemoveWS(safe(input$TI_custom_eqn_RHS))
+
   species.names <- rv.SPECIES$species.names
   param.names   <- rv.PARAMETERS$parameters.names
-  
-  # Check is LHS.var is valid
-  LHS.valid <- variableCheck(LHS.var, 
-                             species.names, 
-                             param.names, 
+
+  LHS.valid <- variableCheck(LHS.var,
+                             species.names,
+                             param.names,
                              TRUE,
                              TRUE)[[1]]
-  
-  # Extract all variables from expression and find valid terms
+
   a <- parse_string_expression(RHS.exp)
   valid <- a$valid.terms
-  
-  # Merge valid terms
+
   if (LHS.valid) {
     valid <- c(valid, LHS.var)
   }
 
-  # See if valid term in species/param or brand new
-  df <- data.frame(matrix(ncol = 2, nrow = 0))
+  existing.rows <- list()
+  new.vars      <- character(0)
   for (term in valid) {
-    exists.already <- FALSE
-    type   <- "Parameter"
-    
+    if (!nzchar(term)) next
     if (term == "t" || term == "time") {
-      exists.already <- TRUE
-      type <- "Time"
-    }
-    if (term %in% species.names) {
-      exists.already <- TRUE
-      type <- "Species"
+      existing.rows[[length(existing.rows) + 1]] <- c(term, "Time")
+    } else if (term %in% species.names) {
+      existing.rows[[length(existing.rows) + 1]] <- c(term, "Species")
     } else if (term %in% param.names) {
-      exists.already <- TRUE
-      type <- "Parameter"
+      existing.rows[[length(existing.rows) + 1]] <- c(term, "Parameter")
+    } else {
+      new.vars <- c(new.vars, term)
     }
-    
-    if (!exists.already) {
-      row.to.add <- c(term, type)
-      df[nrow(df) + 1, ] <- row.to.add
-    }
-    
   }
-  colnames(df) <- c("Variables", "Type")
-  # Build Table
-  if (isTruthy(valid)) {
-    
-    type.options <- c("Parameter", "Species")
-    
-    hot <- rhandsontable(df,
-                         stretchH = "all",
-                         overflow = "visible") %>%
-      hot_col(col = "Variables", readOnly = TRUE) %>%
-      hot_col(col = "Type", type = "dropdown", source = type.options)
+
+  # Build existing.df (always auto-derived; fully read-only).
+  if (length(existing.rows) == 0) {
+    rv.CE.BUILDER$existing.df <- data.frame(
+      Variables = character(),
+      Type      = character(),
+      stringsAsFactors = FALSE
+    )
   } else {
-    temp <- data.frame(c("Variables will be extracted from above expression 
-                         above"))
-    temp <- transpose(temp)
-    colnames(temp) <- c("Equation Variables")
-    hot <- rhandsontable(temp,
-                         overflow = "visible",
-                         stretchH = "all",
-                         readOnly = TRUE,
-                         rowHeaders = NULL,
-                         height = 200
-    ) %>%
-      hot_cols(manualColumnMove = FALSE,
-               manualColumnResize = FALSE,
-               halign = "htCenter",
-               valign = "htMiddle")
+    m <- do.call(rbind, existing.rows)
+    rv.CE.BUILDER$existing.df <- data.frame(
+      Variables = m[, 1],
+      Type      = m[, 2],
+      stringsAsFactors = FALSE
+    )
   }
-  
-  hot
-  
+
+  # Build new.df, preserving previously-chosen Types for surviving variables.
+  prev.new <- isolate(rv.CE.BUILDER$new.df)
+  if (length(new.vars) == 0) {
+    rv.CE.BUILDER$new.df <- data.frame(
+      Variables = character(),
+      Type      = character(),
+      stringsAsFactors = FALSE
+    )
+    rv.CE.BUILDER$new.selected.row <- NULL
+  } else {
+    carried.types <- prev.new$Type[match(new.vars, prev.new$Variables)]
+    carried.types[is.na(carried.types)] <- "Parameter"
+    rv.CE.BUILDER$new.df <- data.frame(
+      Variables = new.vars,
+      Type      = carried.types,
+      stringsAsFactors = FALSE
+    )
+    sel <- ce_normalize_sel(isolate(rv.CE.BUILDER$new.selected.row))
+    if (!is.null(sel) && sel > nrow(rv.CE.BUILDER$new.df)) {
+      rv.CE.BUILDER$new.selected.row <- NULL
+    }
+  }
 })
+
+# Existing-variables table: read-only display of auto-derived classification.
+output$RHT_custom_eqn_params_existing <- renderDT({
+  df <- rv.CE.BUILDER$existing.df
+
+  if (is.null(df) || nrow(df) == 0) {
+    placeholder <- data.frame(
+      "Equation Variables" = "Variables will be extracted from the expression above.",
+      check.names = FALSE,
+      stringsAsFactors = FALSE
+    )
+    return(datatable(
+      placeholder,
+      rownames = FALSE,
+      selection = "none",
+      options = list(dom = "t", paging = FALSE, ordering = FALSE,
+                     searching = FALSE, info = FALSE)
+    ))
+  }
+
+  datatable(
+    df,
+    rownames = FALSE,
+    selection = "none",
+    class = "cell-border stripe",
+    options = list(dom = "t", paging = FALSE, ordering = FALSE,
+                   searching = FALSE, info = FALSE)
+  )
+}, server = FALSE)
+
+# New-variables table: single-row selection; Type edited via picker below.
+output$RHT_custom_eqn_params_new <- renderDT({
+  df <- rv.CE.BUILDER$new.df
+
+  if (is.null(df) || nrow(df) == 0) {
+    placeholder <- data.frame(
+      "Equation Variables" = "Variables will be extracted from the expression above.",
+      check.names = FALSE,
+      stringsAsFactors = FALSE
+    )
+    return(datatable(
+      placeholder,
+      rownames = FALSE,
+      selection = "none",
+      options = list(dom = "t", paging = FALSE, ordering = FALSE,
+                     searching = FALSE, info = FALSE)
+    ))
+  }
+
+  datatable(
+    df,
+    rownames = FALSE,
+    selection = list(mode = "single", target = "row"),
+    class = "cell-border stripe",
+    options = list(dom = "t", paging = FALSE, ordering = FALSE,
+                   searching = FALSE, info = FALSE)
+  )
+}, server = FALSE)
+
+# Track selected row on the new-variables table.
+observeEvent(input$RHT_custom_eqn_params_new_rows_selected, {
+  rv.CE.BUILDER$new.selected.row <-
+    ce_normalize_sel(input$RHT_custom_eqn_params_new_rows_selected)
+}, ignoreNULL = FALSE)
+
+# Type editor (Parameter/Species picker) shown when a row is selected.
+output$CE_new_type_editor <- renderUI({
+  sel <- ce_normalize_sel(rv.CE.BUILDER$new.selected.row)
+  df  <- rv.CE.BUILDER$new.df
+  if (is.null(sel) || is.null(df) || nrow(df) == 0 || sel > nrow(df)) {
+    return(helpText("Click a row above to change its Type."))
+  }
+  current.var  <- df$Variables[sel]
+  current.type <- df$Type[sel]
+
+  pickerInput(
+    inputId  = "CE_new_type_picker",
+    label    = paste0("Type for \"", current.var, "\":"),
+    choices  = CE_NEW_TYPE_OPTIONS,
+    selected = current.type
+  )
+})
+
+# Apply picker changes back to the shadow data.frame.
+observeEvent(input$CE_new_type_picker, {
+  sel <- ce_normalize_sel(rv.CE.BUILDER$new.selected.row)
+  if (is.null(sel)) return(NULL)
+  if (sel > nrow(rv.CE.BUILDER$new.df)) return(NULL)
+  new.type <- input$CE_new_type_picker
+  if (!(new.type %in% CE_NEW_TYPE_OPTIONS)) return(NULL)
+  rv.CE.BUILDER$new.df$Type[sel] <- new.type
+}, ignoreInit = TRUE)
 
 # Render Table to show current additional equans
 output$RHT_custom_eqn_display_existing <- renderDT({

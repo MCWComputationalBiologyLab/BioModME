@@ -373,11 +373,11 @@ equationMathJaxBuilder <- reactive({
       }
     )
     
-    tryCatch( 
+    tryCatch(
       expr = {
-        par.table <- hot_to_r(input$TO_CC_parameter_table)
+        par.table  <- rv.CL.BUILDER$param.df
         parameters <- par.table %>% pull(Variables)
-      }, 
+      },
       error = function(e) {
         parameters <- ""
       },

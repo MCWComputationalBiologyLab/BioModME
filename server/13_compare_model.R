@@ -30,7 +30,6 @@ build_compare_model_df <- function(selected.vars) {
   # which can make bind_rows drop or nest the Name column.
   params.list <- rv.PARAMETERS$parameters
   if (is.null(params.list) || length(params.list) == 0) {
-    cat("[compare_model] parameters list is empty\n")
     return(empty.df)
   }
 
@@ -43,13 +42,9 @@ build_compare_model_df <- function(selected.vars) {
     if (is.null(v) || length(v) == 0) NA_real_ else suppressWarnings(as.numeric(v)[1])
   }, numeric(1))
 
-  cat("[compare_model] selected.raw = ", paste(selected.raw, collapse = " | "), "\n", sep = "")
-  cat("[compare_model] param.names  = ", paste(param.names,  collapse = " | "), "\n", sep = "")
-
   matched <- intersect(selected.raw, param.names)
 
   if (length(matched) == 0) {
-    cat("[compare_model] no intersection — returning empty df\n")
     return(empty.df)
   }
 
@@ -118,9 +113,6 @@ compareModel <- reactiveValues(
 observeEvent(input$compare_models_select_vars, {
   compareModel$df <- build_compare_model_df(input$compare_models_select_vars)
   compareModel$no.values <- nrow(compareModel$df) == 0
-  cat("[compare_model] observer wrote compareModel$df: nrow=", nrow(compareModel$df),
-      " ncol=", ncol(compareModel$df),
-      " cols=", paste(colnames(compareModel$df), collapse = "|"), "\n", sep = "")
 }, ignoreNULL = FALSE)
 
 #create data table that shows the compared models
@@ -139,10 +131,6 @@ output$compare_models_DT <- renderDT({
     keep.cols <- intersect(c("Variable", model.cols), colnames(src))
     data.to.show <- src[, keep.cols, drop = FALSE]
   }
-
-  cat("[compare_model] renderDT fired. nrow=", nrow(data.to.show),
-      " ncol=", ncol(data.to.show),
-      " num_models=", num.models, "\n", sep = "")
 
   datatable(
     data.to.show,

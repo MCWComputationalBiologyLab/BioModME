@@ -14,8 +14,7 @@
 # rv.LOGS
 # rv.ID
 # rv.COUNTS
-# rv.PAR.ESTIMATION 
-# rv.PLOT.LOOP
+# rv.PAR.ESTIMATION
 # rv.UNITS
 # rv.REFRESH (Refresh table values when error checking)
 
@@ -457,26 +456,6 @@ rv.PAR.ESTIMATION <- reactiveValues(
 )
 
 
-# rv.PLOT.LOOP -----------------------------------------------------------------
-rv.PLOT.LOOP <- reactiveValues(
-  loop.parameters = data.frame(matrix(ncol=3,
-                                 nrow=0,
-                                 dimnames = list(NULL, c("Parameter",
-                                                         "Value",
-                                                         "Description")))),
-  loop.ICs = data.frame(matrix(ncol = 4,
-                          nrow = 0,
-                          dimnames = list(NULL, c("Variable",
-                                                  "Value",
-                                                  "Units",
-                                                  "Description")))),
-  loop.time.start = 0,
-  loop.time.end = 100, 
-  loop.time.step = 1,
-  loop.model.results = data.frame()
-)
-
-
 # rv.UNITS ---------------------------------------------------------------------
 rv.UNITS <- reactiveValues(
   units.types = c("Duration",
@@ -521,7 +500,8 @@ rv.REFRESH <- reactiveValues(
   refresh.compartment.table = 1,
   refresh.species.table = 1,
   refresh.param.table = 1,
-  refresh.eqn.table = 1
+  refresh.eqn.table = 1,
+  refresh.pe.table = 1
 )
 
 rv.REACTIONLAWS <- reactiveValues(
@@ -556,6 +536,37 @@ rv.DEBUG <- reactiveValues(
   variable.debug.button = "compartments"
 )
 
+
+# rv.CL.BUILDER ----------------------------------------------------------------
+# Scratch reactive state for the "Build Custom Law" form. The DT parameter
+# table (Variables + Type) stores its current contents here so downstream
+# handlers can read it without rhandsontable's hot_to_r.
+rv.CL.BUILDER <- reactiveValues(
+  param.df = data.frame(
+    Variables = character(),
+    Type      = character(),
+    stringsAsFactors = FALSE
+  ),
+  selected.row = NULL
+)
+
+# rv.CE.BUILDER ----------------------------------------------------------------
+# Scratch reactive state for the "Create Custom Equation" form. Two DT
+# parameter tables (existing + new) store their contents here so the store
+# button can consume them without rhandsontable's hot_to_r.
+rv.CE.BUILDER <- reactiveValues(
+  existing.df = data.frame(
+    Variables = character(),
+    Type      = character(),
+    stringsAsFactors = FALSE
+  ),
+  new.df = data.frame(
+    Variables = character(),
+    Type      = character(),
+    stringsAsFactors = FALSE
+  ),
+  new.selected.row = NULL
+)
 
 # rv.CUSTOM.LAWS ---------------------------------------------------------------
 rv.CUSTOM.LAWS <- reactiveValues(

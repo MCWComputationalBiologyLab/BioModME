@@ -343,14 +343,7 @@ reset_all_storage_variables <- function() {
   rv.PAR.ESTIMATION$pe.successful.run = FALSE
   rv.PAR.ESTIMATION$pe.previous.values = vector()
   rv.PAR.ESTIMATION$pe.log.of.run = "Parameter Estimation Iterations will appear here"
-  
-  rv.PLOT.LOOP$loop.parameters = data.frame(matrix(ncol = 3, nrow = 0, dimnames = list(NULL, c("Parameter", "Value", "Description"))))
-  rv.PLOT.LOOP$loop.ICs = data.frame(matrix(ncol = 4, nrow = 0, dimnames = list(NULL, c("Variable", "Value", "Units", "Description"))))
-  rv.PLOT.LOOP$loop.time.start = 0
-  rv.PLOT.LOOP$loop.time.end = 100
-  rv.PLOT.LOOP$loop.time.step = 1
-  rv.PLOT.LOOP$loop.model.results = data.frame()
-  
+
   rv.REACTIONLAWS$laws = data.frame(
     Name = c("Mass Action", "Mass Action (Regulated)", "Synthesis", "Degradation (Rate)", "Degradation (Enzyme)", "Michaelis Menten"),
     BackendName = c("mass_action", "mass_action_w_reg", "synthesis", "degradation_rate", "degradation_by_enzyme", "michaelis_menten"), 

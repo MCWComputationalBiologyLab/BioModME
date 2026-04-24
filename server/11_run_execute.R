@@ -205,7 +205,6 @@ observeEvent(c(input$execute_run_model,
 
 
   # Initialize other plotting modes with this model
-  # rv.PLOT.LOOP$loop.model.results <- out
   # compareModel$model.1 <- out
   # compareModel$model.2 <- out
   # compareModel$model.3 <- out
