@@ -207,7 +207,6 @@ ui <- dashboardPage(
     # Apply js functionalites from scripts
     includeScript("www/js/popup.js"),
     includeScript("www/js/select_all.js"),
-    includeScript("www/js/remove_all.js"),
     includeScript("www/js/press_enter.js"),
     includeScript(file.path("www", "js", "tablePopup.js")),
     includeScript(file.path("www", "js", "plotPopup.js")),

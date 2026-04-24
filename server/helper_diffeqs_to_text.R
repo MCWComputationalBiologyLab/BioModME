@@ -18,7 +18,7 @@ rateEqns_to_text <- function(rate_equations)
 }
 
 output_var_for_ode_solver <- function(list_of_vars){
-  output <- paste0("d", list_of_vars, collapse = ", ")
+  output <- paste(paste0("d", list_of_vars), collapse = ", ")
   output <- paste0("c(", output, ")")
   
   return(output)

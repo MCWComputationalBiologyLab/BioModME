@@ -68,7 +68,7 @@ server <- shinyServer(function(input, output, session) {
   source(file.path("server", "11_run_execute.R"), local = TRUE)$value
   source(file.path("server", "12_run_post_processing.R"), local = TRUE)$value
   source(file.path("server", "13_0_run_lineplot.R"), local = TRUE)$value
-  #source(file.path("server", "13_compare_model.R"), local = TRUE)$value
+  source(file.path("server", "13_compare_model.R"), local = TRUE)$value
   #source(file.path("server", "13_3_loop_model.R"), local = TRUE)$value #controls the looping mechanism in the lineplot server
   source(file.path("server", "31_documentation_server.R"), local = TRUE)$value
   source(file.path("server", "41_summary.R"), local = TRUE)$value

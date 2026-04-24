@@ -1,10 +1,3 @@
-js2 <- paste0(c(
-  "var selectinput = document.getElementById('lineplot_yvar');",
-  "selectinput.selectize.setValue(-1, false);",
-  "selectinput.selectize.selectall();",
-  "$('#select + .selectize-control .item').removeClass('active');"),
-  collapse = "\n")
-
 TAB_RUN_LINEPLOT <- tabItem(
   tabName = "TAB_RUN_LINEPLOT",
   br(),
@@ -35,7 +28,7 @@ TAB_RUN_LINEPLOT <- tabItem(
             width = 12,
             align = "right",
             div(
-              actionButton("select_all", "Select All", onclick = js2),
+              actionButton("select_all", "Select All"),
               actionButton("reset_input", "Reset")
             )
           )
@@ -127,13 +120,15 @@ TAB_RUN_LINEPLOT <- tabItem(
             choices = c(
               "Standard" = "normal_plot",
               "Side-by-Side Comparisons" = "compare_mode"
-            )
+            ),
+            selected = "normal_plot"
           ),
           selectizeInput(
             inputId = "lineplot_choose_plot_renderer",
             label = "Plot Renderer",
             choices = c("Interactive (plotly)" =  "plotly",
-                        "Standard (ggplot2)" = "ggplot2")
+                        "Standard (ggplot2)" = "ggplot2"),
+            selected = "plotly"
           )
         )
       ),
@@ -542,8 +537,9 @@ TAB_RUN_LINEPLOT <- tabItem(
           fluidRow(
             column(
               width = 12,
+              style = "padding-left:0;padding-right:0;",
               h5(shiny::tags$u("Change Model Parameters")),
-              rHandsontableOutput(outputId = "plot_param_table")
+              div(style = "width:100%;", DTOutput(outputId = "plot_param_table", width = "100%"))
             )
           )
         ),
@@ -591,7 +587,82 @@ TAB_RUN_LINEPLOT <- tabItem(
           fluidRow(
             column(
               width = 12,
-              rHandsontableOutput(outputId = "plot_var_table")
+              style = "padding-left:0;padding-right:0;",
+              div(style = "width:100%;", DTOutput(outputId = "plot_var_table", width = "100%"))
+            )
+          )
+        )
+      )
+    )
+  ),
+  # Compare Controls Box ---------------------------------------------------
+  conditionalPanel(
+    condition = "input.lineplot_choose_plot_mode == 'compare_mode'",
+    fluidRow(
+      column(
+        width = 12,
+        style = "padding-left:0px; padding-right:0px;",
+        box(
+          id = "plot_box_compare_controls",
+          width = 12,
+          style = "width:100%;",
+          title = "Compare Controls",
+          collapsible = TRUE,
+          collapsed = FALSE,
+          fluidRow(
+            column(
+              width = 3,
+              pickerInput(
+                inputId = "model_compare_num_models",
+                label = "Number of Models",
+                choices = c(2, 3, 4),
+                selected = 2
+              )
+            ),
+            column(
+              width = 7,
+              pickerInput(
+                inputId = "compare_models_select_vars",
+                label = "Parameters to Compare",
+                choices = c(),
+                multiple = TRUE,
+                options = list(`actions-box` = TRUE)
+              )
+            ),
+            column(
+              width = 2,
+              br(),
+              actionButton(
+                inputId = "run_compared_model",
+                label = "Run Compared Models"
+              )
+            )
+          ),
+          fluidRow(
+            column(
+              width = 12,
+              div(
+                style = "width:100%; overflow-x: auto;",
+                DTOutput(outputId = "compare_models_DT", width = "100%")
+              )
+            )
+          ),
+          fluidRow(
+            column(
+              width = 6,
+              textInput(
+                inputId = "compare_models_num_row",
+                label = "Rows",
+                value = "1"
+              )
+            ),
+            column(
+              width = 6,
+              textInput(
+                inputId = "compare_models_num_col",
+                label = "Columns",
+                value = "2"
+              )
             )
           )
         )

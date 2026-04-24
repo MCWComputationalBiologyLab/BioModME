@@ -238,7 +238,7 @@ CreatePlot <- function(modelResults,
                                      size = yAxisSize),
       # x/y axis label text size
       axis.text.x     = element_text(size = xAxisLabelSize),
-      axis.text.y     = element_text(size = yAxisLabelSize),
+      axis.text.y     = element_text(size = xAxisLabelSize),
       # Position of legend relative to plot
       legend.position = legendLocation
     )
@@ -538,7 +538,8 @@ output$model_plotType <- renderUI({
           jqui_resizable(plotOutput(outputId = 'LinePlot'))
         )
       )
-    })
+    }
+  )
 })
 
 
@@ -550,6 +551,14 @@ outputOptions(output, "line_type_options_popdown", suspendWhenHidden = FALSE)
 
 
 # Events -----------------------------------------------------------------------
+observeEvent(input$select_all, {
+  req(nrow(rv.RESULTS$results.model.final) > 0)
+  vars <- setdiff(colnames(rv.RESULTS$results.model.final), "time")
+  updateSelectizeInput(session,
+                       "lineplot_yvar",
+                       selected = vars)
+})
+
 observeEvent(input$reset_input, {
   shinyjs::reset("form")
 })
@@ -630,7 +639,6 @@ output$main_lineplot <- renderPlot({
 })
 
 output$lineplot_plotly <- renderPlotly({
-  
   if (nrow(rv.RESULTS$results.model.final) != 0) {
     to.plot <- CreatePlot(rv.RESULTS$results.model.final,
                           input$lineplot_yvar,
@@ -703,133 +711,75 @@ output$downloadLine <- downloadHandler(
 )
 
 # Tables for refreshing plot ---------------------------------------------------
-output$plot_param_table <- renderRHandsontable({
+output$plot_param_table <- renderDT({
   req(length(rv.PARAMETERS$parameters) > 0)
-  
+
   for.table <- rv.PARAMETERS$parameters.df %>%
     select("Name", "Value", "Unit", "Description")
-  
-  rhandsontable(
+
+  datatable(
     for.table,
-    rowHeaders = NULL,
-    colHeaderWidth = 100,
-    stretchH = "all"
-  ) %>%
-    hot_col("Name", readOnly = TRUE) %>%
-    hot_cols(
-      colWidth = c(30, 15, 15, 90),
-      manualColumnMove = FALSE,
-      manualColumnResize = TRUE,
-      halign = "htCenter",
-      valign = "htMiddle",
-      renderer = "
-           function (instance, td, row, col, prop, value, cellProperties) {
-             Handsontable.renderers.NumericRenderer.apply(this, arguments);
-             if (row % 2 == 0) {
-              td.style.background = '#f9f9f9';
-             } else {
-              td.style.background = 'white';
-             };
-           }") %>%
-    hot_rows(rowHeights = 30) %>%
-    hot_context_menu(
-      allowRowEdit = FALSE,
-      allowColEdit = FALSE) %>%
-    hot_validate_numeric(col = 2, min = 0)
+    rownames = FALSE,
+    width = "100%",
+    editable = list(target = "cell", disable = list(columns = c(0))),
+    selection = "none",
+    callback = DT::JS(
+      "table.on('draw.dt', function(){",
+      "  $(table.table().header()).find('th').css('text-align', 'center');",
+      "});"
+    ),
+    options = list(
+      dom = "t",
+      paging = FALSE,
+      ordering = FALSE,
+      searching = FALSE,
+      info = FALSE,
+      autoWidth = FALSE,
+      scrollX = FALSE,
+      columnDefs = list(
+        list(className = "dt-center", targets = "_all"),
+        list(width = "28%", targets = 0),
+        list(width = "18%", targets = 1),
+        list(width = "18%", targets = 2),
+        list(width = "36%", targets = 3)
+      )
+    )
+  )
 })
 
-observeEvent(input$plot_param_table$changes$changes, {
-  xi  = input$plot_param_table$changes$changes[[1]][[1]]
-  yi  = input$plot_param_table$changes$changes[[1]][[2]]
-  old = input$plot_param_table$changes$changes[[1]][[3]]
-  new = input$plot_param_table$changes$changes[[1]][[4]]
-  
-  # Find parameter name that was changed
-  
+observeEvent(input$plot_param_table_cell_edit, {
+  info <- input$plot_param_table_cell_edit
+  xi <- as.integer(info$row) - 1
+  yi <- as.integer(info$col)
+
   plotted.table <- rv.PARAMETERS$parameters.df
-  
-  # Apply Filters
-  
-  plotted.table <- plotted.table %>% 
+  plotted.table <- plotted.table %>%
     filter(!Custom)
-  
+
   if (input$parameters_filter_type != "All") {
     plotted.table <- plotted.table %>%
       filter(Type == input$parameters_filter_type)
   }
-  
+
   plotted.table <- plotted.table %>%
     select("Name", "Value", "Unit", "Description")
-  
-  par.name <- unname(unlist(plotted.table[xi+1, 1]))
-  par.id   <- FindId(par.name)
-  
-  if (yi == 0) {
-    # PARAMETER NAME CHANGE
-    rv.PARAMETERS$parameters[[par.id]]$Name <- new
-    
-    rv.LOGS$IO.logs <- RenameVarInVector(old, new, rv.LOGS$IO.logs)
-    
-    names.list <- names(rv.REACTIONS)
-    for (name in names.list) {
-      rv.REACTIONS[[name]] <- 
-        replace_word_recursive(rv.REACTIONS[[name]], old, new)
-      
-      rv.REACTIONS[[name]] <- 
-        replace_latex_variable_recursive(rv.REACTIONS[[name]], 
-                                         Var2Latex(old), 
-                                         Var2Latex(new))
-    }
-    
-    names.list <- names(rv.IO)
-    for (name in names.list) {
-      rv.IO[[name]] <- 
-        replace_word_recursive(rv.IO[[name]], old, new)
-      rv.IO[[name]] <- 
-        replace_latex_variable_recursive(rv.IO[[name]],
-                                         Var2Latex(old), 
-                                         Var2Latex(new))
-    }
-    
-    # If volume change in compartment data structure
-    if (rv.PARAMETERS$parameters[[par.id]]$Type == "Compartment") {
-      # Find which compartment has this volume
-      for (i in seq(length(rv.COMPARTMENTS$compartments))) {
-        # If the volume name == old volume name 
-        if (rv.COMPARTMENTS$compartments[[i]]$Volume == old) {
-          rv.COMPARTMENTS$compartments[[i]]$Volume = new
-          break
-        }
-      }
-    }
-    
-    # Change parameter name in ID database
-    idx.for.id <- which(rv.ID$id.df[, 2] %in% old)
-    var.id <- rv.ID$id.df[idx.for.id, 1]
-    rv.ID$id.df[idx.for.id, 2] <- new
-    
-  } 
-  else if (yi == 1) {
-    # PARAMETER VALUE CHANGE
-    # browser()
-    # Set booleans
-    conversion.needed <- FALSE
-    
-    # Parameter value change 
+
+  old <- plotted.table[xi + 1, yi + 1, drop = TRUE]
+  new <- DT::coerceValue(info$value, old)
+
+  par.name <- unname(unlist(plotted.table[xi + 1, 1]))
+  par.id <- FindId(par.name)
+
+  if (yi == 1) {
     rv.PARAMETERS$parameters[[par.id]]$Value <- new
-    
-    # Change base value of parameter if needed
+
     selected.unit <- rv.PARAMETERS$parameters[[par.id]]$Unit
-    base.unit     <- rv.PARAMETERS$parameters[[par.id]]$BaseUnit
-    
+    base.unit <- rv.PARAMETERS$parameters[[par.id]]$BaseUnit
+
     if (is.na(selected.unit) || is.na(base.unit)) {
-      # Account for parameters with no units
       rv.PARAMETERS$parameters[[par.id]]$BaseValue <- new
-      
     } else {
       if (selected.unit != base.unit) {
-        # Perform unit conversion
-        conversion.needed <- TRUE
         descriptor <- rv.PARAMETERS$parameters[[par.id]]$UnitDescription
         converted.value <- UnitConversion(descriptor,
                                           selected.unit,
@@ -839,60 +789,36 @@ observeEvent(input$plot_param_table$changes$changes, {
       } else {
         rv.PARAMETERS$parameters[[par.id]]$BaseValue <- new
       }
-      
-      # If volume change in compartment data structure
+
       if (rv.PARAMETERS$parameters[[par.id]]$Type == "Compartment") {
-        # Find which compartment has this volume
         vol.name <- rv.PARAMETERS$parameters[[par.id]]$Name
         for (i in seq(length(rv.COMPARTMENTS$compartments))) {
           if (rv.COMPARTMENTS$compartments[[i]]$Volume == vol.name) {
-            if (conversion.needed) {
-              rv.COMPARTMENTS$compartments[[i]]$BaseValue <- converted.value
-            } else {
-              rv.COMPARTMENTS$compartments[[i]]$BaseValue <- new
-            }
             rv.COMPARTMENTS$compartments[[i]]$Value <- new
+            rv.COMPARTMENTS$compartments[[i]]$BaseValue <- rv.PARAMETERS$parameters[[par.id]]$BaseValue
             break
           }
         }
       }
     }
-    
-    
-  } 
-  else if (yi == 2) {
-    # UNIT CHANGE
-    
-    # Check if no unit exists, then skip and reassign NA
-    # Note Rhandsontable stores NA as NULL, hence the null check
+
+  } else if (yi == 2) {
     if (!is.null(old)) {
-      # check if units are acceptable
       descriptor <- rv.PARAMETERS$parameters[[par.id]]$UnitDescription
-      
-      # Check to make sure units entered are the right ones
       comparison <- UnitCompare(descriptor,
                                 new,
                                 rv.UNITS$units.choices)
-      
+
       if (comparison$is.match) {
-        # Parameter unit change
         new <- Unit_Dict_Convert(UNIT_MAPPING, new)
-        
         rv.PARAMETERS$parameters[[par.id]]$Unit <- new
         rv.REFRESH$refresh.param.table <- rv.REFRESH$refresh.param.table + 1
-        
-        # We take current value on table as unitvalue
-        # We take current unit as the previous units
-        # We take base unit as new Units
-        # The converted value will be the new base unit value
-        
-        # Perform Conversion for base value if needed
+
         from.unit <- rv.PARAMETERS$parameters[[par.id]]$Unit
-        to.unit   <- rv.PARAMETERS$parameters[[par.id]]$BaseUnit
-        from.val  <- rv.PARAMETERS$parameters[[par.id]]$Value
-        
+        to.unit <- rv.PARAMETERS$parameters[[par.id]]$BaseUnit
+        from.val <- rv.PARAMETERS$parameters[[par.id]]$Value
+
         if (from.unit != to.unit) {
-          # Perform unit conversion for base
           descriptor <- rv.PARAMETERS$parameters[[par.id]]$UnitDescription
           converted.value <- UnitConversion(descriptor,
                                             from.unit,
@@ -902,24 +828,18 @@ observeEvent(input$plot_param_table$changes$changes, {
         } else {
           rv.PARAMETERS$parameters[[par.id]]$BaseValue <- from.val
         }
-        
-        # If volume change in compartment data structure change unit there
+
         if (rv.PARAMETERS$parameters[[par.id]]$Type == "Compartment") {
-          # Find which compartment has this volume and change unit/basevalue
           vol.name <- rv.PARAMETERS$parameters[[par.id]]$Name
           for (i in seq(length(rv.COMPARTMENTS$compartments))) {
             if (rv.COMPARTMENTS$compartments[[i]]$Volume == vol.name) {
-              rv.COMPARTMENTS$compartments[[i]]$Unit <- 
-                rv.PARAMETERS$parameters[[par.id]]$Unit
-              
-              rv.COMPARTMENTS$compartments[[i]]$BaseValue <- 
-                rv.PARAMETERS$parameters[[par.id]]$BaseValue
+              rv.COMPARTMENTS$compartments[[i]]$Unit <- rv.PARAMETERS$parameters[[par.id]]$Unit
+              rv.COMPARTMENTS$compartments[[i]]$BaseValue <- rv.PARAMETERS$parameters[[par.id]]$BaseValue
               break
             }
           }
         }
       } else {
-        # if unit conversion isn't allowed
         rv.REFRESH$refresh.param.table <- rv.REFRESH$refresh.param.table + 1
         rv.PARAMETERS$parameters[[par.id]]$Unit <- old
         sendSweetAlert(
@@ -930,135 +850,87 @@ observeEvent(input$plot_param_table$changes$changes, {
         )
       }
     } else {
-      # Reassign NA
       rv.REFRESH$refresh.param.table <- rv.REFRESH$refresh.param.table + 1
       rv.PARAMETERS$parameters[[par.id]]$Unit <- NA
     }
-    
+
   } else if (yi == 3) {
-    # Parameter description change
     rv.PARAMETERS$parameters[[par.id]]$Description <- new
   }
 })
+
 # This table should mirror the table on the main page of the app
 # In the future we should create a module for it but for now we will
 # do a copy and paste.
-output$plot_var_table <- renderRHandsontable({
+output$plot_var_table <- renderDT({
   req(length(rv.SPECIES$species) > 0)
-  
-  df.by.comp <- select(rv.SPECIES$species.df, 
-                       Name, 
-                       Value, 
-                       Unit, 
-                       Compartment, 
+
+  df.by.comp <- select(rv.SPECIES$species.df,
+                       Name,
+                       Value,
+                       Unit,
+                       Compartment,
                        Description)
-  
+
   df.by.comp <- as.data.frame(df.by.comp)
-  
-  colnames(df.by.comp) <- c("Name",
-                            "Value",
-                            "Unit",
-                            "Compartment",
-                            "Description"
-  )
-  
   rv.SPECIES$plotted.var.table <- df.by.comp
-  
-  rhandsontable(
+
+  datatable(
     df.by.comp,
-    # overflow = "visible",
-    # rowHeaders = NULL,
-    # selectCallback = TRUE,
-    colHeaderWidth = 100,
-    stretchH = "all"
-  ) %>%
-    hot_cols(
-      colWidth = c(30, 20, 20, 30, 60),
-      manualColumnMove = FALSE,
-      manualColumnResize = TRUE,
-      halign = "htCenter",
-      valign = "htMiddle",
-      renderer = "
-           function (instance, td, row, col, prop, value, cellProperties) {
-             Handsontable.renderers.NumericRenderer.apply(this, arguments);
-             if (row % 2 == 0) {
-              td.style.background = '#f9f9f9';
-             } else {
-              td.style.background = 'white';
-             };
-           }") %>%
-    hot_col(c("Name", "Compartment"), readOnly = TRUE) %>%
-    hot_rows(rowHeights = 30) %>%
-    hot_context_menu(allowRowEdit = FALSE,
-                     allowColEdit = FALSE
+    rownames = FALSE,
+    width = "100%",
+    editable = list(target = "cell", disable = list(columns = c(0, 3))),
+    selection = "none",
+    callback = DT::JS(
+      "table.on('draw.dt', function(){",
+      "  $(table.table().header()).find('th').css('text-align', 'center');",
+      "});"
+    ),
+    options = list(
+      dom = "t",
+      paging = FALSE,
+      ordering = FALSE,
+      searching = FALSE,
+      info = FALSE,
+      autoWidth = FALSE,
+      scrollX = FALSE,
+      columnDefs = list(
+        list(className = "dt-center", targets = "_all"),
+        list(width = "18%", targets = 0),
+        list(width = "16%", targets = 1),
+        list(width = "16%", targets = 2),
+        list(width = "18%", targets = 3),
+        list(width = "32%", targets = 4)
+      )
     )
+  )
 })
 
-observeEvent(input$plot_var_table$changes$changes, {
-  # browser()
-  xi = input$plot_var_table$changes$changes[[1]][[1]]
-  yi = input$plot_var_table$changes$changes[[1]][[2]]
-  old = input$plot_var_table$changes$changes[[1]][[3]]
-  new = input$plot_var_table$changes$changes[[1]][[4]]
-  
-  # Find which variable is being changed
-  var.name  <- rv.SPECIES$plotted.var.table[xi+1, 1]
+observeEvent(input$plot_var_table_cell_edit, {
+  info <- input$plot_var_table_cell_edit
+  xi <- as.integer(info$row) - 1
+  yi <- as.integer(info$col)
+
+  df.by.comp <- select(rv.SPECIES$species.df,
+                       Name,
+                       Value,
+                       Unit,
+                       Compartment,
+                       Description) %>%
+    as.data.frame()
+
+  old <- df.by.comp[xi + 1, yi + 1, drop = TRUE]
+  new <- DT::coerceValue(info$value, old)
+
+  var.name <- rv.SPECIES$plotted.var.table[xi + 1, 1]
   search.id <- FindId(var.name)
-  # If Name changed
-  if (yi == 0) {
-    # SPECIES NAME CHANNGE
-    
-    # Check if name change is a valid new name
-    
-    # Find id of variable name 
-    # Find variable id and change corresponding name 
-    idx.for.id <- which(rv.ID$id.df[, 2] %in% old)
-    var.id <- rv.ID$id.df[idx.for.id, 1]
-    rv.ID$id.df[idx.for.id, 2] <- new
-    
-    # Search Other Areas Affected by Var Name Change
-    # Steps: 
-    #  Search eqn df for id.
-    # Rename Parameters Found in Reaction Lists
-    # rv.REACTIONS <- replace_word_recursive(rv.REACTIONS, old, new)
-    # browser()
-    names.list <- names(rv.REACTIONS)
-    for (name in names.list) {
-      rv.REACTIONS[[name]] <- 
-        replace_word_recursive(rv.REACTIONS[[name]], old, new)
-      
-      rv.REACTIONS[[name]] <- 
-        replace_latex_variable_recursive(rv.REACTIONS[[name]], 
-                                         Var2Latex(old), 
-                                         Var2Latex(new))
-    }
-    
-    names.list <- names(rv.IO)
-    for (name in names.list) {
-      rv.IO[[name]] <- 
-        replace_word_recursive(rv.IO[[name]], old, new)
-      rv.IO[[name]] <- 
-        replace_latex_variable_recursive(rv.IO[[name]],
-                                         Var2Latex(old), 
-                                         Var2Latex(new))
-    }
-    
-    # Change name in species list
-    rv.SPECIES$species[[search.id]]$Name <- new
-    
-    
-    # Reset differential equations with new name
-    solveForDiffEqs()
-    
-  } else if (yi == 1) {
-    # CHANGE SPECIES VALUE
+
+  if (yi == 1) {
     rv.SPECIES$species[[search.id]]$Value <- new
-    
-    # Change the base value of the value if needed.
+
     select.unit <- rv.SPECIES$species[[search.id]]$Unit
-    base.unit   <- rv.SPECIES$species[[search.id]]$BaseUnit
+    base.unit <- rv.SPECIES$species[[search.id]]$BaseUnit
     if (select.unit != base.unit) {
-      # Perform Unit Conversion
       descriptor <- rv.SPECIES$species[[search.id]]$UnitDescription
       converted.value <- UnitConversion(descriptor,
                                         select.unit,
@@ -1066,43 +938,37 @@ observeEvent(input$plot_var_table$changes$changes, {
                                         as.numeric(new))
       rv.SPECIES$species[[search.id]]$BaseValue <- converted.value
     } else {
-      # Simply Overwrite BaseValue
       rv.SPECIES$species[[search.id]]$BaseValue <- new
     }
   } else if (yi == 2) {
-    # CHANGE SPECIES UNIT
     descriptor <- rv.SPECIES$species[[search.id]]$UnitDescription
-    
-    # Check to make sure units entered are the right ones
+
     comparison <- UnitCompare(descriptor,
                               new,
                               rv.UNITS$units.choices)
-    
+
     if (comparison$is.match) {
       new <- Unit_Dict_Convert(UNIT_MAPPING, new)
       rv.REFRESH$refresh.species.table <- rv.REFRESH$refresh.species.table + 1
-      # Change units
-      rv.SPECIES$species[[search.id]]$Unit  <- new
-      
-      # Change base value of variable concentration if needed
+      rv.SPECIES$species[[search.id]]$Unit <- new
+
       from.unit <- rv.SPECIES$species[[search.id]]$Unit
-      to.unit   <- rv.SPECIES$species[[search.id]]$BaseUnit
-      from.val  <- as.numeric(rv.SPECIES$species[[search.id]]$Value)
-      
+      to.unit <- rv.SPECIES$species[[search.id]]$BaseUnit
+      from.val <- as.numeric(rv.SPECIES$species[[search.id]]$Value)
+
       if (from.unit != to.unit) {
-        # Perform Unit Conversion
         new.value <- UnitConversion(descriptor,
-                                    from.unit, 
+                                    from.unit,
                                     to.unit,
                                     from.val)
-        
+
         rv.SPECIES$species[[search.id]]$BaseValue <- new.value
       } else {
         rv.SPECIES$species[[search.id]]$BaseValue <- from.val
       }
-      
+
     } else {
-      rv.SPECIES$species[[search.id]]$Unit  <- old
+      rv.SPECIES$species[[search.id]]$Unit <- old
       rv.REFRESH$refresh.species.table <- rv.REFRESH$refresh.species.table + 1
       sendSweetAlert(
         session = session,
@@ -1111,20 +977,16 @@ observeEvent(input$plot_var_table$changes$changes, {
         type = "error"
       )
     }
-    
-  } else if (yi == 3) {
-    # CHANGE SPECIES COMPARTMENT
-    rv.SPECIES$species[[search.id]]$Compartment <- new
   } else if (yi == 4) {
-    # CHANGE SPECIES DESCRIPTION
     rv.SPECIES$species[[search.id]]$Description <- new
   }
-  
+
   rv.SPECIES$species.df <- bind_rows(rv.SPECIES$species)
-  
 })
 
-
+# This table should mirror the table on the main page of the app
+# In the future we should create a module for it but for now we will
+# do a copy and paste.
 # Overlay Data -----------------------------------------------------------------
 data.scatter <- reactive({
   req(input$plot_data_import)
