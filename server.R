@@ -35,9 +35,12 @@ server <- shinyServer(function(input, output, session) {
   table.header <- reactiveValues(bg = "#3c8dbc",color = 'white')
   options(shiny.sanitize.errors = FALSE)
   
-  fxn.sources <- file.path("functions", list.files("functions"))
+  fxn.sources <- file.path("functions", list.files("functions", pattern = "\\.R$", full.names = FALSE))
   sapply(fxn.sources, source)
-  
+
+  rateLaw.sources <- file.path("functions", "rateLaws", list.files("functions/rateLaws", pattern = "\\.R$", full.names = FALSE))
+  sapply(rateLaw.sources, source)
+
   source(file.path("server", "helpers.R"))
   source(file.path("server", "helper_prep_ODEs_for_solver.R"))
   
