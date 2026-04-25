@@ -181,12 +181,29 @@ DeriveEquationBasedODEs <- function(species.list.entry,
       mj.rate    <- eqn$MathJax.Rate.Law
       law        <- eqn$Reaction.Law
       descript   <- eqn$Description
-      
+
+      # logistic_competition stores per-species rate laws on the lc entry so
+      # one reaction row can drive ODEs for both species independently.
+      if (!is.null(law) && law == "logistic_competition") {
+        lc <- reactions.rv$logisticCompetition[[eqn.id]]
+        if (!is.null(lc)) {
+          if (id == lc$Species.X.id && !is.null(lc$rate.law.x)) {
+            rate       <- lc$rate.law.x
+            latex.rate <- rate
+            mj.rate    <- rate
+          } else if (id == lc$Species.Y.id && !is.null(lc$rate.law.y)) {
+            rate       <- lc$rate.law.y
+            latex.rate <- rate
+            mj.rate    <- rate
+          }
+        }
+      }
+
       applyMultiple <- FALSE
       multiple      <- "1"
-      
+
       # Find if species Entry is in reactant or product
-      # Check if id reacantid is even exists 
+      # Check if id reacantid is even exists
       if (!is.na(eqn$Reactants.id)) {
         inReactant <- id %in% strsplit(eqn$Reactants.id, ", ")[[1]]
       } else {

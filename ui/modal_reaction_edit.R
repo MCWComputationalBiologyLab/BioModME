@@ -95,6 +95,11 @@ shinyBS::bsModal(
         ),
         conditionalPanel(
           condition =
+            "input.eqnCreate_reaction_law_edit == 'logistic_competition'",
+          uiOutput("equationBuilder_logistic_competition_edit")
+        ),
+        conditionalPanel(
+          condition =
             "input.eqnCreate_reaction_law_edit == 'michaelis_menten'",
           uiOutput("equationBuilder_michaelis_menten_edit")
         ),

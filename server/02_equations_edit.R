@@ -1159,6 +1159,73 @@ output$eqnCreate_edit_rending_mainbar <- renderUI({
       )
     )
   }
+  else if (eqn.reaction.law == "logistic_competition") {
+    info <- rv.REACTIONS$logisticCompetition[[eqn.ID]]
+    # Fallback for reactions saved by an earlier two-row design where eqn.ID
+    # may match the second species's reaction row instead of the lc key.
+    if (is.null(info)) {
+      for (n in names(rv.REACTIONS$logisticCompetition)) {
+        e <- rv.REACTIONS$logisticCompetition[[n]]
+        if (!is.null(e$ID.y) && e$ID.y == eqn.ID) { info <- e; break }
+      }
+    }
+    if (is.null(info)) {
+      return(div(class = "alert alert-warning",
+                 "This Logistic Competition reaction has stale state from a ",
+                 "previous app version. Please delete this reaction row and ",
+                 "add a new Logistic Competition reaction."))
+    }
+    species.x   <- info$Species.X
+    species.y   <- info$Species.Y
+    r.x         <- info$r.x
+    r.y         <- info$r.y
+    alpha.xy    <- info$alpha.xy
+    alpha.yx    <- info$alpha.yx
+    Kc          <- info$Kc
+
+    r.x.val      <- rv.PARAMETERS$parameters[[info$r.x.id]]$Value
+    r.y.val      <- rv.PARAMETERS$parameters[[info$r.y.id]]$Value
+    alpha.xy.val <- rv.PARAMETERS$parameters[[info$alpha.xy.id]]$Value
+    alpha.yx.val <- rv.PARAMETERS$parameters[[info$alpha.yx.id]]$Value
+    Kc.val       <- rv.PARAMETERS$parameters[[info$Kc.id]]$Value
+
+    div(
+      fluidRow(
+        column(
+          width = 4,
+          pickerInput("PI_log_comp_species_x_edit", "Species X",
+                      choices = sort(rv.SPECIES$df.by.compartment$Name),
+                      selected = species.x,
+                      options = pickerOptions(liveSearch = TRUE,
+                                              liveSearchStyle = "startsWith"))
+        ),
+        column(
+          width = 4,
+          pickerInput("PI_log_comp_species_y_edit", "Species Y",
+                      choices = sort(rv.SPECIES$df.by.compartment$Name),
+                      selected = species.y,
+                      options = pickerOptions(liveSearch = TRUE,
+                                              liveSearchStyle = "startsWith"))
+        )
+      ),
+      fluidRow(
+        column(width = 3, textInput("TI_log_comp_r_x_edit", "r_x", value = r.x)),
+        column(width = 3, numericInput("NI_log_comp_r_x_value_edit", "Value", value = r.x.val, min = 0, step = 0.01)),
+        column(width = 3, textInput("TI_log_comp_r_y_edit", "r_y", value = r.y)),
+        column(width = 3, numericInput("NI_log_comp_r_y_value_edit", "Value", value = r.y.val, min = 0, step = 0.01))
+      ),
+      fluidRow(
+        column(width = 3, textInput("TI_log_comp_alpha_xy_edit", "alpha_xy", value = alpha.xy)),
+        column(width = 3, numericInput("NI_log_comp_alpha_xy_value_edit", "Value", value = alpha.xy.val, min = 0, step = 0.01)),
+        column(width = 3, textInput("TI_log_comp_alpha_yx_edit", "alpha_yx", value = alpha.yx)),
+        column(width = 3, numericInput("NI_log_comp_alpha_yx_value_edit", "Value", value = alpha.yx.val, min = 0, step = 0.01))
+      ),
+      fluidRow(
+        column(width = 3, textInput("TI_log_comp_Kc_edit", "Kc (carrying capacity)", value = Kc)),
+        column(width = 3, numericInput("NI_log_comp_Kc_value_edit", "Value", value = Kc.val, min = 0.0001, step = 0.1))
+      )
+    )
+  }
   else if (eqn.reaction.law == "michaelis_menten") {
 
     Info   <- rv.REACTIONS$michaelisMenten[[eqn.ID]]
@@ -1871,6 +1938,105 @@ observeEvent(input$modal_editEqn_edit_button, {
       pretty.string = paste0(mu.name, "*", growth.species),
       latex         = paste0(mu.name, "\\cdot ", growth.species),
       mj            = paste0(Var2MathJ(mu.name), "*", Var2MathJ(growth.species)),
+      mathml        = NA,
+      content.ml    = NA
+    )
+  }
+  else if (eqn.reaction.law == "logistic_competition") {
+    reaction.id  <- NA
+    eqn.display  <- "Logistic Competition"
+    backend.call <- "logistic_competition"
+    modifiers    <- NA
+    modifiers.id <- NA
+    reactants    <- NA
+    reactants.id <- NA
+    products     <- NA
+    products.id  <- NA
+    isReversible <- FALSE
+
+    # Bail out cleanly if the user is editing an orphan row from a previous
+    # design — no lc entry means we cannot reconcile the form with stored state.
+    lc.lookup <- rv.REACTIONS$logisticCompetition[[eqn.ID]]
+    if (is.null(lc.lookup)) {
+      for (n in names(rv.REACTIONS$logisticCompetition)) {
+        e <- rv.REACTIONS$logisticCompetition[[n]]
+        if (!is.null(e$ID.y) && e$ID.y == eqn.ID) { lc.lookup <- e; break }
+      }
+    }
+    if (is.null(lc.lookup)) {
+      shinyjs::enable("createEqn_store_edit_button")
+      w.test$hide()
+      showNotification(paste("Cannot edit: this Logistic Competition row has",
+                             "stale state. Delete and re-add the reaction."),
+                       type = "error", duration = 8)
+      return()
+    }
+
+    species.x    <- input$PI_log_comp_species_x_edit
+    species.y    <- input$PI_log_comp_species_y_edit
+    species      <- c(species.x, species.y)
+    species.id   <- c(FindId(species.x), FindId(species.y))
+
+    r.x.name  <- input$TI_log_comp_r_x_edit
+    r.x.val   <- input$NI_log_comp_r_x_value_edit
+    r.y.name  <- input$TI_log_comp_r_y_edit
+    r.y.val   <- input$NI_log_comp_r_y_value_edit
+    a.xy.name <- input$TI_log_comp_alpha_xy_edit
+    a.xy.val  <- input$NI_log_comp_alpha_xy_value_edit
+    a.yx.name <- input$TI_log_comp_alpha_yx_edit
+    a.yx.val  <- input$NI_log_comp_alpha_yx_value_edit
+    Kc.name   <- input$TI_log_comp_Kc_edit
+    Kc.val    <- input$NI_log_comp_Kc_value_edit
+
+    unit.description.r  <- "num <div> time"
+    base.unit.r         <- paste0("1/", rv.UNITS$units.base$Duration)
+    unit.r              <- paste0("1/", rv.UNITS$units.selected$Duration)
+
+    addParam <- function(name, val, unit, base.unit, unit.desc, desc){
+      if (unit != base.unit) {
+        base.val <- UnitConversion(unit.desc, unit, base.unit, as.numeric(val))
+      } else { base.val <- val }
+      list(name=name,val=val,unit=unit,base.unit=base.unit,unit.desc=unit.desc,
+           base.val=base.val, desc=desc)
+    }
+
+    p.r.x <- addParam(r.x.name, r.x.val, unit.r, base.unit.r, unit.description.r,
+                      paste0("Growth rate of ", species.x))
+    p.r.y <- addParam(r.y.name, r.y.val, unit.r, base.unit.r, unit.description.r,
+                      paste0("Growth rate of ", species.y))
+    p.a.xy<- addParam(a.xy.name, a.xy.val, "dimensionless", "dimensionless",
+                      "dimensionless", paste0("Effect of ", species.y, " on ", species.x))
+    p.a.yx<- addParam(a.yx.name, a.yx.val, "dimensionless", "dimensionless",
+                      "dimensionless", paste0("Effect of ", species.x, " on ", species.y))
+    unit.Kc <- rv.UNITS$units.selected$For.Var
+    base.Kc <- rv.UNITS$units.base$For.Var
+    p.Kc <- addParam(Kc.name, Kc.val, unit.Kc, base.Kc,
+                     paste0("conc (", base.Kc, ")"),
+                     "Community carrying capacity")
+
+    pack <- list(p.r.x, p.r.y, p.a.xy, p.a.yx, p.Kc)
+    for (p in pack){
+      parameters         <- c(parameters, p$name)
+      param.vals         <- c(param.vals, p$val)
+      param.units        <- c(param.units, p$unit)
+      unit.descriptions  <- c(unit.descriptions, p$unit.desc)
+      param.descriptions <- c(param.descriptions, p$desc)
+      base.units         <- c(base.units, p$base.unit)
+      base.values        <- c(base.values, p$base.val)
+    }
+
+    rate.law.x <- paste0(r.x.name,"*",species.x,"*(1-(",species.x,"+",a.xy.name,"*",species.y,")/",Kc.name,")")
+    rate.law.y <- paste0(r.y.name,"*",species.y,"*(1-(",species.y,"+",a.yx.name,"*",species.x,")/",Kc.name,")")
+
+    eqn.d <- "Logistic competition between two species"
+
+    # The reactions row holds a representative rate law for display only; the
+    # per-species rate laws are stored on the lc entry and read by DeriveODEs.
+    laws <- list(
+      string        = paste(rate.law.x, rate.law.y, sep = " ; "),
+      pretty.string = paste(rate.law.x, rate.law.y, sep = " ; "),
+      latex         = paste(rate.law.x, rate.law.y, sep = " ; "),
+      mj            = paste(rate.law.x, rate.law.y, sep = " ; "),
       mathml        = NA,
       content.ml    = NA
     )
@@ -2824,6 +2990,32 @@ observeEvent(input$modal_editEqn_edit_button, {
       )
 
       rv.REACTIONS$exponentialGrowth[[eqn.ID]] <- sub.entry
+    }
+    else if (eqn.reaction.law == "logistic_competition") {
+      r.x.id      <- par.ids[1]; r.y.id <- par.ids[2]
+      alpha.xy.id <- par.ids[3]; alpha.yx.id <- par.ids[4]
+      Kc.id       <- par.ids[5]
+      lc.entry <- list(
+        "ID"           = eqn.ID,
+        "Reaction.Law" = eqn.reaction.law,
+        "Species.X"    = species.x,
+        "Species.X.id" = species.id[1],
+        "Species.Y"    = species.y,
+        "Species.Y.id" = species.id[2],
+        "r.x"          = parameters[1],
+        "r.x.id"       = r.x.id,
+        "r.y"          = parameters[2],
+        "r.y.id"       = r.y.id,
+        "alpha.xy"     = parameters[3],
+        "alpha.xy.id"  = alpha.xy.id,
+        "alpha.yx"     = parameters[4],
+        "alpha.yx.id"  = alpha.yx.id,
+        "Kc"           = parameters[5],
+        "Kc.id"        = Kc.id,
+        "rate.law.x"   = rate.law.x,
+        "rate.law.y"   = rate.law.y
+      )
+      rv.REACTIONS$logisticCompetition[[eqn.ID]] <- lc.entry
     }
     else if (eqn.reaction.law == "synthesis") {
       sub.entry <- list(

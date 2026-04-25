@@ -277,6 +277,7 @@ reset_all_storage_variables <- function() {
   rv.REACTIONS$degradation.by.rate = list()
   rv.REACTIONS$degradation.by.enzyme = list()
   rv.REACTIONS$exponentialGrowth = list()
+  rv.REACTIONS$logisticCompetition = list()
   rv.REACTIONS$reactions.df = data.frame()
   rv.REACTIONS$massAction.df = data.frame()
   rv.REACTIONS$massActionwReg.df = data.frame()
@@ -285,6 +286,7 @@ reset_all_storage_variables <- function() {
   rv.REACTIONS$degradation.by.rate.df = data.frame()
   rv.REACTIONS$degradation.by.enzyme.df = data.frame()
   rv.REACTIONS$exponentialGrowth.df = data.frame()
+  rv.REACTIONS$logisticCompetition.df = data.frame()
   rv.REACTIONS$reaction.id.counter = 0
   
   rv.IO$InputOutput = list()
@@ -347,9 +349,9 @@ reset_all_storage_variables <- function() {
   rv.PAR.ESTIMATION$pe.log.of.run = "Parameter Estimation Iterations will appear here"
 
   rv.REACTIONLAWS$laws = data.frame(
-    Name = c("Mass Action", "Mass Action (Regulated)", "Synthesis", "Degradation (Rate)", "Degradation (Enzyme)", "Michaelis Menten", "Exponential Growth"),
-    BackendName = c("mass_action", "mass_action_w_reg", "synthesis", "degradation_rate", "degradation_by_enzyme", "michaelis_menten", "exponential_growth"),
-    Type = c("chemical", "chemical", "chemical", "chemical", "chemical", "enzyme", "bacterial")
+    Name = c("Mass Action", "Mass Action (Regulated)", "Synthesis", "Degradation (Rate)", "Degradation (Enzyme)", "Michaelis Menten", "Exponential Growth", "Logistic Competition"),
+    BackendName = c("mass_action", "mass_action_w_reg", "synthesis", "degradation_rate", "degradation_by_enzyme", "michaelis_menten", "exponential_growth", "logistic_competition"),
+    Type = c("chemical", "chemical", "chemical", "chemical", "chemical", "enzyme", "bacterial", "bacterial")
   )
   rv.REACTIONLAWS$current.selected.law = ""
   

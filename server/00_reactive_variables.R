@@ -218,6 +218,17 @@ rv.REACTIONS <- reactiveValues(
   # Mu.base.unit     || Base unit
   # Mu.base.val      || Base-unit value
 
+  # Logistic Competition (two-species LV with carrying capacity)
+  logisticCompetition = list(),
+  # ID               || ID of reaction
+  # Species.X        || Prey/competitor X
+  # Species.Y        || Competitor Y
+  # r.x, r.y         || Growth rates
+  # alpha.xy         || Effect of Y on X
+  # alpha.yx         || Effect of X on Y
+  # Kc               || Community carrying capacity
+  # Parameter ids/values/units stored with reaction
+
   # Lists above get converted to dataframes below for various reasons
   reactions.df = data.frame(),
   massAction.df = data.frame(),
@@ -227,6 +238,7 @@ rv.REACTIONS <- reactiveValues(
   degradation.by.rate.df = data.frame(),
   degradation.by.enzyme.df = data.frame(),
   exponentialGrowth.df = data.frame(),
+  logisticCompetition.df = data.frame(),
   
   # This is used to keep track of how many eqns were made 
   # (specifically keeping strack of pregenerated rate constant naming)
@@ -528,20 +540,23 @@ rv.REACTIONLAWS <- reactiveValues(
              "Degradation (Rate)",
              "Degradation (Enzyme)",
              "Michaelis Menten",
-             "Exponential Growth"),
+             "Exponential Growth",
+             "Logistic Competition"),
     BackendName = c("mass_action",
                     "mass_action_w_reg",
                     "synthesis",
                     "degradation_rate",
                     "degradation_by_enzyme",
                     "michaelis_menten",
-                    "exponential_growth"),
+                    "exponential_growth",
+                    "logistic_competition"),
     Type = c("chemical",
              "chemical",
              "chemical",
              "chemical",
              "chemical",
              "enzyme",
+             "bacterial",
              "bacterial")
   ),
 
@@ -666,20 +681,23 @@ rv.sbml.temp <- reactiveValues(
              "Degradation (Rate)",
              "Degradation (Enzyme)",
              "Michaelis Menten",
-             "Exponential Growth"),
+             "Exponential Growth",
+             "Logistic Competition"),
     BackendName = c("mass_action",
                     "mass_action_w_reg",
                     "synthesis",
                     "degradation_rate",
                     "degradation_by_enzyme",
                     "michaelis_menten",
-                    "exponential_growth"),
+                    "exponential_growth",
+                    "logistic_competition"),
     Type = c("chemical",
              "chemical",
              "chemical",
              "chemical",
              "chemical",
              "enzyme",
+             "bacterial",
              "bacterial")
   ),
   reactions = list(),

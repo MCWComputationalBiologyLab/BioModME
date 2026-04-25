@@ -371,6 +371,79 @@ output$equationBuilder_exponential_growth <- renderUI({
   )
 })
 
+output$equationBuilder_logistic_competition <- renderUI({
+  div(
+    fluidRow(
+      column(
+        width = 4,
+        pickerInput(
+          inputId = "PI_log_comp_species_x",
+          label   = "Species X",
+          choices = sort(rv.SPECIES$df.by.compartment$Name),
+          options = pickerOptions(liveSearch = TRUE,
+                                  liveSearchStyle = "startsWith")
+        )
+      ),
+      column(
+        width = 4,
+        pickerInput(
+          inputId = "PI_log_comp_species_y",
+          label   = "Species Y",
+          choices = sort(rv.SPECIES$df.by.compartment$Name),
+          options = pickerOptions(liveSearch = TRUE,
+                                  liveSearchStyle = "startsWith")
+        )
+      )
+    ),
+    fluidRow(
+      column(
+        width = 3,
+        textInput("TI_log_comp_r_x", "r_x", value = "r_x")
+      ),
+      column(
+        width = 3,
+        numericInput("NI_log_comp_r_x_value", "Value", value = 0.7, min = 0, step = 0.01)
+      ),
+      column(
+        width = 3,
+        textInput("TI_log_comp_r_y", "r_y", value = "r_y")
+      ),
+      column(
+        width = 3,
+        numericInput("NI_log_comp_r_y_value", "Value", value = 0.7, min = 0, step = 0.01)
+      )
+    ),
+    fluidRow(
+      column(
+        width = 3,
+        textInput("TI_log_comp_alpha_xy", "alpha_xy", value = "alpha_xy")
+      ),
+      column(
+        width = 3,
+        numericInput("NI_log_comp_alpha_xy_value", "Value", value = 0.1, min = 0, step = 0.01)
+      ),
+      column(
+        width = 3,
+        textInput("TI_log_comp_alpha_yx", "alpha_yx", value = "alpha_yx")
+      ),
+      column(
+        width = 3,
+        numericInput("NI_log_comp_alpha_yx_value", "Value", value = 0.1, min = 0, step = 0.01)
+      )
+    ),
+    fluidRow(
+      column(
+        width = 3,
+        textInput("TI_log_comp_Kc", "Kc (carrying capacity)", value = "Kc")
+      ),
+      column(
+        width = 3,
+        numericInput("NI_log_comp_Kc_value", "Value", value = 1, min = 0.0001, step = 0.1)
+      )
+    )
+  )
+})
+
 output$equationBuilder_synthesis <- renderUI({
 
   div(
