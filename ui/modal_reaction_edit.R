@@ -89,7 +89,12 @@ shinyBS::bsModal(
           uiOutput("equationBuilder_mass_action_w_regulation_edit")
         ),
         conditionalPanel(
-          condition = 
+          condition =
+            "input.eqnCreate_reaction_law_edit == 'exponential_growth'",
+          uiOutput("equationBuilder_exponential_growth_edit")
+        ),
+        conditionalPanel(
+          condition =
             "input.eqnCreate_reaction_law_edit == 'michaelis_menten'",
           uiOutput("equationBuilder_michaelis_menten_edit")
         ),

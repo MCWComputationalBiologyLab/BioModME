@@ -334,8 +334,45 @@ output$equationBuilder_mass_action_w_regulation <- renderUI({
   )#end div
 })
 
+output$equationBuilder_exponential_growth <- renderUI({
+  div(
+    fluidRow(
+      column(
+        width = 4,
+        pickerInput(
+          inputId = "PI_exp_growth_species",
+          label   = "Growing Species",
+          choices = sort(rv.SPECIES$df.by.compartment$Name),
+          options = pickerOptions(liveSearch = TRUE,
+                                  liveSearchStyle = "startsWith")
+        )
+      )
+    ),
+    fluidRow(
+      column(
+        width = 4,
+        textInput(
+          inputId = "TI_exp_growth_mu",
+          label = "Growth Rate Parameter (mu)",
+          value = "mu"
+        )
+      ),
+      column(
+        width = 3,
+        numericInput(
+          inputId = "NI_exp_growth_mu_value",
+          label = "Value",
+          value = 0.7,
+          min = 0,
+          step = 0.01
+        )
+      )
+    )
+  )
+})
+
 output$equationBuilder_synthesis <- renderUI({
-  
+
   div(
     conditionalPanel(
       condition = "!input.CB_synthesis_factor_checkbox",

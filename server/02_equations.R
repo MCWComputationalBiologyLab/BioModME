@@ -664,7 +664,56 @@ observeEvent(input$eqnCreate_addEqnToVector, {
     mathml.law  <- laws$mathml
     content.ml  <- laws$content.ml
 
-  } 
+  }
+  else if (input$eqnCreate_reaction_law == "exponential_growth") {
+    reaction.id  <- NA
+    eqn.display  <- "Exponential Growth"
+    backend.call <- "exponential_growth"
+    modifiers    <- NA
+    modifiers.id <- NA
+    reactants    <- NA
+    reactants.id <- NA
+    products     <- NA
+    products.id  <- NA
+    isReversible <- FALSE
+
+    growth.species    <- input$PI_exp_growth_species
+    growth.species.id <- FindId(growth.species)
+    species           <- growth.species
+    species.id        <- growth.species.id
+
+    mu.name     <- input$TI_exp_growth_mu
+    mu.val      <- input$NI_exp_growth_mu_value
+    unit.description <- "num <div> time"
+    base.unit   <- paste0("1/", rv.UNITS$units.base$Duration)
+    param.unit  <- paste0("1/", rv.UNITS$units.selected$Duration)
+    param.description <- paste0("Specific growth rate for ", growth.species)
+
+    if (param.unit != base.unit) {
+      base.val <- UnitConversion(unit.description,
+                                 param.unit,
+                                 base.unit,
+                                 as.numeric(mu.val))
+    } else {
+      base.val <- mu.val
+    }
+
+    parameters         <- c(parameters, mu.name)
+    param.vals         <- c(param.vals, mu.val)
+    param.units        <- c(param.units, param.unit)
+    unit.descriptions  <- c(unit.descriptions, unit.description)
+    param.descriptions <- c(param.descriptions, param.description)
+    base.units         <- c(base.units, base.unit)
+    base.values        <- c(base.values, base.val)
+
+    rate.law    <- paste0(mu.name, "*", growth.species)
+    p.rate.law  <- rate.law
+    latex.law   <- paste0(mu.name, "\\cdot ", growth.species)
+    mathjax.law <- paste0(Var2MathJ(mu.name), "*", Var2MathJ(growth.species))
+    mathml.law  <- NA
+    content.ml  <- NA
+    eqn.d       <- "Exponential growth dX/dt = mu*X"
+  }
   else if (input$eqnCreate_reaction_law == "mass_action_w_reg") {
     reaction.id <- NA
     eqn.display <- "Regulated Mass Action"
@@ -1928,7 +1977,27 @@ observeEvent(input$eqnCreate_addEqnToVector, {
       rv.REACTIONS$massAction[[n+1]] <- sub.entry
       names(rv.REACTIONS$massAction)[n+1] <- ID.to.add
 
-    } 
+    }
+    else if (input$eqnCreate_reaction_law == "exponential_growth") {
+      mu.id <- par.ids[1]
+      sub.entry <- list(
+        "ID"            = ID.to.add,
+        "Reaction.Law"  = input$eqnCreate_reaction_law,
+        "Species"       = species,
+        "Species.id"    = species.id,
+        "Mu"            = parameters[1],
+        "Mu.id"         = mu.id,
+        "Mu.val"        = param.vals[1],
+        "Mu.unit"       = param.units[1],
+        "Mu.unit.desc"  = unit.descriptions[1],
+        "Mu.base.unit"  = base.units[1],
+        "Mu.base.val"   = base.values[1]
+      )
+
+      n <- length(rv.REACTIONS$exponentialGrowth)
+      rv.REACTIONS$exponentialGrowth[[n + 1]] <- sub.entry
+      names(rv.REACTIONS$exponentialGrowth)[n + 1] <- ID.to.add
+    }
     else if (input$eqnCreate_reaction_law == "mass_action_w_reg") {
      
        pc <- 1
@@ -2496,15 +2565,25 @@ observeEvent(input$eqnCreate_type_of_equation, {
                     pull(BackendName)
     
   } else if (filter.choice == "enzyme_reaction") {
-    
-    option.names <- rv.REACTIONLAWS$laws %>% 
+
+    option.names <- rv.REACTIONLAWS$laws %>%
                     filter(Type == "enzyme") %>%
                     pull(Name)
-    
-    options      <- rv.REACTIONLAWS$laws %>% 
+
+    options      <- rv.REACTIONLAWS$laws %>%
                     filter(Type == "enzyme") %>%
                     pull(BackendName)
-    
+
+  } else if (filter.choice == "bacterial_reaction") {
+
+    option.names <- rv.REACTIONLAWS$laws %>%
+                    filter(Type == "bacterial") %>%
+                    pull(Name)
+
+    options      <- rv.REACTIONLAWS$laws %>%
+                    filter(Type == "bacterial") %>%
+                    pull(BackendName)
+
   } else if (filter.choice == "custom_reaction") {
     option.names <- rv.REACTIONLAWS$laws %>% 
                     filter(Type == "custom") %>%

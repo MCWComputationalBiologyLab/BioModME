@@ -203,7 +203,21 @@ rv.REACTIONS <- reactiveValues(
   # kcat.id          ||  Id related to kcat
   # Products         ||  Products made from degradation if made
   # Products.id      ||  IDs of products made from degradation
-  
+
+  # Holds Exponential Growth Information (first-order growth dX/dt = mu*X)
+  exponentialGrowth = list(),
+  # ID               || ID of growth reaction
+  # Reaction.Law     || Law identifier
+  # Species          || Variable experiencing growth
+  # Species.id       || ID of variable
+  # Mu               || Specific growth rate parameter name
+  # Mu.id            || Parameter ID
+  # Mu.val           || Entered parameter value
+  # Mu.unit          || Entered parameter unit
+  # Mu.unit.desc     || Unit description
+  # Mu.base.unit     || Base unit
+  # Mu.base.val      || Base-unit value
+
   # Lists above get converted to dataframes below for various reasons
   reactions.df = data.frame(),
   massAction.df = data.frame(),
@@ -212,6 +226,7 @@ rv.REACTIONS <- reactiveValues(
   synthesis.df = data.frame(),
   degradation.by.rate.df = data.frame(),
   degradation.by.enzyme.df = data.frame(),
+  exponentialGrowth.df = data.frame(),
   
   # This is used to keep track of how many eqns were made 
   # (specifically keeping strack of pregenerated rate constant naming)
@@ -512,21 +527,24 @@ rv.REACTIONLAWS <- reactiveValues(
              "Synthesis",
              "Degradation (Rate)",
              "Degradation (Enzyme)",
-             "Michaelis Menten"),
+             "Michaelis Menten",
+             "Exponential Growth"),
     BackendName = c("mass_action",
                     "mass_action_w_reg",
                     "synthesis",
                     "degradation_rate",
                     "degradation_by_enzyme",
-                    "michaelis_menten"), 
+                    "michaelis_menten",
+                    "exponential_growth"),
     Type = c("chemical",
              "chemical",
              "chemical",
              "chemical",
              "chemical",
-             "enzyme")
+             "enzyme",
+             "bacterial")
   ),
-  
+
   # Variable to keep track of name for current selected law (used for custom)
   current.selected.law = ""
 )
@@ -647,19 +665,22 @@ rv.sbml.temp <- reactiveValues(
              "Synthesis",
              "Degradation (Rate)",
              "Degradation (Enzyme)",
-             "Michaelis Menten"),
+             "Michaelis Menten",
+             "Exponential Growth"),
     BackendName = c("mass_action",
                     "mass_action_w_reg",
                     "synthesis",
                     "degradation_rate",
                     "degradation_by_enzyme",
-                    "michaelis_menten"), 
+                    "michaelis_menten",
+                    "exponential_growth"),
     Type = c("chemical",
              "chemical",
              "chemical",
              "chemical",
              "chemical",
-             "enzyme")
+             "enzyme",
+             "bacterial")
   ),
   reactions = list(),
   # Refresh Variables 

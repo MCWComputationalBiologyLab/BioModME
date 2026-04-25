@@ -1,5 +1,44 @@
 # Edit Tab Controlling the editing of equations
 
+# Exponential growth edit builder
+output$equationBuilder_exponential_growth_edit <- renderUI({
+  div(
+    fluidRow(
+      column(
+        width = 4,
+        pickerInput(
+          inputId = "PI_exp_growth_species_edit",
+          label   = "Growing Species",
+          choices = sort(rv.SPECIES$df.by.compartment$Name),
+          selected = input$PI_exp_growth_species_edit,
+          options = pickerOptions(liveSearch = TRUE,
+                                  liveSearchStyle = "startsWith")
+        )
+      )
+    ),
+    fluidRow(
+      column(
+        width = 4,
+        textInput(
+          inputId = "TI_exp_growth_mu_edit",
+          label = "Growth Rate Parameter (mu)",
+          value = if (is.null(input$TI_exp_growth_mu_edit)) "mu" else input$TI_exp_growth_mu_edit
+        )
+      ),
+      column(
+        width = 3,
+        numericInput(
+          inputId = "NI_exp_growth_mu_value_edit",
+          label = "Value",
+          value = if (is.null(input$NI_exp_growth_mu_value_edit)) 0.7 else input$NI_exp_growth_mu_value_edit,
+          min = 0,
+          step = 0.01
+        )
+      )
+    )
+  )
+})
+
 # Left Box: Equation Edit Options ----------------------------------------------
 output$eqnCreate_edit_rendering_sidebar <- renderUI({
 # browser()
@@ -1076,8 +1115,52 @@ output$eqnCreate_edit_rending_mainbar <- renderUI({
       )
     )
   }
+  else if (eqn.reaction.law == "exponential_growth") {
+    growthInfo <- rv.REACTIONS$exponentialGrowth[[eqn.ID]]
+
+    species    <- growthInfo$Species
+    mu         <- growthInfo$Mu
+    mu.id      <- growthInfo$Mu.id
+    mu.value   <- rv.PARAMETERS$parameters[[mu.id]]$Value
+
+    div(
+      fluidRow(
+        column(
+          width = 4,
+          pickerInput(
+            inputId = "PI_exp_growth_species_edit",
+            label   = "Growing Species",
+            choices = sort(rv.SPECIES$df.by.compartment$Name),
+            selected = species,
+            options = pickerOptions(liveSearch = TRUE,
+                                    liveSearchStyle = "startsWith")
+          )
+        )
+      ),
+      fluidRow(
+        column(
+          width = 4,
+          textInput(
+            inputId = "TI_exp_growth_mu_edit",
+            label = "Growth Rate Parameter (mu)",
+            value = mu
+          )
+        ),
+        column(
+          width = 3,
+          numericInput(
+            inputId = "NI_exp_growth_mu_value_edit",
+            label = "Value",
+            value = mu.value,
+            min = 0,
+            step = 0.01
+          )
+        )
+      )
+    )
+  }
   else if (eqn.reaction.law == "michaelis_menten") {
-    
+
     Info   <- rv.REACTIONS$michaelisMenten[[eqn.ID]]
     
     ID            <- Info$ID
@@ -1731,7 +1814,7 @@ observeEvent(input$modal_editEqn_edit_button, {
                                          Reverse.Mods,
                                          Reverse.Pars) 
     
-    # Extract reaction laws 
+    # Extract reaction laws
     rate.law    <- laws$string
     p.rate.law  <- laws$pretty.string
     latex.law   <- laws$latex
@@ -1739,8 +1822,61 @@ observeEvent(input$modal_editEqn_edit_button, {
     mathml.law  <- laws$mathml
     content.ml  <- laws$content.ml
   }
+  else if (eqn.reaction.law == "exponential_growth") {
+    reaction.id  <- NA
+    eqn.display  <- "Exponential Growth"
+    backend.call <- "exponential_growth"
+    modifiers    <- NA
+    modifiers.id <- NA
+    reactants    <- NA
+    reactants.id <- NA
+    products     <- NA
+    products.id  <- NA
+    isReversible <- FALSE
+
+    growth.species    <- input$PI_exp_growth_species_edit
+    growth.species.id <- FindId(growth.species)
+    species           <- growth.species
+    species.id        <- growth.species.id
+
+    mu.name     <- input$TI_exp_growth_mu_edit
+    mu.val      <- input$NI_exp_growth_mu_value_edit
+    unit.description <- "num <div> time"
+    base.unit   <- paste0("1/", rv.UNITS$units.base$Duration)
+    param.unit  <- paste0("1/", rv.UNITS$units.selected$Duration)
+    param.description <- paste0("Specific growth rate for ", growth.species)
+
+    if (param.unit != base.unit) {
+      base.val <- UnitConversion(unit.description,
+                                 param.unit,
+                                 base.unit,
+                                 as.numeric(mu.val))
+    } else {
+      base.val <- mu.val
+    }
+
+    parameters         <- c(parameters, mu.name)
+    param.vals         <- c(param.vals, mu.val)
+    param.units        <- c(param.units, param.unit)
+    unit.descriptions  <- c(unit.descriptions, unit.description)
+    param.descriptions <- c(param.descriptions, param.description)
+    base.units         <- c(base.units, base.unit)
+    base.values        <- c(base.values, base.val)
+
+    eqn.d <- "Exponential growth dX/dt = mu*X"
+
+    # Build a laws-shaped list so the shared extraction below can read it.
+    laws <- list(
+      string        = paste0(mu.name, "*", growth.species),
+      pretty.string = paste0(mu.name, "*", growth.species),
+      latex         = paste0(mu.name, "\\cdot ", growth.species),
+      mj            = paste0(Var2MathJ(mu.name), "*", Var2MathJ(growth.species)),
+      mathml        = NA,
+      content.ml    = NA
+    )
+  }
   else if (eqn.reaction.law == "synthesis") {
-    
+
     # Separate if factor or not
     if (input$CB_synthesis_factor_checkbox_edit) {
       # Synthesis uses a factor
@@ -2670,6 +2806,24 @@ observeEvent(input$modal_editEqn_edit_button, {
       n <- length(rv.REACTIONS$massActionwReg)
       rv.REACTIONS$massActionwReg[[n+1]] <- sub.entry
       names(rv.REACTIONS$massActionwReg)[n+1] <- eqn.ID
+    }
+    else if (eqn.reaction.law == "exponential_growth") {
+      mu.id <- par.ids[1]
+      sub.entry <- list(
+        "ID"            = eqn.ID,
+        "Reaction.Law"  = input$eqnCreate_reaction_law,
+        "Species"       = species,
+        "Species.id"    = species.id,
+        "Mu"            = parameters[1],
+        "Mu.id"         = mu.id,
+        "Mu.val"        = param.vals[1],
+        "Mu.unit"       = param.units[1],
+        "Mu.unit.desc"  = unit.descriptions[1],
+        "Mu.base.unit"  = base.units[1],
+        "Mu.base.val"   = base.values[1]
+      )
+
+      rv.REACTIONS$exponentialGrowth[[eqn.ID]] <- sub.entry
     }
     else if (eqn.reaction.law == "synthesis") {
       sub.entry <- list(

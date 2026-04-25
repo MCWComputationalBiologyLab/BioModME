@@ -1344,6 +1344,18 @@ observeEvent(input$file_input_load_sbml, {
   rv.CUSTOM.LAWS$cl.reaction <- rv.sbml.temp$cl.reaction
   rv.CUSTOM.EQNS$ce.equations <- rv.sbml.temp$ce.equations
   rv.REACTIONLAWS$laws <- rv.sbml.temp$laws
+
+  # Backfill built-in bacterial laws missing from older saved models.
+  if (!"exponential_growth" %in% rv.REACTIONLAWS$laws$BackendName) {
+    rv.REACTIONLAWS$laws <- rbind(
+      rv.REACTIONLAWS$laws,
+      data.frame(Name = "Exponential Growth",
+                 BackendName = "exponential_growth",
+                 Type = "bacterial",
+                 stringsAsFactors = FALSE)
+    )
+  }
+
   rv.REACTIONS$reactions <- rv.sbml.temp$reactions
   
   # Refresh vars

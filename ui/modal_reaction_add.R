@@ -28,6 +28,7 @@ shinyBS::bsModal(
           choices = c("All" = "All",
                       "Chemical Reaction" = "chemical_reaction",
                       "Enzyme Based Reaction" = "enzyme_reaction",
+                      "Bacterial Reaction" = "bacterial_reaction",
                       "Custom Reaction" = "custom_reaction",
                       "Time Dependent Equation" = "time_dependent"
           )
@@ -256,12 +257,17 @@ shinyBS::bsModal(
                           ")))
           ),
           conditionalPanel(
-            condition = 
+            condition =
+              "input.eqnCreate_reaction_law == 'exponential_growth'",
+            uiOutput("equationBuilder_exponential_growth")
+          ),
+          conditionalPanel(
+            condition =
               "input.eqnCreate_reaction_law == 'michaelis_menten'",
             uiOutput("equationBuilder_michaelis_menten")
           ),
           conditionalPanel(
-            condition = 
+            condition =
               "input.eqnCreate_reaction_law == 'synthesis'",
             uiOutput("equationBuilder_synthesis")
           ),
