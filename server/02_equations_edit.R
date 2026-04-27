@@ -39,6 +39,53 @@ output$equationBuilder_exponential_growth_edit <- renderUI({
   )
 })
 
+# Predator-Prey edit builder. The dispatch in eqnCreate_edit_rending_mainbar
+# overrides this with values from the predatorPrey entry when an existing
+# reaction is being edited.
+output$equationBuilder_predator_prey_edit <- renderUI({
+  div(
+    fluidRow(
+      column(width = 4,
+        pickerInput("PI_pred_prey_prey_edit", "Prey (X)",
+                    choices = sort(rv.SPECIES$df.by.compartment$Name),
+                    selected = input$PI_pred_prey_prey_edit,
+                    options = pickerOptions(liveSearch = TRUE,
+                                            liveSearchStyle = "startsWith"))),
+      column(width = 4,
+        pickerInput("PI_pred_prey_predator_edit", "Predator (Y)",
+                    choices = sort(rv.SPECIES$df.by.compartment$Name),
+                    selected = input$PI_pred_prey_predator_edit,
+                    options = pickerOptions(liveSearch = TRUE,
+                                            liveSearchStyle = "startsWith")))
+    ),
+    hr(),
+    fluidRow(
+      column(width = 3, textInput("TI_pred_prey_r_edit", "r (prey growth rate)",
+                                  value = if (is.null(input$TI_pred_prey_r_edit)) "r" else input$TI_pred_prey_r_edit)),
+      column(width = 3, numericInput("NI_pred_prey_r_value_edit", "Value",
+                                     value = if (is.null(input$NI_pred_prey_r_value_edit)) 0.7 else input$NI_pred_prey_r_value_edit,
+                                     min = 0, step = 0.01)),
+      column(width = 3, textInput("TI_pred_prey_a_edit", "a (attack rate)",
+                                  value = if (is.null(input$TI_pred_prey_a_edit)) "a" else input$TI_pred_prey_a_edit)),
+      column(width = 3, numericInput("NI_pred_prey_a_value_edit", "Value",
+                                     value = if (is.null(input$NI_pred_prey_a_value_edit)) 0.01 else input$NI_pred_prey_a_value_edit,
+                                     min = 0, step = 0.0001))
+    ),
+    fluidRow(
+      column(width = 3, textInput("TI_pred_prey_b_edit", "b (conversion rate)",
+                                  value = if (is.null(input$TI_pred_prey_b_edit)) "b" else input$TI_pred_prey_b_edit)),
+      column(width = 3, numericInput("NI_pred_prey_b_value_edit", "Value",
+                                     value = if (is.null(input$NI_pred_prey_b_value_edit)) 0.01 else input$NI_pred_prey_b_value_edit,
+                                     min = 0, step = 0.0001)),
+      column(width = 3, textInput("TI_pred_prey_d_edit", "d (predator death rate)",
+                                  value = if (is.null(input$TI_pred_prey_d_edit)) "d" else input$TI_pred_prey_d_edit)),
+      column(width = 3, numericInput("NI_pred_prey_d_value_edit", "Value",
+                                     value = if (is.null(input$NI_pred_prey_d_value_edit)) 0.1 else input$NI_pred_prey_d_value_edit,
+                                     min = 0, step = 0.01))
+    )
+  )
+})
+
 # Competitive Monod growth edit builder. The dispatch in
 # eqnCreate_edit_rending_mainbar overrides this with cm-entry values when an
 # existing reaction is being edited; this stub provides the input IDs so that
@@ -1291,6 +1338,53 @@ output$eqnCreate_edit_rending_mainbar <- renderUI({
       )
     )
   }
+  else if (eqn.reaction.law == "predator_prey") {
+    info <- rv.REACTIONS$predatorPrey[[eqn.ID]]
+    if (is.null(info)) {
+      return(div(class = "alert alert-warning",
+                 "This Predator-Prey row has stale state. Delete and re-add."))
+    }
+    prey      <- info$Prey
+    predator  <- info$Predator
+    r         <- info$r
+    a         <- info$a
+    b         <- info$b
+    d         <- info$d
+    r.val     <- if (!is.null(info$r.id)) rv.PARAMETERS$parameters[[info$r.id]]$Value else info$r.val
+    a.val     <- if (!is.null(info$a.id)) rv.PARAMETERS$parameters[[info$a.id]]$Value else info$a.val
+    b.val     <- if (!is.null(info$b.id)) rv.PARAMETERS$parameters[[info$b.id]]$Value else info$b.val
+    d.val     <- if (!is.null(info$d.id)) rv.PARAMETERS$parameters[[info$d.id]]$Value else info$d.val
+
+    div(
+      fluidRow(
+        column(width = 4,
+          pickerInput("PI_pred_prey_prey_edit", "Prey (X)",
+                      choices = sort(rv.SPECIES$df.by.compartment$Name),
+                      selected = prey,
+                      options = pickerOptions(liveSearch = TRUE,
+                                              liveSearchStyle = "startsWith"))),
+        column(width = 4,
+          pickerInput("PI_pred_prey_predator_edit", "Predator (Y)",
+                      choices = sort(rv.SPECIES$df.by.compartment$Name),
+                      selected = predator,
+                      options = pickerOptions(liveSearch = TRUE,
+                                              liveSearchStyle = "startsWith")))
+      ),
+      hr(),
+      fluidRow(
+        column(width = 3, textInput("TI_pred_prey_r_edit", "r (prey growth rate)", value = r)),
+        column(width = 3, numericInput("NI_pred_prey_r_value_edit", "Value", value = r.val, min = 0, step = 0.01)),
+        column(width = 3, textInput("TI_pred_prey_a_edit", "a (attack rate)", value = a)),
+        column(width = 3, numericInput("NI_pred_prey_a_value_edit", "Value", value = a.val, min = 0, step = 0.0001))
+      ),
+      fluidRow(
+        column(width = 3, textInput("TI_pred_prey_b_edit", "b (conversion rate)", value = b)),
+        column(width = 3, numericInput("NI_pred_prey_b_value_edit", "Value", value = b.val, min = 0, step = 0.0001)),
+        column(width = 3, textInput("TI_pred_prey_d_edit", "d (predator death rate)", value = d)),
+        column(width = 3, numericInput("NI_pred_prey_d_value_edit", "Value", value = d.val, min = 0, step = 0.01))
+      )
+    )
+  }
   else if (eqn.reaction.law == "competitive_monod") {
     info <- rv.REACTIONS$competitiveMonod[[eqn.ID]]
     if (is.null(info)) {
@@ -2202,6 +2296,80 @@ observeEvent(input$modal_editEqn_edit_button, {
       pretty.string = paste0(mu.name, "*", growth.species),
       latex         = paste0(mu.name, "\\cdot ", growth.species),
       mj            = paste0(Var2MathJ(mu.name), "*", Var2MathJ(growth.species)),
+      mathml        = NA,
+      content.ml    = NA
+    )
+  }
+  else if (eqn.reaction.law == "predator_prey") {
+    reaction.id  <- NA
+    eqn.display  <- "Predator-Prey"
+    backend.call <- "predator_prey"
+    isReversible <- FALSE
+
+    species.x    <- input$PI_pred_prey_prey_edit
+    species.y    <- input$PI_pred_prey_predator_edit
+    species.id.x <- FindId(species.x)
+    species.id.y <- FindId(species.y)
+    species      <- c(species.x, species.y)
+    species.id   <- c(species.id.x, species.id.y)
+    reactants    <- NA
+    reactants.id <- NA
+    products     <- collapseVector(c(species.x, species.y))
+    products.id  <- collapseVector(c(species.id.x, species.id.y))
+    modifiers    <- NA
+    modifiers.id <- NA
+
+    r.name <- input$TI_pred_prey_r_edit
+    r.val  <- input$NI_pred_prey_r_value_edit
+    a.name <- input$TI_pred_prey_a_edit
+    a.val  <- input$NI_pred_prey_a_value_edit
+    b.name <- input$TI_pred_prey_b_edit
+    b.val  <- input$NI_pred_prey_b_value_edit
+    d.name <- input$TI_pred_prey_d_edit
+    d.val  <- input$NI_pred_prey_d_value_edit
+
+    unit.description.r <- "num <div> time"
+    base.unit.r        <- paste0("1/", rv.UNITS$units.base$Duration)
+    unit.r             <- paste0("1/", rv.UNITS$units.selected$Duration)
+
+    addParam <- function(name, val, unit, base.unit, unit.desc, desc) {
+      if (unit != base.unit) {
+        base.val <- UnitConversion(unit.desc, unit, base.unit, as.numeric(val))
+      } else { base.val <- val }
+      list(name=name,val=val,unit=unit,base.unit=base.unit,unit.desc=unit.desc,
+           base.val=base.val, desc=desc)
+    }
+
+    p.r <- addParam(r.name, r.val, unit.r, base.unit.r, unit.description.r,
+                    paste0("Prey growth rate for ", species.x))
+    p.a <- addParam(a.name, a.val, unit.r, base.unit.r, unit.description.r,
+                    paste0("Attack rate (loss of ", species.x, " due to ", species.y, ")"))
+    p.b <- addParam(b.name, b.val, unit.r, base.unit.r, unit.description.r,
+                    paste0("Conversion rate (gain of ", species.y, " from consuming ", species.x, ")"))
+    p.d <- addParam(d.name, d.val, unit.r, base.unit.r, unit.description.r,
+                    paste0("Predator death rate for ", species.y))
+
+    pack <- list(p.r, p.a, p.b, p.d)
+    for (p in pack) {
+      parameters         <- c(parameters, p$name)
+      param.vals         <- c(param.vals, p$val)
+      param.units        <- c(param.units, p$unit)
+      unit.descriptions  <- c(unit.descriptions, p$unit.desc)
+      param.descriptions <- c(param.descriptions, p$desc)
+      base.units         <- c(base.units, p$base.unit)
+      base.values        <- c(base.values, p$base.val)
+    }
+
+    rate.law.x <- paste0(r.name, "*", species.x, "-", a.name, "*", species.x, "*", species.y)
+    rate.law.y <- paste0(b.name, "*", species.x, "*", species.y, "-", d.name, "*", species.y)
+
+    eqn.d <- paste0("Predator-prey interaction between ", species.x, " (prey) and ", species.y, " (predator)")
+
+    laws <- list(
+      string        = rate.law.x,
+      pretty.string = rate.law.x,
+      latex         = rate.law.x,
+      mj            = rate.law.x,
       mathml        = NA,
       content.ml    = NA
     )
@@ -3465,6 +3633,27 @@ observeEvent(input$modal_editEqn_edit_button, {
       )
 
       rv.REACTIONS$exponentialGrowth[[eqn.ID]] <- sub.entry
+    }
+    else if (eqn.reaction.law == "predator_prey") {
+      r.id <- par.ids[1]
+      a.id <- par.ids[2]
+      b.id <- par.ids[3]
+      d.id <- par.ids[4]
+      pp.entry <- list(
+        "ID"           = eqn.ID,
+        "Reaction.Law" = eqn.reaction.law,
+        "Prey"         = species.x,
+        "Prey.id"      = species.id.x,
+        "Predator"     = species.y,
+        "Predator.id"  = species.id.y,
+        "r"            = parameters[1], "r.id" = r.id, "r.val" = param.vals[1],
+        "a"            = parameters[2], "a.id" = a.id, "a.val" = param.vals[2],
+        "b"            = parameters[3], "b.id" = b.id, "b.val" = param.vals[3],
+        "d"            = parameters[4], "d.id" = d.id, "d.val" = param.vals[4],
+        "rate.law.x"   = rate.law.x,
+        "rate.law.y"   = rate.law.y
+      )
+      rv.REACTIONS$predatorPrey[[eqn.ID]] <- pp.entry
     }
     else if (eqn.reaction.law == "competitive_monod") {
       mu_max.x.id <- par.ids[1]

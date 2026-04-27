@@ -201,6 +201,29 @@ DeriveEquationBasedODEs <- function(species.list.entry,
           }
         }
       }
+      # predator_prey stores the FULL net rate law for each species (including
+      # both gain and loss terms) on the pp entry. DeriveODEs picks the right
+      # one based on which species the ODE is being assembled for. Both prey
+      # and predator are flagged as products so the standard sign mechanism
+      # gives them "+" — the sign flips for the predation/death terms are
+      # already inside the rate law expression.
+      if (!is.null(law) && law == "predator_prey") {
+        pp <- reactions.rv$predatorPrey[[eqn.id]]
+        if (!is.null(pp)) {
+          new.rate <- NULL
+          if (id == pp$Prey.id && !is.null(pp$rate.law.x)) {
+            new.rate <- pp$rate.law.x
+          } else if (id == pp$Predator.id && !is.null(pp$rate.law.y)) {
+            new.rate <- pp$rate.law.y
+          }
+          if (!is.null(new.rate)) {
+            rate       <- new.rate
+            fmt        <- ConvertRateLaw(new.rate)
+            latex.rate <- fmt$latex
+            mj.rate    <- fmt$mathjax
+          }
+        }
+      }
       # competitive_monod stores per-species (X, Y) growth rate laws and the
       # substrate consumption rate(s) on the cm entry. Each species pulls its
       # own rate law; the substrate combines both species' consumption rates

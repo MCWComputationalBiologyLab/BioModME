@@ -238,6 +238,18 @@ equationMathJaxBuilder <- reactive({
     # Show scheme: S -> X (with Monod kinetics)
     textOut <- paste0("\\ce{", substrate.mj, "->[{", mu_max.mj, "}][{", K_s.mj, "}]", species.mj, "}")
   }
+  else if (input$eqnCreate_reaction_law == "predator_prey") {
+    x <- Var2MathJ(input$PI_pred_prey_prey)
+    y <- Var2MathJ(input$PI_pred_prey_predator)
+    r <- Var2MathJ(input$TI_pred_prey_r)
+    a <- Var2MathJ(input$TI_pred_prey_a)
+    b <- Var2MathJ(input$TI_pred_prey_b)
+    d <- Var2MathJ(input$TI_pred_prey_d)
+    textOut <- paste0("\\begin{aligned}",
+                      "\\frac{d", x, "}{dt} &= ", r, x, "-", a, x, y, " \\\\",
+                      "\\frac{d", y, "}{dt} &= ", b, x, y, "-", d, y,
+                      "\\end{aligned}")
+  }
   else if (input$eqnCreate_reaction_law == "competitive_monod") {
     single.species.mode <- isTruthy(input$CB_comp_monod_single_species)
     no.substrate.restriction <- isTruthy(input$CB_comp_monod_no_substrate_restriction)
@@ -651,6 +663,16 @@ equationLatexBuilder <- reactive({
     mu_max <- Var2Latex(input$TI_monod_mu_max)
     K_s <- Var2Latex(input$TI_monod_K_s)
     textOut <- paste0("\\frac{d", species, "}{dt} = ", mu_max, "*", species, "*\\frac{", substrate, "}{", K_s, "+", substrate, "}")
+  }
+  else if (input$eqnCreate_reaction_law == "predator_prey") {
+    x <- Var2Latex(input$PI_pred_prey_prey)
+    y <- Var2Latex(input$PI_pred_prey_predator)
+    r <- Var2Latex(input$TI_pred_prey_r)
+    a <- Var2Latex(input$TI_pred_prey_a)
+    b <- Var2Latex(input$TI_pred_prey_b)
+    d <- Var2Latex(input$TI_pred_prey_d)
+    textOut <- paste0("\\frac{d", x, "}{dt} = ", r, "*", x, "-", a, "*", x, "*", y, ", ",
+                      "\\frac{d", y, "}{dt} = ", b, "*", x, "*", y, "-", d, "*", y)
   }
   else if (input$eqnCreate_reaction_law == "competitive_monod") {
     single.species.mode <- isTruthy(input$CB_comp_monod_single_species)
@@ -1146,6 +1168,11 @@ equationBuilder <- reactive({
     mu_max <- input$TI_monod_mu_max
     textOut <- paste0(substrate, " --> (", mu_max, ", ", input$TI_monod_K_s, ") ", species)
   }
+  else if (input$eqnCreate_reaction_law == "predator_prey") {
+    species.x <- input$PI_pred_prey_prey
+    species.y <- input$PI_pred_prey_predator
+    textOut <- paste0("--> (predator-prey) ", species.x, ", ", species.y)
+  }
   else if (input$eqnCreate_reaction_law == "competitive_monod") {
     species.x <- input$PI_comp_monod_species_x
     species.y <- input$PI_comp_monod_species_y
@@ -1483,6 +1510,11 @@ equationBuilder_edit <- reactive({
     substrate <- input$PI_monod_substrate_edit
     mu_max <- input$TI_monod_mu_max_edit
     textOut <- paste0(substrate, " --> (", mu_max, ", ", input$TI_monod_K_s_edit, ") ", species)
+  }
+  else if (eqn.reaction.law == "predator_prey") {
+    species.x <- input$PI_pred_prey_prey_edit
+    species.y <- input$PI_pred_prey_predator_edit
+    textOut <- paste0("--> (predator-prey) ", species.x, ", ", species.y)
   }
   else if (eqn.reaction.law == "competitive_monod") {
     species.x <- input$PI_comp_monod_species_x_edit
@@ -1863,6 +1895,16 @@ equationLatexBuilder_edit <- reactive({
     mu_max <- Var2Latex(input$TI_monod_mu_max_edit)
     K_s <- Var2Latex(input$TI_monod_K_s_edit)
     textOut <- paste0("\\frac{d", species, "}{dt} = ", mu_max, "*", species, "*\\frac{", substrate, "}{", K_s, "+", substrate, "}")
+  }
+  else if (eqn.reaction.law == "predator_prey") {
+    x <- Var2Latex(input$PI_pred_prey_prey_edit)
+    y <- Var2Latex(input$PI_pred_prey_predator_edit)
+    r <- Var2Latex(input$TI_pred_prey_r_edit)
+    a <- Var2Latex(input$TI_pred_prey_a_edit)
+    b <- Var2Latex(input$TI_pred_prey_b_edit)
+    d <- Var2Latex(input$TI_pred_prey_d_edit)
+    textOut <- paste0("\\frac{d", x, "}{dt} = ", r, "*", x, "-", a, "*", x, "*", y, ", ",
+                      "\\frac{d", y, "}{dt} = ", b, "*", x, "*", y, "-", d, "*", y)
   }
   else if (eqn.reaction.law == "competitive_monod") {
     single.species.mode <- isTruthy(input$CB_comp_monod_single_species_edit)
@@ -2255,6 +2297,18 @@ equationBuilder_edit_mathJax <- reactive({
     mu_max.mj <- Var2MathJ(input$TI_monod_mu_max_edit)
     K_s.mj <- Var2MathJ(input$TI_monod_K_s_edit)
     textOut <- paste0("\\ce{", substrate.mj, "->[{", mu_max.mj, "}][{", K_s.mj, "}]", species.mj, "}")
+  }
+  else if (eqn.reaction.law == "predator_prey") {
+    x <- Var2MathJ(input$PI_pred_prey_prey_edit)
+    y <- Var2MathJ(input$PI_pred_prey_predator_edit)
+    r <- Var2MathJ(input$TI_pred_prey_r_edit)
+    a <- Var2MathJ(input$TI_pred_prey_a_edit)
+    b <- Var2MathJ(input$TI_pred_prey_b_edit)
+    d <- Var2MathJ(input$TI_pred_prey_d_edit)
+    textOut <- paste0("\\begin{aligned}",
+                      "\\frac{d", x, "}{dt} &= ", r, x, "-", a, x, y, " \\\\",
+                      "\\frac{d", y, "}{dt} &= ", b, x, y, "-", d, y,
+                      "\\end{aligned}")
   }
   else if (eqn.reaction.law == "competitive_monod") {
     single.species.mode <- isTruthy(input$CB_comp_monod_single_species_edit)

@@ -1015,6 +1015,88 @@ observeEvent(input$eqnCreate_addEqnToVector, {
     mathml.law  <- NA
     content.ml  <- NA
   }
+  else if (input$eqnCreate_reaction_law == "predator_prey") {
+    reaction.id  <- NA
+    eqn.display  <- "Predator-Prey"
+    backend.call <- "predator_prey"
+    isReversible <- FALSE
+
+    species.x    <- input$PI_pred_prey_prey
+    species.y    <- input$PI_pred_prey_predator
+    species.id.x <- FindId(species.x)
+    species.id.y <- FindId(species.y)
+
+    # Both prey and predator are "products" of this reaction so DeriveODEs
+    # gives them a "+" sign; per-species rate laws (the FULL net rate
+    # including loss terms) are picked up from the predatorPrey entry.
+    species      <- c(species.x, species.y)
+    species.id   <- c(species.id.x, species.id.y)
+    reactants    <- NA
+    reactants.id <- NA
+    products     <- collapseVector(c(species.x, species.y))
+    products.id  <- collapseVector(c(species.id.x, species.id.y))
+    modifiers    <- NA
+    modifiers.id <- NA
+
+    r.name <- input$TI_pred_prey_r
+    r.val  <- input$NI_pred_prey_r_value
+    a.name <- input$TI_pred_prey_a
+    a.val  <- input$NI_pred_prey_a_value
+    b.name <- input$TI_pred_prey_b
+    b.val  <- input$NI_pred_prey_b_value
+    d.name <- input$TI_pred_prey_d
+    d.val  <- input$NI_pred_prey_d_value
+
+    unit.description.r <- "num <div> time"
+    base.unit.r        <- paste0("1/", rv.UNITS$units.base$Duration)
+    unit.r             <- paste0("1/", rv.UNITS$units.selected$Duration)
+
+    addParam <- function(name, val, unit, base.unit, unit.desc, desc) {
+      if (unit != base.unit) {
+        base.val <- UnitConversion(unit.desc, unit, base.unit, as.numeric(val))
+      } else { base.val <- val }
+      list(name=name,val=val,unit=unit,base.unit=base.unit,unit.desc=unit.desc,
+           base.val=base.val, desc=desc)
+    }
+
+    p.r <- addParam(r.name, r.val, unit.r, base.unit.r, unit.description.r,
+                    paste0("Prey growth rate for ", species.x))
+    p.a <- addParam(a.name, a.val, unit.r, base.unit.r, unit.description.r,
+                    paste0("Attack rate (loss of ", species.x, " due to ", species.y, ")"))
+    p.b <- addParam(b.name, b.val, unit.r, base.unit.r, unit.description.r,
+                    paste0("Conversion rate (gain of ", species.y, " from consuming ", species.x, ")"))
+    p.d <- addParam(d.name, d.val, unit.r, base.unit.r, unit.description.r,
+                    paste0("Predator death rate for ", species.y))
+
+    pack <- list(p.r, p.a, p.b, p.d)
+    for (p in pack) {
+      parameters         <- c(parameters, p$name)
+      param.vals         <- c(param.vals, p$val)
+      param.units        <- c(param.units, p$unit)
+      unit.descriptions  <- c(unit.descriptions, p$unit.desc)
+      param.descriptions <- c(param.descriptions, p$desc)
+      base.units         <- c(base.units, p$base.unit)
+      base.values        <- c(base.values, p$base.val)
+    }
+
+    # Net rate laws (full RHS of dX/dt and dY/dt)
+    rate.law.x <- paste0(r.name, "*", species.x, "-", a.name, "*", species.x, "*", species.y)
+    rate.law.y <- paste0(b.name, "*", species.x, "*", species.y, "-", d.name, "*", species.y)
+
+    mathjax.law <- paste0("\\begin{aligned}",
+                          "\\frac{d", Var2MathJ(species.x), "}{dt} &= ", Var2MathJ(r.name), Var2MathJ(species.x),
+                          "-", Var2MathJ(a.name), Var2MathJ(species.x), Var2MathJ(species.y), " \\\\",
+                          "\\frac{d", Var2MathJ(species.y), "}{dt} &= ", Var2MathJ(b.name), Var2MathJ(species.x), Var2MathJ(species.y),
+                          "-", Var2MathJ(d.name), Var2MathJ(species.y),
+                          "\\end{aligned}")
+
+    rate.law    <- rate.law.x
+    p.rate.law  <- rate.law.x
+    latex.law   <- rate.law.x
+    mathml.law  <- NA
+    content.ml  <- NA
+    eqn.d       <- paste0("Predator-prey interaction between ", species.x, " (prey) and ", species.y, " (predator)")
+  }
   else if (input$eqnCreate_reaction_law == "mass_action_w_reg") {
     reaction.id <- NA
     eqn.display <- "Regulated Mass Action"
@@ -2398,6 +2480,29 @@ observeEvent(input$eqnCreate_addEqnToVector, {
       ncm <- length(rv.REACTIONS$competitiveMonod)
       rv.REACTIONS$competitiveMonod[[ncm + 1]] <- cm.entry
       names(rv.REACTIONS$competitiveMonod)[ncm + 1] <- ID.to.add
+    }
+    else if (input$eqnCreate_reaction_law == "predator_prey") {
+      r.id <- par.ids[1]
+      a.id <- par.ids[2]
+      b.id <- par.ids[3]
+      d.id <- par.ids[4]
+      pp.entry <- list(
+        "ID"           = ID.to.add,
+        "Reaction.Law" = input$eqnCreate_reaction_law,
+        "Prey"         = species.x,
+        "Prey.id"      = species.id.x,
+        "Predator"     = species.y,
+        "Predator.id"  = species.id.y,
+        "r"            = parameters[1], "r.id" = r.id, "r.val" = param.vals[1],
+        "a"            = parameters[2], "a.id" = a.id, "a.val" = param.vals[2],
+        "b"            = parameters[3], "b.id" = b.id, "b.val" = param.vals[3],
+        "d"            = parameters[4], "d.id" = d.id, "d.val" = param.vals[4],
+        "rate.law.x"   = rate.law.x,
+        "rate.law.y"   = rate.law.y
+      )
+      npp <- length(rv.REACTIONS$predatorPrey)
+      rv.REACTIONS$predatorPrey[[npp + 1]] <- pp.entry
+      names(rv.REACTIONS$predatorPrey)[npp + 1] <- ID.to.add
     }
     else if (input$eqnCreate_reaction_law == "logistic_competition") {
       # The shared code above already wrote ONE reaction.entry for ID.to.add

@@ -558,6 +558,39 @@ output$equationBuilder_competitive_monod <- renderUI({
   )
 })
 
+output$equationBuilder_predator_prey <- renderUI({
+  n.existing <- length(rv.REACTIONS$predatorPrey)
+  param.suffix <- if (n.existing > 0) paste0("_", n.existing + 1) else ""
+
+  div(
+    fluidRow(
+      column(width = 4,
+        pickerInput("PI_pred_prey_prey", "Prey (X)",
+                    choices = sort(rv.SPECIES$df.by.compartment$Name),
+                    options = pickerOptions(liveSearch = TRUE,
+                                            liveSearchStyle = "startsWith"))),
+      column(width = 4,
+        pickerInput("PI_pred_prey_predator", "Predator (Y)",
+                    choices = sort(rv.SPECIES$df.by.compartment$Name),
+                    options = pickerOptions(liveSearch = TRUE,
+                                            liveSearchStyle = "startsWith")))
+    ),
+    hr(),
+    fluidRow(
+      column(width = 3, textInput("TI_pred_prey_r", "r (prey growth rate)", value = paste0("r", param.suffix))),
+      column(width = 3, numericInput("NI_pred_prey_r_value", "Value", value = 0.7, min = 0, step = 0.01)),
+      column(width = 3, textInput("TI_pred_prey_a", "a (attack rate in dX/dt)", value = paste0("a", param.suffix))),
+      column(width = 3, numericInput("NI_pred_prey_a_value", "Value", value = 0.01, min = 0, step = 0.0001))
+    ),
+    fluidRow(
+      column(width = 3, textInput("TI_pred_prey_b", "b (conversion rate in dY/dt)", value = paste0("b", param.suffix))),
+      column(width = 3, numericInput("NI_pred_prey_b_value", "Value", value = 0.01, min = 0, step = 0.0001)),
+      column(width = 3, textInput("TI_pred_prey_d", "d (predator death rate)", value = paste0("d", param.suffix))),
+      column(width = 3, numericInput("NI_pred_prey_d_value", "Value", value = 0.1, min = 0, step = 0.01))
+    )
+  )
+})
+
 output$equationBuilder_synthesis <- renderUI({
 
   div(

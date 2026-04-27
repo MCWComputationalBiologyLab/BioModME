@@ -1382,6 +1382,15 @@ observeEvent(input$file_input_load_sbml, {
                  stringsAsFactors = FALSE)
     )
   }
+  if (!"predator_prey" %in% rv.REACTIONLAWS$laws$BackendName) {
+    rv.REACTIONLAWS$laws <- rbind(
+      rv.REACTIONLAWS$laws,
+      data.frame(Name = "Predator-Prey",
+                 BackendName = "predator_prey",
+                 Type = "bacterial",
+                 stringsAsFactors = FALSE)
+    )
+  }
 
   rv.REACTIONS$reactions <- rv.sbml.temp$reactions
   

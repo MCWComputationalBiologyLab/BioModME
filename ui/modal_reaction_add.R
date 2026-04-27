@@ -288,6 +288,11 @@ shinyBS::bsModal(
           ),
           conditionalPanel(
             condition =
+              "input.eqnCreate_reaction_law == 'predator_prey'",
+            uiOutput("equationBuilder_predator_prey")
+          ),
+          conditionalPanel(
+            condition =
               "input.eqnCreate_reaction_law == 'michaelis_menten'",
             uiOutput("equationBuilder_michaelis_menten")
           ),
