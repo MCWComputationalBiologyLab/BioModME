@@ -444,6 +444,55 @@ output$equationBuilder_logistic_competition <- renderUI({
   )
 })
 
+output$equationBuilder_monod_growth <- renderUI({
+  # Count existing monod growth reactions to generate unique parameter names
+  n.existing <- length(rv.REACTIONS$monodGrowth)
+  param.suffix <- if (n.existing > 0) paste0("_", n.existing + 1) else ""
+
+  div(
+    fluidRow(
+      column(
+        width = 4,
+        pickerInput(
+          inputId = "PI_monod_species",
+          label   = "Growing Species (X)",
+          choices = sort(rv.SPECIES$df.by.compartment$Name),
+          options = pickerOptions(liveSearch = TRUE,
+                                  liveSearchStyle = "startsWith")
+        )
+      ),
+      column(
+        width = 4,
+        pickerInput(
+          inputId = "PI_monod_substrate",
+          label   = "Substrate (S)",
+          choices = sort(rv.SPECIES$df.by.compartment$Name),
+          options = pickerOptions(liveSearch = TRUE,
+                                  liveSearchStyle = "startsWith")
+        )
+      )
+    ),
+    fluidRow(
+      column(
+        width = 3,
+        textInput("TI_monod_mu_max", "mu_max", value = paste0("mu_max", param.suffix))
+      ),
+      column(
+        width = 3,
+        numericInput("NI_monod_mu_max_value", "Value", value = 0.7, min = 0, step = 0.01)
+      ),
+      column(
+        width = 3,
+        textInput("TI_monod_K_s", "K_s (half-saturation)", value = paste0("K_s", param.suffix))
+      ),
+      column(
+        width = 3,
+        numericInput("NI_monod_K_s_value", "Value", value = 0.5, min = 0.0001, step = 0.01)
+      )
+    )
+  )
+})
+
 output$equationBuilder_synthesis <- renderUI({
 
   div(

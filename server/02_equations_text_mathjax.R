@@ -230,6 +230,14 @@ equationMathJaxBuilder <- reactive({
                       "\\frac{d", y, "}{dt} &= ", r2, y, "\\left(1-\\frac{", y, "+", a2, x, "}{", Kc, "}\\right)",
                       "\\end{aligned}")
   }
+  else if (input$eqnCreate_reaction_law == "monod_growth") {
+    species.mj <- Var2MathJ(input$PI_monod_species)
+    substrate.mj <- Var2MathJ(input$PI_monod_substrate)
+    mu_max.mj <- Var2MathJ(input$TI_monod_mu_max)
+    K_s.mj <- Var2MathJ(input$TI_monod_K_s)
+    # Show scheme: S -> X (with Monod kinetics)
+    textOut <- paste0("\\ce{", substrate.mj, "->[{", mu_max.mj, "}][{", K_s.mj, "}]", species.mj, "}")
+  }
   else if (input$eqnCreate_reaction_law == "synthesis") {
 
     if (input$CB_synthesis_factor_checkbox) {
@@ -598,6 +606,13 @@ equationLatexBuilder <- reactive({
     species <- Var2Latex(input$PI_exp_growth_species)
     mu      <- Var2Latex(input$TI_exp_growth_mu)
     textOut <- paste0("\\frac{d", species, "}{dt} = ", mu, species)
+  }
+  else if (input$eqnCreate_reaction_law == "monod_growth") {
+    species <- Var2Latex(input$PI_monod_species)
+    substrate <- Var2Latex(input$PI_monod_substrate)
+    mu_max <- Var2Latex(input$TI_monod_mu_max)
+    K_s <- Var2Latex(input$TI_monod_K_s)
+    textOut <- paste0("\\frac{d", species, "}{dt} = ", mu_max, "*", species, "*\\frac{", substrate, "}{", K_s, "+", substrate, "}")
   }
   else if (input$eqnCreate_reaction_law == "mass_action_w_reg") {
     arrow <- "\\xrightarrow"
@@ -1067,6 +1082,12 @@ equationBuilder <- reactive({
     species.y <- input$PI_log_comp_species_y
     textOut <- paste0("--> (logistic competition) ", species.x, ", ", species.y)
   }
+  else if (input$eqnCreate_reaction_law == "monod_growth") {
+    species <- input$PI_monod_species
+    substrate <- input$PI_monod_substrate
+    mu_max <- input$TI_monod_mu_max
+    textOut <- paste0(substrate, " --> (", mu_max, ", ", input$TI_monod_K_s, ") ", species)
+  }
   else if (input$eqnCreate_reaction_law == "synthesis") {
     if (input$CB_synthesis_factor_checkbox) {
       arrow  <- "-->"
@@ -1392,6 +1413,12 @@ equationBuilder_edit <- reactive({
     x  <- input$PI_log_comp_species_x_edit
     y  <- input$PI_log_comp_species_y_edit
     textOut <- paste0("--> (logistic competition) ", x, ", ", y)
+  }
+  else if (eqn.reaction.law == "monod_growth") {
+    species <- input$PI_monod_species_edit
+    substrate <- input$PI_monod_substrate_edit
+    mu_max <- input$TI_monod_mu_max_edit
+    textOut <- paste0(substrate, " --> (", mu_max, ", ", input$TI_monod_K_s_edit, ") ", species)
   }
   else if (eqn.reaction.law == "synthesis") {
     if (input$CB_synthesis_factor_checkbox_edit) {
@@ -1760,6 +1787,13 @@ equationLatexBuilder_edit <- reactive({
                       "\\frac{d", y, "}{dt} &= ", r2, y, "\\left(1-\\frac{", y, "+", a2, x, "}{", Kc, "}\\right)",
                       "\\end{aligned}")
   }
+  else if (eqn.reaction.law == "monod_growth") {
+    species <- Var2Latex(input$PI_monod_species_edit)
+    substrate <- Var2Latex(input$PI_monod_substrate_edit)
+    mu_max <- Var2Latex(input$TI_monod_mu_max_edit)
+    K_s <- Var2Latex(input$TI_monod_K_s_edit)
+    textOut <- paste0("\\frac{d", species, "}{dt} = ", mu_max, "*", species, "*\\frac{", substrate, "}{", K_s, "+", substrate, "}")
+  }
   else if (eqn.reaction.law == "synthesis") {
     if (input$CB_synthesis_factor_checkbox_edit) {
       arrow  <- "\\xrightarrow"
@@ -2125,6 +2159,13 @@ equationBuilder_edit_mathJax <- reactive({
                       "\\frac{d", x, "}{dt} &= ", r1, x, "\\left(1-\\frac{", x, "+", a1, y, "}{", Kc, "}\\right) \\\\",
                       "\\frac{d", y, "}{dt} &= ", r2, y, "\\left(1-\\frac{", y, "+", a2, x, "}{", Kc, "}\\right)",
                       "\\end{aligned}")
+  }
+  else if (eqn.reaction.law == "monod_growth") {
+    species.mj <- Var2MathJ(input$PI_monod_species_edit)
+    substrate.mj <- Var2MathJ(input$PI_monod_substrate_edit)
+    mu_max.mj <- Var2MathJ(input$TI_monod_mu_max_edit)
+    K_s.mj <- Var2MathJ(input$TI_monod_K_s_edit)
+    textOut <- paste0("\\ce{", substrate.mj, "->[{", mu_max.mj, "}][{", K_s.mj, "}]", species.mj, "}")
   }
   else if (eqn.reaction.law == "synthesis") {
 

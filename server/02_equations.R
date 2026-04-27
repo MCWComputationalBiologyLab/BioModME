@@ -798,6 +798,76 @@ observeEvent(input$eqnCreate_addEqnToVector, {
     content.ml  <- NA
     eqn.d       <- "Logistic competition between two species"
   }
+  else if (input$eqnCreate_reaction_law == "monod_growth") {
+    reaction.id  <- NA
+    eqn.display  <- "Monod Growth"
+    backend.call <- "monod_growth"
+    modifiers    <- NA
+    modifiers.id <- NA
+    isReversible <- FALSE
+
+    growth.species    <- input$PI_monod_species
+    growth.species.id <- FindId(growth.species)
+    substrate         <- input$PI_monod_substrate
+    substrate.id      <- FindId(substrate)
+    species           <- c(growth.species, substrate)
+    species.id        <- c(growth.species.id, substrate.id)
+
+    # Substrate is consumed (reactant), growing species is produced (product)
+    reactants    <- substrate
+    reactants.id <- substrate.id
+    products     <- growth.species
+    products.id  <- growth.species.id
+
+    mu_max.name     <- input$TI_monod_mu_max
+    mu_max.val      <- input$NI_monod_mu_max_value
+    unit.description.mu <- "num <div> time"
+    base.unit.mu    <- paste0("1/", rv.UNITS$units.base$Duration)
+    param.unit.mu   <- paste0("1/", rv.UNITS$units.selected$Duration)
+    param.description.mu <- paste0("Maximum specific growth rate for ", growth.species)
+
+    if (param.unit.mu != base.unit.mu) {
+      base.val.mu <- UnitConversion(unit.description.mu,
+                                    param.unit.mu,
+                                    base.unit.mu,
+                                    as.numeric(mu_max.val))
+    } else {
+      base.val.mu <- mu_max.val
+    }
+
+    K_s.name     <- input$TI_monod_K_s
+    K_s.val      <- input$NI_monod_K_s_value
+    unit.K_s     <- rv.UNITS$units.selected$For.Var
+    base.K_s     <- rv.UNITS$units.base$For.Var
+    unit.description.K_s <- paste0("conc (", base.K_s, ")")
+    param.description.K_s <- paste0("Half-saturation constant for ", substrate)
+
+    if (unit.K_s != base.K_s) {
+      base.val.K_s <- UnitConversion(unit.description.K_s,
+                                     unit.K_s,
+                                     base.K_s,
+                                     as.numeric(K_s.val))
+    } else {
+      base.val.K_s <- K_s.val
+    }
+
+    parameters         <- c(parameters, mu_max.name, K_s.name)
+    param.vals         <- c(param.vals, mu_max.val, K_s.val)
+    param.units        <- c(param.units, param.unit.mu, unit.K_s)
+    unit.descriptions  <- c(unit.descriptions, unit.description.mu, unit.description.K_s)
+    param.descriptions <- c(param.descriptions, param.description.mu, param.description.K_s)
+    base.units         <- c(base.units, base.unit.mu, base.K_s)
+    base.values        <- c(base.values, base.val.mu, base.val.K_s)
+
+    # Rate law: mu_max * X * S / (K_s + S)
+    rate.law    <- paste0(mu_max.name, "*", growth.species, "*", substrate, "/(", K_s.name, "+", substrate, ")")
+    p.rate.law  <- rate.law
+    latex.law   <- paste0(mu_max.name, "\\cdot ", growth.species, "\\cdot \\frac{", substrate, "}{", K_s.name, "+", substrate, "}")
+    mathjax.law <- paste0(Var2MathJ(mu_max.name), "*", Var2MathJ(growth.species), "*\\frac{", Var2MathJ(substrate), "}{", Var2MathJ(K_s.name), "+", Var2MathJ(substrate), "}")
+    mathml.law  <- NA
+    content.ml  <- NA
+    eqn.d       <- paste0("Monod growth d", growth.species, "/dt = ", mu_max.name, "*", growth.species, "*", substrate, "/(", K_s.name, "+", substrate, ")")
+  }
   else if (input$eqnCreate_reaction_law == "mass_action_w_reg") {
     reaction.id <- NA
     eqn.display <- "Regulated Mass Action"
@@ -2081,6 +2151,36 @@ observeEvent(input$eqnCreate_addEqnToVector, {
       n <- length(rv.REACTIONS$exponentialGrowth)
       rv.REACTIONS$exponentialGrowth[[n + 1]] <- sub.entry
       names(rv.REACTIONS$exponentialGrowth)[n + 1] <- ID.to.add
+    }
+    else if (input$eqnCreate_reaction_law == "monod_growth") {
+      mu_max.id <- par.ids[1]
+      K_s.id    <- par.ids[2]
+      sub.entry <- list(
+        "ID"               = ID.to.add,
+        "Reaction.Law"     = input$eqnCreate_reaction_law,
+        "Species"          = growth.species,
+        "Species.id"       = growth.species.id,
+        "Substrate"        = substrate,
+        "Substrate.id"     = substrate.id,
+        "Mu_max"           = parameters[1],
+        "Mu_max.id"        = mu_max.id,
+        "Mu_max.val"       = param.vals[1],
+        "Mu_max.unit"      = param.units[1],
+        "Mu_max.unit.desc" = unit.descriptions[1],
+        "Mu_max.base.unit" = base.units[1],
+        "Mu_max.base.val"  = base.values[1],
+        "K_s"              = parameters[2],
+        "K_s.id"           = K_s.id,
+        "K_s.val"          = param.vals[2],
+        "K_s.unit"         = param.units[2],
+        "K_s.unit.desc"    = unit.descriptions[2],
+        "K_s.base.unit"    = base.units[2],
+        "K_s.base.val"     = base.values[2]
+      )
+
+      n <- length(rv.REACTIONS$monodGrowth)
+      rv.REACTIONS$monodGrowth[[n + 1]] <- sub.entry
+      names(rv.REACTIONS$monodGrowth)[n + 1] <- ID.to.add
     }
     else if (input$eqnCreate_reaction_law == "logistic_competition") {
       # The shared code above already wrote ONE reaction.entry for ID.to.add

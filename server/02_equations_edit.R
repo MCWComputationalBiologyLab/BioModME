@@ -39,6 +39,74 @@ output$equationBuilder_exponential_growth_edit <- renderUI({
   )
 })
 
+# Monod growth edit builder
+output$equationBuilder_monod_growth_edit <- renderUI({
+  div(
+    fluidRow(
+      column(
+        width = 4,
+        pickerInput(
+          inputId = "PI_monod_species_edit",
+          label   = "Growing Species (X)",
+          choices = sort(rv.SPECIES$df.by.compartment$Name),
+          selected = input$PI_monod_species_edit,
+          options = pickerOptions(liveSearch = TRUE,
+                                  liveSearchStyle = "startsWith")
+        )
+      ),
+      column(
+        width = 4,
+        pickerInput(
+          inputId = "PI_monod_substrate_edit",
+          label   = "Substrate (S)",
+          choices = sort(rv.SPECIES$df.by.compartment$Name),
+          selected = input$PI_monod_substrate_edit,
+          options = pickerOptions(liveSearch = TRUE,
+                                  liveSearchStyle = "startsWith")
+        )
+      )
+    ),
+    fluidRow(
+      column(
+        width = 3,
+        textInput(
+          inputId = "TI_monod_mu_max_edit",
+          label = "mu_max",
+          value = if (is.null(input$TI_monod_mu_max_edit)) "mu_max" else input$TI_monod_mu_max_edit
+        )
+      ),
+      column(
+        width = 3,
+        numericInput(
+          inputId = "NI_monod_mu_max_value_edit",
+          label = "Value",
+          value = if (is.null(input$NI_monod_mu_max_value_edit)) 0.7 else input$NI_monod_mu_max_value_edit,
+          min = 0,
+          step = 0.01
+        )
+      ),
+      column(
+        width = 3,
+        textInput(
+          inputId = "TI_monod_K_s_edit",
+          label = "K_s (half-saturation)",
+          value = if (is.null(input$TI_monod_K_s_edit)) "K_s" else input$TI_monod_K_s_edit
+        )
+      ),
+      column(
+        width = 3,
+        numericInput(
+          inputId = "NI_monod_K_s_value_edit",
+          label = "Value",
+          value = if (is.null(input$NI_monod_K_s_value_edit)) 0.5 else input$NI_monod_K_s_value_edit,
+          min = 0.0001,
+          step = 0.01
+        )
+      )
+    )
+  )
+})
+
 # Left Box: Equation Edit Options ----------------------------------------------
 output$eqnCreate_edit_rendering_sidebar <- renderUI({
 # browser()
@@ -1159,6 +1227,43 @@ output$eqnCreate_edit_rending_mainbar <- renderUI({
       )
     )
   }
+  else if (eqn.reaction.law == "monod_growth") {
+    info <- rv.REACTIONS$monodGrowth[[eqn.ID]]
+    species    <- info$Species
+    substrate  <- info$Substrate
+    mu_max     <- info$Mu_max
+    K_s        <- info$K_s
+
+    mu_max.val <- rv.PARAMETERS$parameters[[info$Mu_max.id]]$Value
+    K_s.val    <- rv.PARAMETERS$parameters[[info$K_s.id]]$Value
+
+    div(
+      fluidRow(
+        column(
+          width = 4,
+          pickerInput("PI_monod_species_edit", "Growing Species (X)",
+                      choices = sort(rv.SPECIES$df.by.compartment$Name),
+                      selected = species,
+                      options = pickerOptions(liveSearch = TRUE,
+                                              liveSearchStyle = "startsWith"))
+        ),
+        column(
+          width = 4,
+          pickerInput("PI_monod_substrate_edit", "Substrate (S)",
+                      choices = sort(rv.SPECIES$df.by.compartment$Name),
+                      selected = substrate,
+                      options = pickerOptions(liveSearch = TRUE,
+                                              liveSearchStyle = "startsWith"))
+        )
+      ),
+      fluidRow(
+        column(width = 3, textInput("TI_monod_mu_max_edit", "mu_max", value = mu_max)),
+        column(width = 3, numericInput("NI_monod_mu_max_value_edit", "Value", value = mu_max.val, min = 0, step = 0.01)),
+        column(width = 3, textInput("TI_monod_K_s_edit", "K_s (half-saturation)", value = K_s)),
+        column(width = 3, numericInput("NI_monod_K_s_value_edit", "Value", value = K_s.val, min = 0.0001, step = 0.01))
+      )
+    )
+  }
   else if (eqn.reaction.law == "logistic_competition") {
     info <- rv.REACTIONS$logisticCompetition[[eqn.ID]]
     # Fallback for reactions saved by an earlier two-row design where eqn.ID
@@ -1938,6 +2043,79 @@ observeEvent(input$modal_editEqn_edit_button, {
       pretty.string = paste0(mu.name, "*", growth.species),
       latex         = paste0(mu.name, "\\cdot ", growth.species),
       mj            = paste0(Var2MathJ(mu.name), "*", Var2MathJ(growth.species)),
+      mathml        = NA,
+      content.ml    = NA
+    )
+  }
+  else if (eqn.reaction.law == "monod_growth") {
+    reaction.id  <- NA
+    eqn.display  <- "Monod Growth"
+    backend.call <- "monod_growth"
+    modifiers    <- NA
+    modifiers.id <- NA
+    isReversible <- FALSE
+
+    growth.species    <- input$PI_monod_species_edit
+    growth.species.id <- FindId(growth.species)
+    substrate         <- input$PI_monod_substrate_edit
+    substrate.id      <- FindId(substrate)
+    species           <- c(growth.species, substrate)
+    species.id        <- c(growth.species.id, substrate.id)
+
+    # Substrate is consumed (reactant), growing species is produced (product)
+    reactants    <- substrate
+    reactants.id <- substrate.id
+    products     <- growth.species
+    products.id  <- growth.species.id
+
+    mu_max.name     <- input$TI_monod_mu_max_edit
+    mu_max.val      <- input$NI_monod_mu_max_value_edit
+    unit.description.mu <- "num <div> time"
+    base.unit.mu    <- paste0("1/", rv.UNITS$units.base$Duration)
+    param.unit.mu   <- paste0("1/", rv.UNITS$units.selected$Duration)
+
+    if (param.unit.mu != base.unit.mu) {
+      base.val.mu <- UnitConversion(unit.description.mu,
+                                    param.unit.mu,
+                                    base.unit.mu,
+                                    as.numeric(mu_max.val))
+    } else {
+      base.val.mu <- mu_max.val
+    }
+
+    K_s.name     <- input$TI_monod_K_s_edit
+    K_s.val      <- input$NI_monod_K_s_value_edit
+    unit.K_s     <- rv.UNITS$units.selected$For.Var
+    base.K_s     <- rv.UNITS$units.base$For.Var
+    unit.description.K_s <- paste0("conc (", base.K_s, ")")
+
+    if (unit.K_s != base.K_s) {
+      base.val.K_s <- UnitConversion(unit.description.K_s,
+                                     unit.K_s,
+                                     base.K_s,
+                                     as.numeric(K_s.val))
+    } else {
+      base.val.K_s <- K_s.val
+    }
+
+    parameters         <- c(parameters, mu_max.name, K_s.name)
+    param.vals         <- c(param.vals, mu_max.val, K_s.val)
+    param.units        <- c(param.units, param.unit.mu, unit.K_s)
+    unit.descriptions  <- c(unit.descriptions, unit.description.mu, unit.description.K_s)
+    param.descriptions <- c(param.descriptions,
+                             paste0("Specific growth rate for ", growth.species),
+                             paste0("Half-saturation constant for ", substrate))
+    base.units         <- c(base.units, base.unit.mu, base.K_s)
+    base.values        <- c(base.values, base.val.mu, base.val.K_s)
+
+    rate.law.str <- paste0(mu_max.name, "*", growth.species, "*", substrate, "/(", K_s.name, "+", substrate, ")")
+    eqn.d <- paste0("Monod growth d", growth.species, "/dt = ", rate.law.str)
+
+    laws <- list(
+      string        = rate.law.str,
+      pretty.string = rate.law.str,
+      latex         = paste0(mu_max.name, "\\cdot ", growth.species, "\\cdot \\frac{", substrate, "}{", K_s.name, "+", substrate, "}"),
+      mj            = paste0(Var2MathJ(mu_max.name), "*", Var2MathJ(growth.species), "*\\frac{", Var2MathJ(substrate), "}{", Var2MathJ(K_s.name), "+", Var2MathJ(substrate), "}"),
       mathml        = NA,
       content.ml    = NA
     )
@@ -2990,6 +3168,33 @@ observeEvent(input$modal_editEqn_edit_button, {
       )
 
       rv.REACTIONS$exponentialGrowth[[eqn.ID]] <- sub.entry
+    }
+    else if (eqn.reaction.law == "monod_growth") {
+      mu_max.id <- par.ids[1]
+      K_s.id    <- par.ids[2]
+      sub.entry <- list(
+        "ID"               = eqn.ID,
+        "Reaction.Law"     = eqn.reaction.law,
+        "Species"          = growth.species,
+        "Species.id"       = growth.species.id,
+        "Substrate"        = substrate,
+        "Substrate.id"     = substrate.id,
+        "Mu_max"           = parameters[1],
+        "Mu_max.id"        = mu_max.id,
+        "Mu_max.val"       = param.vals[1],
+        "Mu_max.unit"      = param.units[1],
+        "Mu_max.unit.desc" = unit.descriptions[1],
+        "Mu_max.base.unit" = base.units[1],
+        "Mu_max.base.val"  = base.values[1],
+        "K_s"              = parameters[2],
+        "K_s.id"           = K_s.id,
+        "K_s.val"          = param.vals[2],
+        "K_s.unit"         = param.units[2],
+        "K_s.unit.desc"    = unit.descriptions[2],
+        "K_s.base.unit"    = base.units[2],
+        "K_s.base.val"     = base.values[2]
+      )
+      rv.REACTIONS$monodGrowth[[eqn.ID]] <- sub.entry
     }
     else if (eqn.reaction.law == "logistic_competition") {
       r.x.id      <- par.ids[1]; r.y.id <- par.ids[2]

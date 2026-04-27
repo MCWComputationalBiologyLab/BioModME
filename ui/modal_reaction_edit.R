@@ -100,6 +100,11 @@ shinyBS::bsModal(
         ),
         conditionalPanel(
           condition =
+            "input.eqnCreate_reaction_law_edit == 'monod_growth'",
+          uiOutput("equationBuilder_monod_growth_edit")
+        ),
+        conditionalPanel(
+          condition =
             "input.eqnCreate_reaction_law_edit == 'michaelis_menten'",
           uiOutput("equationBuilder_michaelis_menten_edit")
         ),

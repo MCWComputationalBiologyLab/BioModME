@@ -1364,6 +1364,15 @@ observeEvent(input$file_input_load_sbml, {
                  stringsAsFactors = FALSE)
     )
   }
+  if (!"monod_growth" %in% rv.REACTIONLAWS$laws$BackendName) {
+    rv.REACTIONLAWS$laws <- rbind(
+      rv.REACTIONLAWS$laws,
+      data.frame(Name = "Monod Growth",
+                 BackendName = "monod_growth",
+                 Type = "bacterial",
+                 stringsAsFactors = FALSE)
+    )
+  }
 
   rv.REACTIONS$reactions <- rv.sbml.temp$reactions
   

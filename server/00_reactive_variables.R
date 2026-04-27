@@ -218,6 +218,19 @@ rv.REACTIONS <- reactiveValues(
   # Mu.base.unit     || Base unit
   # Mu.base.val      || Base-unit value
 
+  # Monod Growth (substrate-dependent growth dX/dt = mu_max * X * S / (K_s + S))
+  monodGrowth = list(),
+  # ID               || ID of growth reaction
+  # Reaction.Law     || Law identifier
+  # Species          || Variable experiencing growth (bacteria)
+  # Species.id       || ID of variable
+  # Substrate        || Substrate species (nutrient)
+  # Substrate.id     || ID of substrate
+  # Mu_max           || Maximum specific growth rate parameter name
+  # Mu_max.id        || Parameter ID
+  # K_s              || Half-saturation constant parameter name
+  # K_s.id           || Parameter ID
+
   # Logistic Competition (two-species LV with carrying capacity)
   logisticCompetition = list(),
   # ID               || ID of reaction
@@ -239,6 +252,7 @@ rv.REACTIONS <- reactiveValues(
   degradation.by.enzyme.df = data.frame(),
   exponentialGrowth.df = data.frame(),
   logisticCompetition.df = data.frame(),
+  monodGrowth.df = data.frame(),
   
   # This is used to keep track of how many eqns were made 
   # (specifically keeping strack of pregenerated rate constant naming)
@@ -541,7 +555,8 @@ rv.REACTIONLAWS <- reactiveValues(
              "Degradation (Enzyme)",
              "Michaelis Menten",
              "Exponential Growth",
-             "Logistic Competition"),
+             "Logistic Competition",
+             "Monod Growth"),
     BackendName = c("mass_action",
                     "mass_action_w_reg",
                     "synthesis",
@@ -549,13 +564,15 @@ rv.REACTIONLAWS <- reactiveValues(
                     "degradation_by_enzyme",
                     "michaelis_menten",
                     "exponential_growth",
-                    "logistic_competition"),
+                    "logistic_competition",
+                    "monod_growth"),
     Type = c("chemical",
              "chemical",
              "chemical",
              "chemical",
              "chemical",
              "enzyme",
+             "bacterial",
              "bacterial",
              "bacterial")
   ),
@@ -682,7 +699,8 @@ rv.sbml.temp <- reactiveValues(
              "Degradation (Enzyme)",
              "Michaelis Menten",
              "Exponential Growth",
-             "Logistic Competition"),
+             "Logistic Competition",
+             "Monod Growth"),
     BackendName = c("mass_action",
                     "mass_action_w_reg",
                     "synthesis",
@@ -690,13 +708,15 @@ rv.sbml.temp <- reactiveValues(
                     "degradation_by_enzyme",
                     "michaelis_menten",
                     "exponential_growth",
-                    "logistic_competition"),
+                    "logistic_competition",
+                    "monod_growth"),
     Type = c("chemical",
              "chemical",
              "chemical",
              "chemical",
              "chemical",
              "enzyme",
+             "bacterial",
              "bacterial",
              "bacterial")
   ),
