@@ -89,7 +89,9 @@ CreatePlot <- function(modelResults,
                        optionOverlayData,
                        dataToOverlay, 
                        overlayX,
-                       overlayY
+                       overlayY,
+                       optionXLogScale = FALSE,
+                       optionYLogScale = FALSE
 
 ) {
   # Inputs
@@ -249,23 +251,55 @@ CreatePlot <- function(modelResults,
   
   # Options for Custom Axis Choices
   if (optionCustomAxis) {
-    g_line <-
-      g_line + scale_x_continuous(
-        limits = c(xAxisMin, xAxisMax),
-        breaks = seq(
-          from = xAxisMin,
-          to = xAxisMax,
-          by = xAxisStep
+    if (optionXLogScale && xAxisMin > 0) {
+      # Use log scale with custom limits
+      g_line <-
+        g_line + scale_x_log10(
+          limits = c(xAxisMin, xAxisMax)
         )
-      ) +
-      scale_y_continuous(
-        limits = c(yAxisMin, yAxisMax),
-        breaks = seq(
-          from = yAxisMin,
-          to = yAxisMax,
-          by = yAxisStep
+    } else if (optionXLogScale) {
+      # Log scale requested but min <= 0, use default log scale
+      g_line <- g_line + scale_x_log10()
+    } else {
+      g_line <-
+        g_line + scale_x_continuous(
+          limits = c(xAxisMin, xAxisMax),
+          breaks = seq(
+            from = xAxisMin,
+            to = xAxisMax,
+            by = xAxisStep
+          )
         )
-      )
+    }
+
+    if (optionYLogScale && yAxisMin > 0) {
+      # Use log scale with custom limits
+      g_line <-
+        g_line + scale_y_log10(
+          limits = c(yAxisMin, yAxisMax)
+        )
+    } else if (optionYLogScale) {
+      # Log scale requested but min <= 0, use default log scale
+      g_line <- g_line + scale_y_log10()
+    } else {
+      g_line <-
+        g_line + scale_y_continuous(
+          limits = c(yAxisMin, yAxisMax),
+          breaks = seq(
+            from = yAxisMin,
+            to = yAxisMax,
+            by = yAxisStep
+          )
+        )
+    }
+  } else {
+    # Apply log scales even when custom axis is not enabled
+    if (optionXLogScale) {
+      g_line <- g_line + scale_x_log10()
+    }
+    if (optionYLogScale) {
+      g_line <- g_line + scale_y_log10()
+    }
   }
   
   if (is.null(concentrations)) {
@@ -351,25 +385,55 @@ plotLineplotInput <- function(data) {
   }
   
   if (input$line_axis_confirm) {
-    g_line <-
-      g_line + scale_x_continuous(
-        limits = c(input$line_xaxis_min, input$line_xaxis_max),
-        breaks = seq(
-          from = input$line_xaxis_min,
-          to = input$line_xaxis_max,
-          by = input$line_xstep
+    if (input$line_xaxis_log && input$line_xaxis_min > 0) {
+      # Use log scale with custom limits
+      g_line <-
+        g_line + scale_x_log10(
+          limits = c(input$line_xaxis_min, input$line_xaxis_max)
         )
-      ) +
-      scale_y_continuous(
-        limits = c(input$line_yaxis_min, input$line_yaxis_max),
-        breaks = seq(
-          input$line_yaxis_min,
-          input$line_yaxis_max,
-          input$line_ystep
+    } else if (input$line_xaxis_log) {
+      # Log scale requested but min <= 0, use default log scale
+      g_line <- g_line + scale_x_log10()
+    } else {
+      g_line <-
+        g_line + scale_x_continuous(
+          limits = c(input$line_xaxis_min, input$line_xaxis_max),
+          breaks = seq(
+            from = input$line_xaxis_min,
+            to = input$line_xaxis_max,
+            by = input$line_xstep
+          )
         )
-      )
-  } else{
-    g_line <- g_line
+    }
+
+    if (input$line_yaxis_log && input$line_yaxis_min > 0) {
+      # Use log scale with custom limits
+      g_line <-
+        g_line + scale_y_log10(
+          limits = c(input$line_yaxis_min, input$line_yaxis_max)
+        )
+    } else if (input$line_yaxis_log) {
+      # Log scale requested but min <= 0, use default log scale
+      g_line <- g_line + scale_y_log10()
+    } else {
+      g_line <-
+        g_line + scale_y_continuous(
+          limits = c(input$line_yaxis_min, input$line_yaxis_max),
+          breaks = seq(
+            input$line_yaxis_min,
+            input$line_yaxis_max,
+            input$line_ystep
+          )
+        )
+    }
+  } else {
+    # Apply log scales even when custom axis is not enabled
+    if (input$line_xaxis_log) {
+      g_line <- g_line + scale_x_log10()
+    }
+    if (input$line_yaxis_log) {
+      g_line <- g_line + scale_y_log10()
+    }
   }
   
   if (is.null(input$lineplot_yvar)) {
@@ -629,7 +693,9 @@ output$main_lineplot <- renderPlot({
                           input$show_overlay_data,
                           data.scatter(),
                           input$plot_data_import_x,
-                          input$plot_data_import_y)
+                          input$plot_data_import_y,
+                          input$line_xaxis_log,
+                          input$line_yaxis_log)
     return(to.plot)
   } else {
     plot(1, 1, type="n", xlab="", ylab="", xaxt='n', yaxt='n')
@@ -674,7 +740,9 @@ output$lineplot_plotly <- renderPlotly({
                           input$show_overlay_data,
                           data.scatter(),
                           input$plot_data_import_x,
-                          input$plot_data_import_y
+                          input$plot_data_import_y,
+                          input$line_xaxis_log,
+                          input$line_yaxis_log
     )
     ggplotly(to.plot,
              tooltip = c("x", "y", "colour"))
