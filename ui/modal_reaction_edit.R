@@ -89,7 +89,42 @@ shinyBS::bsModal(
           uiOutput("equationBuilder_mass_action_w_regulation_edit")
         ),
         conditionalPanel(
-          condition = 
+          condition =
+            "input.eqnCreate_reaction_law_edit == 'exponential_growth'",
+          uiOutput("equationBuilder_exponential_growth_edit")
+        ),
+        conditionalPanel(
+          condition =
+            "input.eqnCreate_reaction_law_edit == 'logistic_competition'",
+          uiOutput("equationBuilder_logistic_competition_edit")
+        ),
+        conditionalPanel(
+          condition =
+            "input.eqnCreate_reaction_law_edit == 'monod_growth'",
+          uiOutput("equationBuilder_monod_growth_edit")
+        ),
+        conditionalPanel(
+          condition =
+            "input.eqnCreate_reaction_law_edit == 'competitive_monod'",
+          prettyCheckbox(
+            inputId = "CB_comp_monod_single_species_edit",
+            label = "Single species competition (only X grows competitively)",
+            value = FALSE
+          ),
+          prettyCheckbox(
+            inputId = "CB_comp_monod_no_substrate_restriction_edit",
+            label = "Remove competitive restriction from substrate consumption",
+            value = FALSE
+          ),
+          uiOutput("equationBuilder_competitive_monod_edit")
+        ),
+        conditionalPanel(
+          condition =
+            "input.eqnCreate_reaction_law_edit == 'predator_prey'",
+          uiOutput("equationBuilder_predator_prey_edit")
+        ),
+        conditionalPanel(
+          condition =
             "input.eqnCreate_reaction_law_edit == 'michaelis_menten'",
           uiOutput("equationBuilder_michaelis_menten_edit")
         ),

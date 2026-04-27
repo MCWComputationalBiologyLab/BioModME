@@ -203,7 +203,70 @@ rv.REACTIONS <- reactiveValues(
   # kcat.id          ||  Id related to kcat
   # Products         ||  Products made from degradation if made
   # Products.id      ||  IDs of products made from degradation
-  
+
+  # Holds Exponential Growth Information (first-order growth dX/dt = mu*X)
+  exponentialGrowth = list(),
+  # ID               || ID of growth reaction
+  # Reaction.Law     || Law identifier
+  # Species          || Variable experiencing growth
+  # Species.id       || ID of variable
+  # Mu               || Specific growth rate parameter name
+  # Mu.id            || Parameter ID
+  # Mu.val           || Entered parameter value
+  # Mu.unit          || Entered parameter unit
+  # Mu.unit.desc     || Unit description
+  # Mu.base.unit     || Base unit
+  # Mu.base.val      || Base-unit value
+
+  # Predator-Prey (Lotka-Volterra)
+  predatorPrey = list(),
+  # ID            || ID of reaction
+  # Prey          || Prey species name
+  # Prey.id       || ID of prey species
+  # Predator      || Predator species name
+  # Predator.id   || ID of predator species
+  # r, a, b, d    || Parameter names (prey growth, attack, conversion, predator death)
+  # *.id, *.val   || IDs and values of parameters
+  # rate.law.x, rate.law.y stored for ODE assembly via DeriveODEs
+
+  # Competitive Monod Growth (two species competing for substrate with Monod kinetics)
+  competitiveMonod = list(),
+  # ID               || ID of reaction
+  # Species.X        || Competitor X
+  # Species.Y        || Competitor Y
+  # Substrate        || Substrate species
+  # mu_max.x, mu_max.y || Maximum growth rates
+  # K_s.x, K_s.y     || Half-saturation constants
+  # alpha.xy         || Effect of Y on X
+  # alpha.yx         || Effect of X on Y
+  # Kc               || Carrying capacity
+  # Y_x, Y_y         || Yield coefficients
+  # rate.law.x, rate.law.y, rate.law.s.x, rate.law.s.y stored for ODE assembly
+
+  # Monod Growth (substrate-dependent growth dX/dt = mu_max * X * S / (K_s + S))
+  monodGrowth = list(),
+  # ID               || ID of growth reaction
+  # Reaction.Law     || Law identifier
+  # Species          || Variable experiencing growth (bacteria)
+  # Species.id       || ID of variable
+  # Substrate        || Substrate species (nutrient)
+  # Substrate.id     || ID of substrate
+  # Mu_max           || Maximum specific growth rate parameter name
+  # Mu_max.id        || Parameter ID
+  # K_s              || Half-saturation constant parameter name
+  # K_s.id           || Parameter ID
+
+  # Logistic Competition (two-species LV with carrying capacity)
+  logisticCompetition = list(),
+  # ID               || ID of reaction
+  # Species.X        || Prey/competitor X
+  # Species.Y        || Competitor Y
+  # r.x, r.y         || Growth rates
+  # alpha.xy         || Effect of Y on X
+  # alpha.yx         || Effect of X on Y
+  # Kc               || Community carrying capacity
+  # Parameter ids/values/units stored with reaction
+
   # Lists above get converted to dataframes below for various reasons
   reactions.df = data.frame(),
   massAction.df = data.frame(),
@@ -212,6 +275,11 @@ rv.REACTIONS <- reactiveValues(
   synthesis.df = data.frame(),
   degradation.by.rate.df = data.frame(),
   degradation.by.enzyme.df = data.frame(),
+  exponentialGrowth.df = data.frame(),
+  logisticCompetition.df = data.frame(),
+  monodGrowth.df = data.frame(),
+  competitiveMonod.df = data.frame(),
+  predatorPrey.df = data.frame(),
   
   # This is used to keep track of how many eqns were made 
   # (specifically keeping strack of pregenerated rate constant naming)
@@ -512,21 +580,36 @@ rv.REACTIONLAWS <- reactiveValues(
              "Synthesis",
              "Degradation (Rate)",
              "Degradation (Enzyme)",
-             "Michaelis Menten"),
+             "Michaelis Menten",
+             "Exponential Growth",
+             "Logistic Competition",
+             "Monod Growth",
+             "Competitive Monod Growth",
+             "Predator-Prey"),
     BackendName = c("mass_action",
                     "mass_action_w_reg",
                     "synthesis",
                     "degradation_rate",
                     "degradation_by_enzyme",
-                    "michaelis_menten"), 
+                    "michaelis_menten",
+                    "exponential_growth",
+                    "logistic_competition",
+                    "monod_growth",
+                    "competitive_monod",
+                    "predator_prey"),
     Type = c("chemical",
              "chemical",
              "chemical",
              "chemical",
              "chemical",
-             "enzyme")
+             "enzyme",
+             "bacterial",
+             "bacterial",
+             "bacterial",
+             "bacterial",
+             "bacterial")
   ),
-  
+
   # Variable to keep track of name for current selected law (used for custom)
   current.selected.law = ""
 )
@@ -647,19 +730,34 @@ rv.sbml.temp <- reactiveValues(
              "Synthesis",
              "Degradation (Rate)",
              "Degradation (Enzyme)",
-             "Michaelis Menten"),
+             "Michaelis Menten",
+             "Exponential Growth",
+             "Logistic Competition",
+             "Monod Growth",
+             "Competitive Monod Growth",
+             "Predator-Prey"),
     BackendName = c("mass_action",
                     "mass_action_w_reg",
                     "synthesis",
                     "degradation_rate",
                     "degradation_by_enzyme",
-                    "michaelis_menten"), 
+                    "michaelis_menten",
+                    "exponential_growth",
+                    "logistic_competition",
+                    "monod_growth",
+                    "competitive_monod",
+                    "predator_prey"),
     Type = c("chemical",
              "chemical",
              "chemical",
              "chemical",
              "chemical",
-             "enzyme")
+             "enzyme",
+             "bacterial",
+             "bacterial",
+             "bacterial",
+             "bacterial",
+             "bacterial")
   ),
   reactions = list(),
   # Refresh Variables 

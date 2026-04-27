@@ -173,11 +173,15 @@ Var2Latex <- function(variable, mathMode = TRUE, noDollarSign = TRUE) {
       if (noDollarSign) {
         before <- paste0(split.var[1:idx], collapse = "")
         after <- paste0(split.var[(idx + 1):length.of.var], collapse = "")
+        # Escape any further underscores so KaTeX/LaTeX render them literally
+        # rather than treating them as nested subscripts.
+        after <- gsub("_", "\\\\_", after)
         new.var <- paste0(before, "{", after, "}")
       } else{
         before <- paste0(split.var[1:idx], collapse = "")
         before <- paste0("$", before)
         after <- paste0(split.var[(idx + 1):length.of.var], collapse = "")
+        after <- gsub("_", "\\\\_", after)
         new.var <- paste0(before, "{", after, "}$")
       }
     } else {

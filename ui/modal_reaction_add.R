@@ -28,6 +28,7 @@ shinyBS::bsModal(
           choices = c("All" = "All",
                       "Chemical Reaction" = "chemical_reaction",
                       "Enzyme Based Reaction" = "enzyme_reaction",
+                      "Bacterial Reaction" = "bacterial_reaction",
                       "Custom Reaction" = "custom_reaction",
                       "Time Dependent Equation" = "time_dependent"
           )
@@ -256,12 +257,47 @@ shinyBS::bsModal(
                           ")))
           ),
           conditionalPanel(
-            condition = 
+            condition =
+              "input.eqnCreate_reaction_law == 'exponential_growth'",
+            uiOutput("equationBuilder_exponential_growth")
+          ),
+          conditionalPanel(
+            condition =
+              "input.eqnCreate_reaction_law == 'logistic_competition'",
+            uiOutput("equationBuilder_logistic_competition")
+          ),
+          conditionalPanel(
+            condition =
+              "input.eqnCreate_reaction_law == 'monod_growth'",
+            uiOutput("equationBuilder_monod_growth")
+          ),
+          conditionalPanel(
+            condition =
+              "input.eqnCreate_reaction_law == 'competitive_monod'",
+            prettyCheckbox(
+              inputId = "CB_comp_monod_single_species",
+              label = "Single species competition (only X grows competitively)",
+              value = FALSE
+            ),
+            prettyCheckbox(
+              inputId = "CB_comp_monod_no_substrate_restriction",
+              label = "Remove competitive restriction from substrate consumption",
+              value = FALSE
+            ),
+            uiOutput("equationBuilder_competitive_monod")
+          ),
+          conditionalPanel(
+            condition =
+              "input.eqnCreate_reaction_law == 'predator_prey'",
+            uiOutput("equationBuilder_predator_prey")
+          ),
+          conditionalPanel(
+            condition =
               "input.eqnCreate_reaction_law == 'michaelis_menten'",
             uiOutput("equationBuilder_michaelis_menten")
           ),
           conditionalPanel(
-            condition = 
+            condition =
               "input.eqnCreate_reaction_law == 'synthesis'",
             uiOutput("equationBuilder_synthesis")
           ),

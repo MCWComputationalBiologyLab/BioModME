@@ -334,8 +334,265 @@ output$equationBuilder_mass_action_w_regulation <- renderUI({
   )#end div
 })
 
+output$equationBuilder_exponential_growth <- renderUI({
+  div(
+    fluidRow(
+      column(
+        width = 4,
+        pickerInput(
+          inputId = "PI_exp_growth_species",
+          label   = "Growing Species",
+          choices = sort(rv.SPECIES$df.by.compartment$Name),
+          options = pickerOptions(liveSearch = TRUE,
+                                  liveSearchStyle = "startsWith")
+        )
+      )
+    ),
+    fluidRow(
+      column(
+        width = 4,
+        textInput(
+          inputId = "TI_exp_growth_mu",
+          label = "Growth Rate Parameter (mu)",
+          value = "mu"
+        )
+      ),
+      column(
+        width = 3,
+        numericInput(
+          inputId = "NI_exp_growth_mu_value",
+          label = "Value",
+          value = 0.7,
+          min = 0,
+          step = 0.01
+        )
+      )
+    )
+  )
+})
+
+output$equationBuilder_logistic_competition <- renderUI({
+  div(
+    fluidRow(
+      column(
+        width = 4,
+        pickerInput(
+          inputId = "PI_log_comp_species_x",
+          label   = "Species X",
+          choices = sort(rv.SPECIES$df.by.compartment$Name),
+          options = pickerOptions(liveSearch = TRUE,
+                                  liveSearchStyle = "startsWith")
+        )
+      ),
+      column(
+        width = 4,
+        pickerInput(
+          inputId = "PI_log_comp_species_y",
+          label   = "Species Y",
+          choices = sort(rv.SPECIES$df.by.compartment$Name),
+          options = pickerOptions(liveSearch = TRUE,
+                                  liveSearchStyle = "startsWith")
+        )
+      )
+    ),
+    fluidRow(
+      column(
+        width = 3,
+        textInput("TI_log_comp_r_x", "r_x", value = "r_x")
+      ),
+      column(
+        width = 3,
+        numericInput("NI_log_comp_r_x_value", "Value", value = 0.7, min = 0, step = 0.01)
+      ),
+      column(
+        width = 3,
+        textInput("TI_log_comp_r_y", "r_y", value = "r_y")
+      ),
+      column(
+        width = 3,
+        numericInput("NI_log_comp_r_y_value", "Value", value = 0.7, min = 0, step = 0.01)
+      )
+    ),
+    fluidRow(
+      column(
+        width = 3,
+        textInput("TI_log_comp_alpha_xy", "alpha_xy", value = "alpha_xy")
+      ),
+      column(
+        width = 3,
+        numericInput("NI_log_comp_alpha_xy_value", "Value", value = 0.1, min = 0, step = 0.01)
+      ),
+      column(
+        width = 3,
+        textInput("TI_log_comp_alpha_yx", "alpha_yx", value = "alpha_yx")
+      ),
+      column(
+        width = 3,
+        numericInput("NI_log_comp_alpha_yx_value", "Value", value = 0.1, min = 0, step = 0.01)
+      )
+    ),
+    fluidRow(
+      column(
+        width = 3,
+        textInput("TI_log_comp_Kc", "Kc (carrying capacity)", value = "Kc")
+      ),
+      column(
+        width = 3,
+        numericInput("NI_log_comp_Kc_value", "Value", value = 1, min = 0.0001, step = 0.1)
+      )
+    )
+  )
+})
+
+output$equationBuilder_monod_growth <- renderUI({
+  # Count existing monod growth reactions to generate unique parameter names
+  n.existing <- length(rv.REACTIONS$monodGrowth)
+  param.suffix <- if (n.existing > 0) paste0("_", n.existing + 1) else ""
+
+  div(
+    fluidRow(
+      column(
+        width = 4,
+        pickerInput(
+          inputId = "PI_monod_species",
+          label   = "Growing Species (X)",
+          choices = sort(rv.SPECIES$df.by.compartment$Name),
+          options = pickerOptions(liveSearch = TRUE,
+                                  liveSearchStyle = "startsWith")
+        )
+      ),
+      column(
+        width = 4,
+        pickerInput(
+          inputId = "PI_monod_substrate",
+          label   = "Substrate (S)",
+          choices = sort(rv.SPECIES$df.by.compartment$Name),
+          options = pickerOptions(liveSearch = TRUE,
+                                  liveSearchStyle = "startsWith")
+        )
+      )
+    ),
+    fluidRow(
+      column(
+        width = 3,
+        textInput("TI_monod_mu_max", "mu_max", value = paste0("mu_max", param.suffix))
+      ),
+      column(
+        width = 3,
+        numericInput("NI_monod_mu_max_value", "Value", value = 0.7, min = 0, step = 0.01)
+      ),
+      column(
+        width = 3,
+        textInput("TI_monod_K_s", "K_s (half-saturation)", value = paste0("K_s", param.suffix))
+      ),
+      column(
+        width = 3,
+        numericInput("NI_monod_K_s_value", "Value", value = 0.5, min = 0.0001, step = 0.01)
+      )
+    )
+  )
+})
+
+output$equationBuilder_competitive_monod <- renderUI({
+  n.existing <- length(rv.REACTIONS$competitiveMonod)
+  param.suffix <- if (n.existing > 0) paste0("_", n.existing + 1) else ""
+
+  # Single set of input IDs so the species/parameter values persist across
+  # toggling the "Single species competition" checkbox. Y-related parameter
+  # rows are hidden when single-species mode is on.
+  div(
+    fluidRow(
+      column(width = 3,
+        pickerInput("PI_comp_monod_species_x", "Species X",
+                    choices = sort(rv.SPECIES$df.by.compartment$Name),
+                    options = pickerOptions(liveSearch = TRUE,
+                                            liveSearchStyle = "startsWith"))),
+      column(width = 3,
+        pickerInput("PI_comp_monod_species_y", "Species Y",
+                    choices = sort(rv.SPECIES$df.by.compartment$Name),
+                    options = pickerOptions(liveSearch = TRUE,
+                                            liveSearchStyle = "startsWith"))),
+      column(width = 3,
+        pickerInput("PI_comp_monod_substrate", "Substrate (S)",
+                    choices = sort(rv.SPECIES$df.by.compartment$Name),
+                    options = pickerOptions(liveSearch = TRUE,
+                                            liveSearchStyle = "startsWith")))
+    ),
+    fluidRow(
+      column(width = 3, textInput("TI_comp_monod_mu_max_x", "mu_max_x", value = paste0("mu_max_x", param.suffix))),
+      column(width = 3, numericInput("NI_comp_monod_mu_max_x_value", "Value", value = 0.7, min = 0, step = 0.01)),
+      column(width = 3, textInput("TI_comp_monod_K_s_x", "K_s_x", value = paste0("K_s_x", param.suffix))),
+      column(width = 3, numericInput("NI_comp_monod_K_s_x_value", "Value", value = 0.5, min = 0.0001, step = 0.01))
+    ),
+    conditionalPanel(
+      condition = "!input.CB_comp_monod_single_species",
+      fluidRow(
+        column(width = 3, textInput("TI_comp_monod_mu_max_y", "mu_max_y", value = paste0("mu_max_y", param.suffix))),
+        column(width = 3, numericInput("NI_comp_monod_mu_max_y_value", "Value", value = 0.7, min = 0, step = 0.01)),
+        column(width = 3, textInput("TI_comp_monod_K_s_y", "K_s_y", value = paste0("K_s_y", param.suffix))),
+        column(width = 3, numericInput("NI_comp_monod_K_s_y_value", "Value", value = 0.5, min = 0.0001, step = 0.01))
+      )
+    ),
+    fluidRow(
+      column(width = 3, textInput("TI_comp_monod_alpha_xy", "alpha_xy", value = paste0("alpha_xy", param.suffix))),
+      column(width = 3, numericInput("NI_comp_monod_alpha_xy_value", "Value", value = 0.1, min = 0, step = 0.01)),
+      conditionalPanel(
+        condition = "!input.CB_comp_monod_single_species",
+        column(width = 3, textInput("TI_comp_monod_alpha_yx", "alpha_yx", value = paste0("alpha_yx", param.suffix))),
+        column(width = 3, numericInput("NI_comp_monod_alpha_yx_value", "Value", value = 0.1, min = 0, step = 0.01))
+      )
+    ),
+    fluidRow(
+      column(width = 3, textInput("TI_comp_monod_Kc", "Kc (carrying capacity)", value = paste0("Kc", param.suffix))),
+      column(width = 3, numericInput("NI_comp_monod_Kc_value", "Value", value = 1, min = 0.0001, step = 0.1)),
+      column(width = 3, textInput("TI_comp_monod_Y_x", "Y_x (yield)", value = paste0("Y_x", param.suffix))),
+      column(width = 3, numericInput("NI_comp_monod_Y_x_value", "Value", value = 0.5, min = 0.0001, step = 0.01))
+    ),
+    conditionalPanel(
+      condition = "!input.CB_comp_monod_single_species",
+      fluidRow(
+        column(width = 3, textInput("TI_comp_monod_Y_y", "Y_y (yield)", value = paste0("Y_y", param.suffix))),
+        column(width = 3, numericInput("NI_comp_monod_Y_y_value", "Value", value = 0.5, min = 0.0001, step = 0.01))
+      )
+    )
+  )
+})
+
+output$equationBuilder_predator_prey <- renderUI({
+  n.existing <- length(rv.REACTIONS$predatorPrey)
+  param.suffix <- if (n.existing > 0) paste0("_", n.existing + 1) else ""
+
+  div(
+    fluidRow(
+      column(width = 4,
+        pickerInput("PI_pred_prey_prey", "Prey (X)",
+                    choices = sort(rv.SPECIES$df.by.compartment$Name),
+                    options = pickerOptions(liveSearch = TRUE,
+                                            liveSearchStyle = "startsWith"))),
+      column(width = 4,
+        pickerInput("PI_pred_prey_predator", "Predator (Y)",
+                    choices = sort(rv.SPECIES$df.by.compartment$Name),
+                    options = pickerOptions(liveSearch = TRUE,
+                                            liveSearchStyle = "startsWith")))
+    ),
+    hr(),
+    fluidRow(
+      column(width = 3, textInput("TI_pred_prey_r", "r (prey growth rate)", value = paste0("r", param.suffix))),
+      column(width = 3, numericInput("NI_pred_prey_r_value", "Value", value = 0.7, min = 0, step = 0.01)),
+      column(width = 3, textInput("TI_pred_prey_a", "a (attack rate in dX/dt)", value = paste0("a", param.suffix))),
+      column(width = 3, numericInput("NI_pred_prey_a_value", "Value", value = 0.01, min = 0, step = 0.0001))
+    ),
+    fluidRow(
+      column(width = 3, textInput("TI_pred_prey_b", "b (conversion rate in dY/dt)", value = paste0("b", param.suffix))),
+      column(width = 3, numericInput("NI_pred_prey_b_value", "Value", value = 0.01, min = 0, step = 0.0001)),
+      column(width = 3, textInput("TI_pred_prey_d", "d (predator death rate)", value = paste0("d", param.suffix))),
+      column(width = 3, numericInput("NI_pred_prey_d_value", "Value", value = 0.1, min = 0, step = 0.01))
+    )
+  )
+})
+
 output$equationBuilder_synthesis <- renderUI({
-  
+
   div(
     conditionalPanel(
       condition = "!input.CB_synthesis_factor_checkbox",

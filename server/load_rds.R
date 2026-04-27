@@ -170,7 +170,55 @@ observeEvent(rv.LOADBUTTONS$LB.count, {
   
   # Load Reaction Laws ---------------------------------------------------------
   rv.REACTIONLAWS$laws <- model$laws
-  
+
+  # Backfill built-in bacterial laws missing from older saved models so that
+  # the reaction-law dropdown always exposes the current set.
+  if (!"exponential_growth" %in% rv.REACTIONLAWS$laws$BackendName) {
+    rv.REACTIONLAWS$laws <- rbind(
+      rv.REACTIONLAWS$laws,
+      data.frame(Name = "Exponential Growth",
+                 BackendName = "exponential_growth",
+                 Type = "bacterial",
+                 stringsAsFactors = FALSE)
+    )
+  }
+  if (!"logistic_competition" %in% rv.REACTIONLAWS$laws$BackendName) {
+    rv.REACTIONLAWS$laws <- rbind(
+      rv.REACTIONLAWS$laws,
+      data.frame(Name = "Logistic Competition",
+                 BackendName = "logistic_competition",
+                 Type = "bacterial",
+                 stringsAsFactors = FALSE)
+    )
+  }
+  if (!"monod_growth" %in% rv.REACTIONLAWS$laws$BackendName) {
+    rv.REACTIONLAWS$laws <- rbind(
+      rv.REACTIONLAWS$laws,
+      data.frame(Name = "Monod Growth",
+                 BackendName = "monod_growth",
+                 Type = "bacterial",
+                 stringsAsFactors = FALSE)
+    )
+  }
+  if (!"competitive_monod" %in% rv.REACTIONLAWS$laws$BackendName) {
+    rv.REACTIONLAWS$laws <- rbind(
+      rv.REACTIONLAWS$laws,
+      data.frame(Name = "Competitive Monod Growth",
+                 BackendName = "competitive_monod",
+                 Type = "bacterial",
+                 stringsAsFactors = FALSE)
+    )
+  }
+  if (!"predator_prey" %in% rv.REACTIONLAWS$laws$BackendName) {
+    rv.REACTIONLAWS$laws <- rbind(
+      rv.REACTIONLAWS$laws,
+      data.frame(Name = "Predator-Prey",
+                 BackendName = "predator_prey",
+                 Type = "bacterial",
+                 stringsAsFactors = FALSE)
+    )
+  }
+
   rv.COUNTS$loading.model <- rv.COUNTS$loading.model + 1
   # Plot - Compare Mode --------------------------------------------------------
   # compareModel$model.1 <- results$model.final

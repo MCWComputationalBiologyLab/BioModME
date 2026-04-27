@@ -181,12 +181,91 @@ DeriveEquationBasedODEs <- function(species.list.entry,
       mj.rate    <- eqn$MathJax.Rate.Law
       law        <- eqn$Reaction.Law
       descript   <- eqn$Description
-      
+
+      # logistic_competition stores per-species rate laws on the lc entry so
+      # one reaction row can drive ODEs for both species independently.
+      if (!is.null(law) && law == "logistic_competition") {
+        lc <- reactions.rv$logisticCompetition[[eqn.id]]
+        if (!is.null(lc)) {
+          new.rate <- NULL
+          if (id == lc$Species.X.id && !is.null(lc$rate.law.x)) {
+            new.rate <- lc$rate.law.x
+          } else if (id == lc$Species.Y.id && !is.null(lc$rate.law.y)) {
+            new.rate <- lc$rate.law.y
+          }
+          if (!is.null(new.rate)) {
+            rate       <- new.rate
+            fmt        <- ConvertRateLaw(new.rate)
+            latex.rate <- fmt$latex
+            mj.rate    <- fmt$mathjax
+          }
+        }
+      }
+      # predator_prey stores the FULL net rate law for each species (including
+      # both gain and loss terms) on the pp entry. DeriveODEs picks the right
+      # one based on which species the ODE is being assembled for. Both prey
+      # and predator are flagged as products so the standard sign mechanism
+      # gives them "+" — the sign flips for the predation/death terms are
+      # already inside the rate law expression.
+      if (!is.null(law) && law == "predator_prey") {
+        pp <- reactions.rv$predatorPrey[[eqn.id]]
+        if (!is.null(pp)) {
+          new.rate <- NULL
+          if (id == pp$Prey.id && !is.null(pp$rate.law.x)) {
+            new.rate <- pp$rate.law.x
+          } else if (id == pp$Predator.id && !is.null(pp$rate.law.y)) {
+            new.rate <- pp$rate.law.y
+          }
+          if (!is.null(new.rate)) {
+            rate       <- new.rate
+            fmt        <- ConvertRateLaw(new.rate)
+            latex.rate <- fmt$latex
+            mj.rate    <- fmt$mathjax
+          }
+        }
+      }
+      # competitive_monod stores per-species (X, Y) growth rate laws and the
+      # substrate consumption rate(s) on the cm entry. Each species pulls its
+      # own rate law; the substrate combines both species' consumption rates
+      # (and gets the negative sign via the standard reactant handling below).
+      if (!is.null(law) && law == "competitive_monod") {
+        cm <- reactions.rv$competitiveMonod[[eqn.id]]
+        if (!is.null(cm)) {
+          new.rate <- NULL
+          if (id == cm$Species.X.id && !is.null(cm$rate.law.x) &&
+              !(length(cm$rate.law.x) == 1 && is.na(cm$rate.law.x))) {
+            new.rate <- cm$rate.law.x
+          } else if (!is.null(cm$Species.Y.id) && id == cm$Species.Y.id &&
+                     !is.null(cm$rate.law.y) &&
+                     !(length(cm$rate.law.y) == 1 && is.na(cm$rate.law.y))) {
+            new.rate <- cm$rate.law.y
+          } else if (id == cm$Substrate.id) {
+            sx <- cm$rate.law.s.x
+            sy <- cm$rate.law.s.y
+            sx.has <- !is.null(sx) && !(length(sx) == 1 && is.na(sx))
+            sy.has <- !is.null(sy) && !(length(sy) == 1 && is.na(sy))
+            if (sx.has && sy.has) {
+              new.rate <- paste0(sx, "+", sy)
+            } else if (sx.has) {
+              new.rate <- sx
+            } else if (sy.has) {
+              new.rate <- sy
+            }
+          }
+          if (!is.null(new.rate)) {
+            rate       <- new.rate
+            fmt        <- ConvertRateLaw(new.rate)
+            latex.rate <- fmt$latex
+            mj.rate    <- fmt$mathjax
+          }
+        }
+      }
+
       applyMultiple <- FALSE
       multiple      <- "1"
-      
+
       # Find if species Entry is in reactant or product
-      # Check if id reacantid is even exists 
+      # Check if id reacantid is even exists
       if (!is.na(eqn$Reactants.id)) {
         inReactant <- id %in% strsplit(eqn$Reactants.id, ", ")[[1]]
       } else {
