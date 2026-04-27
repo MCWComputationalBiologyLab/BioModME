@@ -146,28 +146,29 @@ CreatePlot <- function(modelResults,
   
   # use gather on incoming results to put them into a plottable data structure
   selectedData <- gatherData(modelResults, concentrations)
-  n <- length(unique(selectedData$Variable))
-  
-  # gather vector of selected line type inputs and evaluate to vector
-  type_line <- paste0("c(", 
-                      paste0("input$line_type", 
-                            unique(sort(selectedData$Variable)), 
-                            collapse = ", "),
-                      ")"
-                )
-  
-  type_line <- eval(parse(text = type_line))
-  
+  # Ensure the Variable factor levels preserve the requested order from
+  # `concentrations` (if provided) so that legend order and color/linetype
+  # mappings remain consistent between on-screen and downloaded plots.
+  if (!is.null(concentrations)) {
+    levs <- intersect(concentrations, unique(selectedData$Variable))
+    if (length(levs) == 0) levs <- unique(selectedData$Variable)
+  } else {
+    levs <- unique(selectedData$Variable)
+  }
+  selectedData$Variable <- factor(selectedData$Variable, levels = levs)
+  n <- length(levs)
+
+    # Build the linetype vector in the same order as the factor levels.
+    id_names <- gsub(" ", "_", levels(selectedData$Variable))
+    type_line <- paste0("c(", paste0("input$line_type", id_names, collapse = ", "), ")")
+    type_line <- eval(parse(text = type_line))
+
   # Find selected color palletes and create
   cols_line <- color_palettes(colorPalette, n)
   # rewrite with the custom values if user chose custom
   if (cols_line[1] == "CUSTOM") {
-    cols_line <-
-      paste0("c(",
-             paste0("input$cols_line", 
-                    unique(sort(selectedData$Variable)), 
-                    collapse = ", "),
-             ")")
+    cols_ids <- gsub(" ", "_", levels(selectedData$Variable))
+    cols_line <- paste0("c(", paste0("input$cols_line", cols_ids, collapse = ", "), ")")
     cols_line <- eval(parse(text = cols_line))
   }
   
@@ -209,12 +210,12 @@ CreatePlot <- function(modelResults,
   g_line <- g_line + 
     # Select the colors of the lines
     scale_color_manual(name = legendTitle,
-                       values = cols_line,
-                       labels = unique(selectedData$Variable)) +
+               values = cols_line,
+               labels = levels(selectedData$Variable)) +
     # Select the show type of the lines
     scale_linetype_manual(name = legendTitle,
-                          values = type_line,
-                          labels = unique(selectedData$Variable)) +
+                values = type_line,
+                labels = levels(selectedData$Variable)) +
     #this adds title, xlabel, and ylabel to graph based upon text inputs
     labs(
       title = plotTitle,
@@ -310,24 +311,21 @@ CreatePlot <- function(modelResults,
 plotLineplotInput <- function(data) {
   #calls data function and stores it to selectedData
   selectedData <- data
-  n = length(unique(selectedData$Variable))
-  #n = length(unique(selectedData$variable))
-  type_line <-
-    paste0("c(", paste0("input$line_type", 
-                        unique(sort(data$Variable)), 
-                        collapse = ", "), ")")
+  # Preserve ordering of variables as they appear so legend order matches
+  # the plotted traces.
+  levs <- unique(selectedData$Variable)
+  selectedData$Variable <- factor(selectedData$Variable, levels = levs)
+  n = length(levs)
+  id_names <- gsub(" ", "_", levels(selectedData$Variable))
+  type_line <- paste0("c(", paste0("input$line_type", id_names, collapse = ", "), ")")
   type_line <- eval(parse(text = type_line))
   #create vector of cols for lines
-  
+
   cols_line <- color_palettes(input$choose_color_palette, n)
   # rewrite with the custom values if user chose custom
   if (cols_line[1] == "CUSTOM") {
-    cols_line <-
-      paste0("c(",
-             paste0("input$cols_line", 
-                    unique(sort(data$Variable)), 
-                    collapse = ", "),
-             ")")
+    cols_ids <- gsub(" ", "_", levels(selectedData$Variable))
+    cols_line <- paste0("c(", paste0("input$cols_line", cols_ids, collapse = ", "), ")")
     cols_line <- eval(parse(text = cols_line))
   }
   
@@ -339,9 +337,11 @@ plotLineplotInput <- function(data) {
     #scale_fill_brewer(palette = "Dark2") + 
     #scale_color_viridis(discrete = FALSE, option = "D") + 
     scale_color_manual(name = input$line_legend_title,
-                       values = cols_line) +
+               values = cols_line,
+               labels = levels(selectedData$Variable)) +
     scale_linetype_manual(name = input$line_legend_title,
-                          values = type_line)
+                values = type_line,
+                labels = levels(selectedData$Variable))
   
   if (input$line_show_dots) {
     g_line <- g_line + geom_point()
