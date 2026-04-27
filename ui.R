@@ -151,7 +151,7 @@ ui <- dashboardPage(
                  icon = icon("clipboard-user")),
         
         absolutePanel(
-          "v1.20",
+          "v1.21",
           bottom = 0,
           left = 5,
           fixed = TRUE
