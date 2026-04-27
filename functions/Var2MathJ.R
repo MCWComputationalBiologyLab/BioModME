@@ -19,7 +19,12 @@ Var2MathJ <- function(var = NULL){
       if (split.var[i] == "_" & !has.underscore) {
         has.underscore = TRUE
         latex.var = paste0(latex.var, split.var[i], "{")
-      }else{
+      } else if (split.var[i] == "_" & has.underscore) {
+        # Already inside subscript braces; escape additional underscores so
+        # KaTeX renders them literally instead of raising a double-subscript
+        # error (e.g. mu_max_x_2 -> mu_{max\_x\_2}).
+        latex.var = paste0(latex.var, "\\_")
+      } else {
         latex.var = paste0(latex.var, split.var[i])
       }
     }

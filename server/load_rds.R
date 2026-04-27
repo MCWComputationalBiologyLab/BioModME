@@ -200,6 +200,15 @@ observeEvent(rv.LOADBUTTONS$LB.count, {
                  stringsAsFactors = FALSE)
     )
   }
+  if (!"competitive_monod" %in% rv.REACTIONLAWS$laws$BackendName) {
+    rv.REACTIONLAWS$laws <- rbind(
+      rv.REACTIONLAWS$laws,
+      data.frame(Name = "Competitive Monod Growth",
+                 BackendName = "competitive_monod",
+                 Type = "bacterial",
+                 stringsAsFactors = FALSE)
+    )
+  }
 
   rv.COUNTS$loading.model <- rv.COUNTS$loading.model + 1
   # Plot - Compare Mode --------------------------------------------------------

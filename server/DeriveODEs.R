@@ -187,14 +187,53 @@ DeriveEquationBasedODEs <- function(species.list.entry,
       if (!is.null(law) && law == "logistic_competition") {
         lc <- reactions.rv$logisticCompetition[[eqn.id]]
         if (!is.null(lc)) {
+          new.rate <- NULL
           if (id == lc$Species.X.id && !is.null(lc$rate.law.x)) {
-            rate       <- lc$rate.law.x
-            latex.rate <- rate
-            mj.rate    <- rate
+            new.rate <- lc$rate.law.x
           } else if (id == lc$Species.Y.id && !is.null(lc$rate.law.y)) {
-            rate       <- lc$rate.law.y
-            latex.rate <- rate
-            mj.rate    <- rate
+            new.rate <- lc$rate.law.y
+          }
+          if (!is.null(new.rate)) {
+            rate       <- new.rate
+            fmt        <- ConvertRateLaw(new.rate)
+            latex.rate <- fmt$latex
+            mj.rate    <- fmt$mathjax
+          }
+        }
+      }
+      # competitive_monod stores per-species (X, Y) growth rate laws and the
+      # substrate consumption rate(s) on the cm entry. Each species pulls its
+      # own rate law; the substrate combines both species' consumption rates
+      # (and gets the negative sign via the standard reactant handling below).
+      if (!is.null(law) && law == "competitive_monod") {
+        cm <- reactions.rv$competitiveMonod[[eqn.id]]
+        if (!is.null(cm)) {
+          new.rate <- NULL
+          if (id == cm$Species.X.id && !is.null(cm$rate.law.x) &&
+              !(length(cm$rate.law.x) == 1 && is.na(cm$rate.law.x))) {
+            new.rate <- cm$rate.law.x
+          } else if (!is.null(cm$Species.Y.id) && id == cm$Species.Y.id &&
+                     !is.null(cm$rate.law.y) &&
+                     !(length(cm$rate.law.y) == 1 && is.na(cm$rate.law.y))) {
+            new.rate <- cm$rate.law.y
+          } else if (id == cm$Substrate.id) {
+            sx <- cm$rate.law.s.x
+            sy <- cm$rate.law.s.y
+            sx.has <- !is.null(sx) && !(length(sx) == 1 && is.na(sx))
+            sy.has <- !is.null(sy) && !(length(sy) == 1 && is.na(sy))
+            if (sx.has && sy.has) {
+              new.rate <- paste0(sx, "+", sy)
+            } else if (sx.has) {
+              new.rate <- sx
+            } else if (sy.has) {
+              new.rate <- sy
+            }
+          }
+          if (!is.null(new.rate)) {
+            rate       <- new.rate
+            fmt        <- ConvertRateLaw(new.rate)
+            latex.rate <- fmt$latex
+            mj.rate    <- fmt$mathjax
           }
         }
       }

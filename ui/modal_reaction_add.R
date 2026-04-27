@@ -273,6 +273,21 @@ shinyBS::bsModal(
           ),
           conditionalPanel(
             condition =
+              "input.eqnCreate_reaction_law == 'competitive_monod'",
+            prettyCheckbox(
+              inputId = "CB_comp_monod_single_species",
+              label = "Single species competition (only X grows competitively)",
+              value = FALSE
+            ),
+            prettyCheckbox(
+              inputId = "CB_comp_monod_no_substrate_restriction",
+              label = "Remove competitive restriction from substrate consumption",
+              value = FALSE
+            ),
+            uiOutput("equationBuilder_competitive_monod")
+          ),
+          conditionalPanel(
+            condition =
               "input.eqnCreate_reaction_law == 'michaelis_menten'",
             uiOutput("equationBuilder_michaelis_menten")
           ),
