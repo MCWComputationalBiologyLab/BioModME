@@ -1603,7 +1603,23 @@ observeEvent(input$eqnCreate_addEqnToVector, {
     param.descriptions  <- c(param.descriptions, param.description)
     base.units          <- c(base.units, base.unit)
     base.values         <- c(base.values, base.val)
-    
+
+    # Add krel parameter if products are being produced AND relative formation is checked
+    krel.param <- NA
+    if (input$CB_degradation_rate_toProducts && isTruthy(input$CB_degradation_rate_relative_formation)) {
+      krel.param         <- input$TI_degradation_rate_krel
+      krel.param.val     <- input$NI_degradation_rate_krel_value
+      krel.param.desc    <- paste0("Product yield fraction for degradation of ", deg.species)
+
+      parameters          <- c(parameters, krel.param)
+      param.vals          <- c(param.vals, krel.param.val)
+      param.units         <- c(param.units, "dimensionless")
+      unit.descriptions   <- c(unit.descriptions, "dimensionless")
+      param.descriptions  <- c(param.descriptions, krel.param.desc)
+      base.units          <- c(base.units, "dimensionless")
+      base.values         <- c(base.values, krel.param.val)
+    }
+
     # Store Rate Law
     laws <- Degradation_By_Rate(parameter, ConcDep, deg.species, volume.var)
     
@@ -1801,14 +1817,30 @@ observeEvent(input$eqnCreate_addEqnToVector, {
       base.values         <- c(base.values, kcat.base.val)
       
       # Store Rate Law
-      laws <- Degradation_By_Enzyme_no_Vmax(deg.species, 
-                                            Km, 
-                                            kcat, 
-                                            enzyme, 
+      laws <- Degradation_By_Enzyme_no_Vmax(deg.species,
+                                            Km,
+                                            kcat,
+                                            enzyme,
                                             volume.var)
     }
-    
-    # Extract reaction laws 
+
+    # Add krel parameter if products are being produced AND relative formation is checked
+    krel.param <- NA
+    if (input$CB_degradation_enzyme_toProducts && isTruthy(input$CB_degradation_enzyme_relative_formation)) {
+      krel.param         <- input$TI_degradation_enzyme_krel
+      krel.param.val     <- input$NI_degradation_enzyme_krel_value
+      krel.param.desc    <- paste0("Product yield fraction for degradation of ", deg.species)
+
+      parameters          <- c(parameters, krel.param)
+      param.vals          <- c(param.vals, krel.param.val)
+      param.units         <- c(param.units, "dimensionless")
+      unit.descriptions   <- c(unit.descriptions, "dimensionless")
+      param.descriptions  <- c(param.descriptions, krel.param.desc)
+      base.units          <- c(base.units, "dimensionless")
+      base.values         <- c(base.values, krel.param.val)
+    }
+
+    # Extract reaction laws
     rate.law    <- laws$string
     p.rate.law  <- laws$pretty.string
     latex.law   <- laws$latex
@@ -2617,6 +2649,13 @@ observeEvent(input$eqnCreate_addEqnToVector, {
       
     }
     else if (input$eqnCreate_reaction_law == "degradation_rate") {
+      krel.param.id <- NA
+      if (input$CB_degradation_rate_toProducts &&
+          isTruthy(input$CB_degradation_rate_relative_formation) &&
+          length(par.ids) >= 2) {
+        krel.param.id <- par.ids[2]
+      }
+
       sub.entry <- list(
         "ID"               = ID.to.add,
         "Reaction.Law"     = input$eqnCreate_reaction_law,
@@ -2626,7 +2665,9 @@ observeEvent(input$eqnCreate_addEqnToVector, {
         "Rate.Constant"    = parameter,
         "Rate.Constant.id" = par.ids[1],
         "Products"         = products.collapsed,
-        "Products.id"      = products.id.collapsed
+        "Products.id"      = products.id.collapsed,
+        "krel"             = krel.param,
+        "krel.id"          = krel.param.id
       )
       
       # Add to mass action RV
@@ -2638,14 +2679,22 @@ observeEvent(input$eqnCreate_addEqnToVector, {
       # Gets ids based on use.Vmax
       Vmax.id <- NA
       kcat.id <- NA
-      Km.id   <- par.ids[1]
-      
+      Km.id   <- if (length(par.ids) >= 1) par.ids[1] else NA
+
       if (Use.Vmax) {
-        Vmax.id <- par.ids[2]
+        if (length(par.ids) >= 2) Vmax.id <- par.ids[2]
       } else {
-        kcat.id <- par.ids[2]
+        if (length(par.ids) >= 2) kcat.id <- par.ids[2]
       }
-      
+
+      # krel.id is the last par.id when relative formation is checked
+      krel.param.id <- NA
+      if (input$CB_degradation_enzyme_toProducts &&
+          isTruthy(input$CB_degradation_enzyme_relative_formation) &&
+          length(par.ids) >= 3) {
+        krel.param.id <- par.ids[length(par.ids)]
+      }
+
       sub.entry <- list(
         "ID"               = ID.to.add,
         "Reaction.Law"     = input$eqnCreate_reaction_law,
@@ -2661,7 +2710,9 @@ observeEvent(input$eqnCreate_addEqnToVector, {
         "kcat"             = kcat,
         "kcat.id"          = kcat.id,
         "Products"         = products.collapsed,
-        "Products.id"      = products.id.collapsed
+        "Products.id"      = products.id.collapsed,
+        "krel"             = krel.param,
+        "krel.id"          = krel.param.id
       )
       
       # Add to mass action RV

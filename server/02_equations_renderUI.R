@@ -675,7 +675,18 @@ output$equationBuilder_synthesis <- renderUI({
 })
 
 output$equationBuilder_degradation_rate <- renderUI({
-  
+  # Auto-number krel parameter so multiple relative-formation reactions don't collide
+  n.existing.with.krel <- 0
+  if (length(rv.REACTIONS$degradation.by.rate) > 0) {
+    for (i in seq_along(rv.REACTIONS$degradation.by.rate)) {
+      degInfo <- rv.REACTIONS$degradation.by.rate[[i]]
+      if ("krel" %in% names(degInfo) && !is.na(degInfo$krel) && degInfo$krel != "") {
+        n.existing.with.krel <- n.existing.with.krel + 1
+      }
+    }
+  }
+  param.suffix <- if (n.existing.with.krel > 0) paste0("_", n.existing.with.krel + 1) else ""
+
   div(
     fluidRow(
       column(
@@ -685,21 +696,52 @@ output$equationBuilder_degradation_rate <- renderUI({
           label   = "Species to degrade",
           choices = sort(rv.SPECIES$df.by.compartment$Name),
           options = pickerOptions(liveSearch = TRUE,
-                                  liveSearchStyle = "startsWith") 
+                                  liveSearchStyle = "startsWith")
         )
       ),
       column(
-        width = 4,
+        width = 8,
         conditionalPanel(
           condition = "input.CB_degradation_rate_toProducts",
-          lapply(seq(input$NI_degradation_rate_num_products), function(i){
-            pickerInput(
-              inputId = paste0("PI_degradation_rate_product_", as.character(i)),
-              label = paste0("Product ", as.character(i)),
-              choices = sort(rv.SPECIES$df.by.compartment$Name),
-              options = pickerOptions(liveSearch = TRUE,
-                                      liveSearchStyle = "startsWith"))
-          })
+          fluidRow(
+            column(
+              width = 12,
+              prettyCheckbox(
+                inputId = "CB_degradation_rate_relative_formation",
+                label = "Relative Formation",
+                value = FALSE
+              )
+            )
+          ),
+          fluidRow(
+            column(
+              width = 6,
+              lapply(seq(input$NI_degradation_rate_num_products), function(i){
+                pickerInput(
+                  inputId = paste0("PI_degradation_rate_product_", as.character(i)),
+                  label = paste0("Product ", as.character(i)),
+                  choices = sort(rv.SPECIES$df.by.compartment$Name),
+                  options = pickerOptions(liveSearch = TRUE,
+                                          liveSearchStyle = "startsWith"))
+              })
+            ),
+            column(
+              width = 6,
+              conditionalPanel(
+                condition = "input.CB_degradation_rate_relative_formation",
+                textInput(
+                  inputId = "TI_degradation_rate_krel",
+                  label = "krel (product yield fraction)",
+                  value = paste0("krel", param.suffix)
+                ),
+                numericInput(
+                  inputId = "NI_degradation_rate_krel_value",
+                  label = "Value (0-1)",
+                  value = 0.1, min = 0, max = 1, step = 0.01
+                )
+              )
+            )
+          )
         )
       )
     ),
@@ -732,7 +774,18 @@ output$equationBuilder_degradation_rate <- renderUI({
 })
 
 output$equationBuilder_degradation_by_enzyme <- renderUI({
-  
+  # Auto-number krel parameter for enzyme degradations with relative formation
+  n.existing.with.krel <- 0
+  if (length(rv.REACTIONS$degradation.by.enzyme) > 0) {
+    for (i in seq_along(rv.REACTIONS$degradation.by.enzyme)) {
+      degInfo <- rv.REACTIONS$degradation.by.enzyme[[i]]
+      if ("krel" %in% names(degInfo) && !is.na(degInfo$krel) && degInfo$krel != "") {
+        n.existing.with.krel <- n.existing.with.krel + 1
+      }
+    }
+  }
+  param.suffix <- if (n.existing.with.krel > 0) paste0("_", n.existing.with.krel + 1) else ""
+
   div(
     fluidRow(
       column(
@@ -742,7 +795,7 @@ output$equationBuilder_degradation_by_enzyme <- renderUI({
           label   = "Species to degrade",
           choices = sort(rv.SPECIES$df.by.compartment$Name),
           options = pickerOptions(liveSearch = TRUE,
-                                  liveSearchStyle = "startsWith") 
+                                  liveSearchStyle = "startsWith")
         ),
         conditionalPanel(
           condition = "!input.CB_degradation_enzyme_useVmax",
@@ -754,19 +807,49 @@ output$equationBuilder_degradation_by_enzyme <- renderUI({
         )
       ),
       column(
-        width = 3,
-        offset = 1,
+        width = 9,
         conditionalPanel(
           condition = "input.CB_degradation_enzyme_toProducts",
-          lapply(seq(input$NI_degradation_enzyme_num_products), function(i){
-            pickerInput(
-              inputId = paste0("PI_degradation_enzyme_product_", 
-                               as.character(i)),
-              label = paste0("Product ", as.character(i)),
-              choices = sort(rv.SPECIES$df.by.compartment$Name),
-              options = pickerOptions(liveSearch = TRUE,
-                                      liveSearchStyle = "startsWith"))
-          })
+          fluidRow(
+            column(
+              width = 12,
+              prettyCheckbox(
+                inputId = "CB_degradation_enzyme_relative_formation",
+                label = "Relative Formation",
+                value = FALSE
+              )
+            )
+          ),
+          fluidRow(
+            column(
+              width = 6,
+              lapply(seq(input$NI_degradation_enzyme_num_products), function(i){
+                pickerInput(
+                  inputId = paste0("PI_degradation_enzyme_product_",
+                                   as.character(i)),
+                  label = paste0("Product ", as.character(i)),
+                  choices = sort(rv.SPECIES$df.by.compartment$Name),
+                  options = pickerOptions(liveSearch = TRUE,
+                                          liveSearchStyle = "startsWith"))
+              })
+            ),
+            column(
+              width = 6,
+              conditionalPanel(
+                condition = "input.CB_degradation_enzyme_relative_formation",
+                textInput(
+                  inputId = "TI_degradation_enzyme_krel",
+                  label = "krel (product yield fraction)",
+                  value = paste0("krel", param.suffix)
+                ),
+                numericInput(
+                  inputId = "NI_degradation_enzyme_krel_value",
+                  label = "Value (0-1)",
+                  value = 0.1, min = 0, max = 1, step = 0.01
+                )
+              )
+            )
+          )
         )
       )
     ),

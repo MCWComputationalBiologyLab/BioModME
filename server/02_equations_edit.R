@@ -1092,12 +1092,15 @@ output$eqnCreate_edit_rending_mainbar <- renderUI({
     RC.id      <- degInfo$Rate.Constant.id
     Product    <- degInfo$Products
     Product.id <- degInfo$Products.id
-    
+    krel.stored    <- if ("krel" %in% names(degInfo)) degInfo$krel else NA
+    krel.id.stored <- if ("krel.id" %in% names(degInfo)) degInfo$krel.id else NA
+    use.relative.formation <- !is.na(krel.stored) && !is.na(krel.id.stored)
+
     prod.exists <- ifelse(is.na(Product), FALSE, TRUE)
     if (prod.exists) {
       num.prods <- length(strsplit(Product, ", ")[[1]])
     }
-    
+
     div(
       fluidRow(
         column(
@@ -1108,24 +1111,58 @@ output$eqnCreate_edit_rending_mainbar <- renderUI({
             choices = sort(rv.SPECIES$df.by.compartment$Name),
             selected = VarDeg,
             options = pickerOptions(liveSearch = TRUE,
-                                    liveSearchStyle = "startsWith") 
+                                    liveSearchStyle = "startsWith")
           )
         ),
         column(
-          width = 4,
+          width = 8,
           conditionalPanel(
             condition = "input.CB_degradation_rate_toProducts_edit",
-            lapply(
-              seq(input$NI_degradation_rate_num_products_edit), function(i){
-                pickerInput(
-                  inputId = paste0("PI_degradation_rate_product_edit_", 
-                                   as.character(i)),
-                  label = paste0("Product ", as.character(i)),
-                  choices = sort(rv.SPECIES$df.by.compartment$Name),
-                  selected = Product[i],
-                  options = pickerOptions(liveSearch = TRUE,
-                                          liveSearchStyle = "startsWith"))
-              }
+            fluidRow(
+              column(
+                width = 12,
+                prettyCheckbox(
+                  inputId = "CB_degradation_rate_relative_formation_edit",
+                  label = "Relative Formation",
+                  value = use.relative.formation
+                )
+              )
+            ),
+            fluidRow(
+              column(
+                width = 6,
+                lapply(
+                  seq(input$NI_degradation_rate_num_products_edit), function(i){
+                    pickerInput(
+                      inputId = paste0("PI_degradation_rate_product_edit_",
+                                       as.character(i)),
+                      label = paste0("Product ", as.character(i)),
+                      choices = sort(rv.SPECIES$df.by.compartment$Name),
+                      selected = Product[i],
+                      options = pickerOptions(liveSearch = TRUE,
+                                              liveSearchStyle = "startsWith"))
+                  }
+                )
+              ),
+              column(
+                width = 6,
+                conditionalPanel(
+                  condition = "input.CB_degradation_rate_relative_formation_edit",
+                  textInput(
+                    inputId = "TI_degradation_rate_krel_edit",
+                    label = "krel (product yield fraction)",
+                    value = if (!is.na(krel.stored)) krel.stored else "krel"
+                  ),
+                  numericInput(
+                    inputId = "NI_degradation_rate_krel_value_edit",
+                    label = "Value (0-1)",
+                    value = if (!is.na(krel.id.stored) && krel.id.stored %in% names(rv.PARAMETERS$parameters))
+                              rv.PARAMETERS$parameters[[krel.id.stored]]$Value
+                            else 0.1,
+                    min = 0, max = 1, step = 0.01
+                  )
+                )
+              )
             )
           )
         )
@@ -1159,7 +1196,7 @@ output$eqnCreate_edit_rending_mainbar <- renderUI({
   }
   else if (eqn.reaction.law == "degradation_by_enzyme") {
     degInfo   <- rv.REACTIONS$degradation.by.enzyme[[eqn.ID]]
-    
+
     ID         <- degInfo$ID
     law        <- degInfo$Reaction.Law
     VarDeg     <- degInfo$VarDeg
@@ -1177,12 +1214,15 @@ output$eqnCreate_edit_rending_mainbar <- renderUI({
     kcat.id    <- degInfo$kcat.id
     Product    <- degInfo$Products
     Product.id <- degInfo$Products.id
-    
+    krel.stored    <- if ("krel" %in% names(degInfo)) degInfo$krel else NA
+    krel.id.stored <- if ("krel.id" %in% names(degInfo)) degInfo$krel.id else NA
+    use.relative.formation <- !is.na(krel.stored) && !is.na(krel.id.stored)
+
     prod.exists <- ifelse(is.na(Product), FALSE, TRUE)
     if (prod.exists) {
       num.prods <- length(strsplit(Product, ", ")[[1]])
     }
-    
+
     div(
       fluidRow(
         column(
@@ -1193,7 +1233,7 @@ output$eqnCreate_edit_rending_mainbar <- renderUI({
             choices = sort(rv.SPECIES$df.by.compartment$Name),
             selected = VarDeg,
             options = pickerOptions(liveSearch = TRUE,
-                                    liveSearchStyle = "startsWith") 
+                                    liveSearchStyle = "startsWith")
           ),
           conditionalPanel(
             condition = "!input.CB_degradation_enzyme_useVmax_edit",
@@ -1206,21 +1246,54 @@ output$eqnCreate_edit_rending_mainbar <- renderUI({
           )
         ),
         column(
-          width = 3,
-          offset = 1,
+          width = 9,
           conditionalPanel(
             condition = "input.CB_degradation_enzyme_toProducts_edit",
-            lapply(
-              seq(input$NI_degradation_enzyme_num_products_edit), function(i){
-                pickerInput(
-                  inputId = paste0("PI_degradation_enzyme_product_edit_", 
-                                   as.character(i)),
-                  label = paste0("Product ", as.character(i)),
-                  choices = sort(rv.SPECIES$df.by.compartment$Name),
-                  selected = Product[i],
-                  options = pickerOptions(liveSearch = TRUE,
-                                          liveSearchStyle = "startsWith"))
-              }
+            fluidRow(
+              column(
+                width = 12,
+                prettyCheckbox(
+                  inputId = "CB_degradation_enzyme_relative_formation_edit",
+                  label = "Relative Formation",
+                  value = use.relative.formation
+                )
+              )
+            ),
+            fluidRow(
+              column(
+                width = 6,
+                lapply(
+                  seq(input$NI_degradation_enzyme_num_products_edit), function(i){
+                    pickerInput(
+                      inputId = paste0("PI_degradation_enzyme_product_edit_",
+                                       as.character(i)),
+                      label = paste0("Product ", as.character(i)),
+                      choices = sort(rv.SPECIES$df.by.compartment$Name),
+                      selected = Product[i],
+                      options = pickerOptions(liveSearch = TRUE,
+                                              liveSearchStyle = "startsWith"))
+                  }
+                )
+              ),
+              column(
+                width = 6,
+                conditionalPanel(
+                  condition = "input.CB_degradation_enzyme_relative_formation_edit",
+                  textInput(
+                    inputId = "TI_degradation_enzyme_krel_edit",
+                    label = "krel (product yield fraction)",
+                    value = if (!is.na(krel.stored)) krel.stored else "krel"
+                  ),
+                  numericInput(
+                    inputId = "NI_degradation_enzyme_krel_value_edit",
+                    label = "Value (0-1)",
+                    value = if (!is.na(krel.id.stored) && krel.id.stored %in% names(rv.PARAMETERS$parameters))
+                              rv.PARAMETERS$parameters[[krel.id.stored]]$Value
+                            else 0.1,
+                    min = 0, max = 1, step = 0.01
+                  )
+                )
+              )
             )
           )
         )
@@ -2891,7 +2964,23 @@ observeEvent(input$modal_editEqn_edit_button, {
     param.descriptions  <- c(param.descriptions, param.description)
     base.units          <- c(base.units, base.unit)
     base.values         <- c(base.values, base.val)
-    
+
+    # Add krel parameter if products are being produced AND relative formation is checked
+    krel.param <- NA
+    if (input$CB_degradation_rate_toProducts_edit && isTruthy(input$CB_degradation_rate_relative_formation_edit)) {
+      krel.param         <- input$TI_degradation_rate_krel_edit
+      krel.param.val     <- input$NI_degradation_rate_krel_value_edit
+      krel.param.desc    <- paste0("Product yield fraction for degradation of ", deg.species)
+
+      parameters          <- c(parameters, krel.param)
+      param.vals          <- c(param.vals, krel.param.val)
+      param.units         <- c(param.units, "dimensionless")
+      unit.descriptions   <- c(unit.descriptions, "dimensionless")
+      param.descriptions  <- c(param.descriptions, krel.param.desc)
+      base.units          <- c(base.units, "dimensionless")
+      base.values         <- c(base.values, krel.param.val)
+    }
+
     # Store Rate Law
     laws <- Degradation_By_Rate(parameter, ConcDep, deg.species)
   }
@@ -3083,6 +3172,22 @@ observeEvent(input$modal_editEqn_edit_button, {
       
       # Store Rate Law
       laws <- Degradation_By_Enzyme_no_Vmax(deg.species, Km, kcat, enzyme)
+    }
+
+    # Add krel parameter if products are being produced AND relative formation is checked
+    krel.param <- NA
+    if (input$CB_degradation_enzyme_toProducts_edit && isTruthy(input$CB_degradation_enzyme_relative_formation_edit)) {
+      krel.param         <- input$TI_degradation_enzyme_krel_edit
+      krel.param.val     <- input$NI_degradation_enzyme_krel_value_edit
+      krel.param.desc    <- paste0("Product yield fraction for degradation of ", deg.species)
+
+      parameters          <- c(parameters, krel.param)
+      param.vals          <- c(param.vals, krel.param.val)
+      param.units         <- c(param.units, "dimensionless")
+      unit.descriptions   <- c(unit.descriptions, "dimensionless")
+      param.descriptions  <- c(param.descriptions, krel.param.desc)
+      base.units          <- c(base.units, "dimensionless")
+      base.values         <- c(base.values, krel.param.val)
     }
   }
   else if (eqn.reaction.law == "michaelis_menten") {
@@ -3792,6 +3897,13 @@ observeEvent(input$modal_editEqn_edit_button, {
       
     }
     else if (eqn.reaction.law == "degradation_rate") {
+      krel.param.id <- NA
+      if (input$CB_degradation_rate_toProducts_edit &&
+          isTruthy(input$CB_degradation_rate_relative_formation_edit) &&
+          length(par.ids) >= 2) {
+        krel.param.id <- par.ids[2]
+      }
+
       sub.entry <- list(
         "ID"               = eqn.ID,
         "Reaction.Law"     = input$eqnCreate_reaction_law,
@@ -3801,26 +3913,33 @@ observeEvent(input$modal_editEqn_edit_button, {
         "Rate.Constant"    = parameter,
         "Rate.Constant.id" = par.ids[1],
         "Products"         = products.collapsed,
-        "Products.id"      = products.id.collapsed
+        "Products.id"      = products.id.collapsed,
+        "krel"             = krel.param,
+        "krel.id"          = krel.param.id
       )
-      
-      # Add to mass action RV
-      n <- length(rv.REACTIONS$degradation.by.rate)
-      rv.REACTIONS$degradation.by.rate[[n+1]] <- sub.entry
-      names(rv.REACTIONS$degradation.by.rate)[n+1] <- eqn.ID
+
+      # Update existing entry by ID (previously this appended a duplicate row).
+      rv.REACTIONS$degradation.by.rate[[eqn.ID]] <- sub.entry
     }
     else if (eqn.reaction.law == "degradation_by_enzyme") {
       # Gets ids based on use.Vmax
       Vmax.id <- NA
       kcat.id <- NA
-      Km.id   <- par.ids[1]
-      
+      Km.id   <- if (length(par.ids) >= 1) par.ids[1] else NA
+
       if (Use.Vmax) {
-        Vmax.id <- par.ids[2]
+        if (length(par.ids) >= 2) Vmax.id <- par.ids[2]
       } else {
-        kcat.id <- par.ids[2]
+        if (length(par.ids) >= 2) kcat.id <- par.ids[2]
       }
-      
+
+      krel.param.id <- NA
+      if (input$CB_degradation_enzyme_toProducts_edit &&
+          isTruthy(input$CB_degradation_enzyme_relative_formation_edit) &&
+          length(par.ids) >= 3) {
+        krel.param.id <- par.ids[length(par.ids)]
+      }
+
       sub.entry <- list(
         "ID"               = eqn.ID,
         "Reaction.Law"     = input$eqnCreate_reaction_law,
@@ -3836,13 +3955,13 @@ observeEvent(input$modal_editEqn_edit_button, {
         "kcat"             = kcat,
         "kcat.id"          = kcat.id,
         "Products"         = products.collapsed,
-        "Products.id"      = products.id.collapsed
+        "Products.id"      = products.id.collapsed,
+        "krel"             = krel.param,
+        "krel.id"          = krel.param.id
       )
-      
-      # Add to mass action RV
-      n <- length(rv.REACTIONS$degradation.by.enzyme)
-      rv.REACTIONS$degradation.by.enzyme[[n+1]] <- sub.entry
-      names(rv.REACTIONS$degradation.by.enzyme)[n+1] <- eqn.ID
+
+      # Update existing entry by ID (previously this appended a duplicate row).
+      rv.REACTIONS$degradation.by.enzyme[[eqn.ID]] <- sub.entry
     }
     else if (eqn.reaction.law == "michaelis_menten") {
       # Gets ids based on use.Vmax

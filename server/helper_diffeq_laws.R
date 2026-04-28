@@ -656,38 +656,46 @@ CalcDiffEqnsForSyn <- function(synInfo, searchVar) {
 }
 
 CalcDiffEqnsForDeg <- function(degInfo, searchVar) {
-    # Unpack Information
+    # Unpack Information. Tolerate both legacy column names (Law, RC, Prods)
+    # and the current sub.entry shape written by 02_equations.R.
     ID      <- degInfo$ID[1]
-    Law     <- degInfo$Law[1]
+    Law     <- if ("Law"    %in% names(degInfo)) degInfo$Law[1]    else degInfo$Reaction.Law[1]
     VarDeg  <- degInfo$VarDeg[1]
     ConcDep <- degInfo$ConcDep[1]
-    RC      <- degInfo$RC[1]
+    RC      <- if ("RC"     %in% names(degInfo)) degInfo$RC[1]     else degInfo$Rate.Constant[1]
     Km      <- degInfo$Km[1]
     Enz     <- degInfo$Enz[1]
     Vmax    <- degInfo$Vmax[1]
-    Product <- degInfo$Prods[1]
+    Product <- if ("Prods"  %in% names(degInfo)) degInfo$Prods[1]  else degInfo$Products[1]
+    krel    <- if ("krel"   %in% names(degInfo)) degInfo$krel[1]   else NA
     is.Prod <- FALSE
-    # Create Products if they exist
-    if (!is.na(Product)) {
-        Product <- str_split(Product, " ")[[1]]
+    # Products are stored as a comma-separated string, e.g. "p1, p2"
+    if (!is.na(Product) && Product != "") {
+        Product <- trimws(str_split(Product, ", ")[[1]])
         if (searchVar %in% Product) {
             is.Prod <- TRUE
         }
-    } 
-    
+    }
+
     if (Law == "rate") {
-        # if species being degraded
+        # if species being generated as product, multiply by krel when set
         if (is.Prod) {
-            diff.eqn <- ifelse(ConcDep,
-                               paste0(RC, "*", VarDeg),
-                               paste0(RC))
+            if (!is.na(krel) && !is.null(krel) && krel != "") {
+                diff.eqn <- ifelse(ConcDep,
+                                   paste0(RC, "*", krel, "*", VarDeg),
+                                   paste0(RC, "*", krel))
+            } else {
+                diff.eqn <- ifelse(ConcDep,
+                                   paste0(RC, "*", VarDeg),
+                                   paste0(RC))
+            }
         } else {
-            # if species being generated
+            # if species being degraded (negative term, krel does not apply)
             diff.eqn <- ifelse(ConcDep,
                                paste0("-", RC, "*", VarDeg),
                                paste0("-", RC))
         }
-        
+
 
         latex.eqn <- IO2Latex(diff.eqn, "out")
     }

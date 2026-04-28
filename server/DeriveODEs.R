@@ -321,11 +321,64 @@ DeriveEquationBasedODEs <- function(species.list.entry,
             multiple <- stoich.to.apply
           }
         }
-      } 
-      
-      # Build ODE expression 
+      }
+
+      # If this is a degradation reaction with products and a krel parameter,
+      # multiply the product-formation rate by krel. Reactant (species being
+      # degraded) keeps the unscaled rate.
+      krel <- NA
+      if (!inReactant && !is.null(law)) {
+        if (law == "degradation_rate" &&
+            eqn.id %in% names(reactions.rv$degradation.by.rate)) {
+          degInfo <- reactions.rv$degradation.by.rate[[eqn.id]]
+          if ("krel" %in% names(degInfo) && !is.na(degInfo$krel) && degInfo$krel != "") {
+            krel <- degInfo$krel
+          }
+        } else if (law == "degradation_by_enzyme" &&
+                   eqn.id %in% names(reactions.rv$degradation.by.enzyme)) {
+          degInfo <- reactions.rv$degradation.by.enzyme[[eqn.id]]
+          if ("krel" %in% names(degInfo) && !is.na(degInfo$krel) && degInfo$krel != "") {
+            krel <- degInfo$krel
+          }
+        }
+      }
+
+      if (!is.na(krel)) {
+        # Enzyme degradation rate has form V*(Vmax*S/(Km+S)) or
+        # V*(kcat*E*S/(Km+S)) — has a "/". Rate-based degradation is just
+        # V*(k_d*S) or V*(k_d) — no "/". Use that to choose insertion point:
+        # before the "/" for enzyme; after the rate constant for rate.
+        insert.has.division <- function(s) {
+          sub("(\\*[^/]+)(/)", paste0("\\1*", krel, "\\2"), s)
+        }
+        insert.no.division <- function(s) {
+          if (grepl("\\*", s)) {
+            sub("(\\([^\\*]+)(\\*)", paste0("\\1*", krel, "\\2"), s)
+          } else {
+            sub("(\\))", paste0("*", krel, "\\1"), s)
+          }
+        }
+
+        if (grepl("/", rate)) {
+          rate <- insert.has.division(rate)
+        } else {
+          rate <- insert.no.division(rate)
+        }
+        if (grepl("/", latex.rate)) {
+          latex.rate <- insert.has.division(latex.rate)
+        } else {
+          latex.rate <- insert.no.division(latex.rate)
+        }
+        if (grepl("/", mj.rate)) {
+          mj.rate <- insert.has.division(mj.rate)
+        } else {
+          mj.rate <- insert.no.division(mj.rate)
+        }
+      }
+
+      # Build ODE expression
       if (inReactant) {sign <- "-"} else {sign <- "+"}
-      
+
       if (applyMultiple) {
         ODE <- c(ODE, 
                  paste0(sign, multiple, "*(", rate,")"))
