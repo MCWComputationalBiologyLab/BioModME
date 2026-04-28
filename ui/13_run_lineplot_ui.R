@@ -263,6 +263,18 @@ TAB_RUN_LINEPLOT <- tabItem(
               )
             )
           ), #end fluidRow
+          hr(),
+          prettyCheckbox(
+            inputId = "line_xaxis_log",
+            label = "Log Scale X-Axis",
+            value = FALSE
+          ),
+          prettyCheckbox(
+            inputId = "line_yaxis_log",
+            label = "Log Scale Y-Axis",
+            value = FALSE
+          ),
+          hr(),
           switchInput(
             inputId = "line_axis_confirm",
             label = "Change Axis",

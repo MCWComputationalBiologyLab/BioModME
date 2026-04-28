@@ -33,7 +33,7 @@ CreateRModel <- function(variables, parameters, parameterValues, ICsValues,
                          additionalEqns, diffEQs, timeScaleBool, timeScaleValue,
                          solverMethod, timeStart, timeEnd, timeStep){
   
-  out.script <- "library(deSolve)\n\n"
+  out.script <- "library(deSolve)\nlibrary(ggplot2)\nlibrary(reshape2)\n\n"
   
   start.function <- "myModel <- function(t, state, parameters) {\n "
   start.function <- paste0(start.function,
@@ -67,7 +67,21 @@ CreateRModel <- function(variables, parameters, parameterValues, ICsValues,
   
   ode.line <- paste0("\nout <- ode(y = state, times = times, func = myModel, ",
                      "parms = parameters)\n")
-  
+
+  # Build plotting code
+  plot.code <- "\nout_df <- as.data.frame(out)\n\n"
+  plot.code <- paste0(plot.code, "# Convert to long format for ggplot\n")
+  plot.code <- paste0(plot.code, "out_long <- melt(out_df, id.vars = \"time\",\n")
+  plot.code <- paste0(plot.code, "                 variable.name = \"species\",\n")
+  plot.code <- paste0(plot.code, "                 value.name = \"value\")\n\n")
+  plot.code <- paste0(plot.code, "ggplot(out_long, aes(x = time, y = value, color = species)) +\n")
+  plot.code <- paste0(plot.code, "  geom_line(size = 1.2) +\n")
+  plot.code <- paste0(plot.code, "  theme_bw() +\n")
+  plot.code <- paste0(plot.code, "  labs(title = \"ODE Model Dynamics\",\n")
+  plot.code <- paste0(plot.code, "       x = \"Time\",\n")
+  plot.code <- paste0(plot.code, "       y = \"Concentration\",\n")
+  plot.code <- paste0(plot.code, "       color = \"Species\")\n")
+
   #build output script from components above
   out.script <- paste0(out.script, start.function)
   if (!is.na(add.eqns)) 
@@ -78,7 +92,8 @@ CreateRModel <- function(variables, parameters, parameterValues, ICsValues,
   out.script <- paste0(out.script, state)
   out.script <- paste0(out.script, times)
   out.script <- paste0(out.script, ode.line)
-  
+  out.script <- paste0(out.script, plot.code)
+
   return(out.script)
 
   

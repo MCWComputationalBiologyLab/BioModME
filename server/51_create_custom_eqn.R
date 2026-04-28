@@ -481,14 +481,42 @@ output$RHT_custom_eqn_display_existing <- renderDT({
   }
 })
 
+# Helper function to convert underscores in expressions to MathJax subscripts
+ConvertExpressionToMathJax <- function(expression) {
+  # Convert variable names with underscores to MathJax format
+  # e.g., "sigma_ABE" -> "sigma_{ABE}"
+  # This processes the entire expression, converting all variable names
+
+  if (is.null(expression) || expression == "") {
+    return(expression)
+  }
+
+  # Pattern matches: word characters starting with letter, underscore, then word characters
+  # This will match things like sigma_ABE, con_ABE, etc.
+  # We want to convert these to sigma_{ABE}, con_{ABE}
+  # The pattern ensures we only match variable-like patterns (not operators)
+
+  # Use regex to find and replace all occurrences
+  # Pattern: ([a-zA-Z][a-zA-Z0-9]*)_([a-zA-Z0-9]+)
+  # - First part: word starting with letter, followed by letters/numbers
+  # - Underscore
+  # - Second part: letters/numbers (the subscript)
+  # Replacement: \1_{\2} converts to identifier_{identifier}
+
+  # Process the expression - this will convert all variable_name patterns
+  result <- gsub("([a-zA-Z][a-zA-Z0-9]*)_([a-zA-Z0-9]+)", "\\1_{\\2}", expression, perl = TRUE)
+
+  return(result)
+}
+
 # Build Mathjax Expression
 custom_law_expression <- reactive ({
   # Grab Expression Information
-  LHS.var <- input$TI_custom_eqn_LHS
-  RHS.exp <- input$TI_custom_eqn_RHS
-  
+  LHS.var <- ConvertExpressionToMathJax(input$TI_custom_eqn_LHS)
+  RHS.exp <- ConvertExpressionToMathJax(input$TI_custom_eqn_RHS)
+
   textOut <- paste0("$$", LHS.var, " = ", RHS.exp, "$$")
-  
+
   return(textOut)
 })
 
