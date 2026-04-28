@@ -1391,6 +1391,15 @@ observeEvent(input$file_input_load_sbml, {
                  stringsAsFactors = FALSE)
     )
   }
+  if (!"substrate_synthesis_competition" %in% rv.REACTIONLAWS$laws$BackendName) {
+    rv.REACTIONLAWS$laws <- rbind(
+      rv.REACTIONLAWS$laws,
+      data.frame(Name = "Substrate Synthesis (Competition)",
+                 BackendName = "substrate_synthesis_competition",
+                 Type = "bacterial",
+                 stringsAsFactors = FALSE)
+    )
+  }
 
   rv.REACTIONS$reactions <- rv.sbml.temp$reactions
   

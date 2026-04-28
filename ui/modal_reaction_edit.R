@@ -125,6 +125,16 @@ shinyBS::bsModal(
         ),
         conditionalPanel(
           condition =
+            "input.eqnCreate_reaction_law_edit == 'substrate_synthesis_competition'",
+          prettyCheckbox(
+            inputId = "CB_sub_syn_comp_species_dependent_edit",
+            label   = "Species-dependent synthesis (rate = k*S*X*(1-(X+alpha*Y)/Kc))",
+            value   = TRUE
+          ),
+          uiOutput("equationBuilder_substrate_synthesis_competition_edit")
+        ),
+        conditionalPanel(
+          condition =
             "input.eqnCreate_reaction_law_edit == 'michaelis_menten'",
           uiOutput("equationBuilder_michaelis_menten_edit")
         ),

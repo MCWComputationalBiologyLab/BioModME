@@ -798,6 +798,121 @@ observeEvent(input$eqnCreate_addEqnToVector, {
     content.ml  <- NA
     eqn.d       <- "Logistic competition between two species"
   }
+  else if (input$eqnCreate_reaction_law == "substrate_synthesis_competition") {
+    reaction.id  <- NA
+    eqn.display  <- "Substrate Synthesis (Competition)"
+    backend.call <- "substrate_synthesis_competition"
+    isReversible <- FALSE
+
+    species.dependent <- isTruthy(input$CB_sub_syn_comp_species_dependent)
+
+    growth.species    <- input$PI_sub_syn_comp_species
+    growth.species.id <- FindId(growth.species)
+    substrate         <- input$PI_sub_syn_comp_substrate
+    substrate.id      <- FindId(substrate)
+    competitor        <- input$PI_sub_syn_comp_competitor
+    has.competitor    <- isTruthy(competitor) && competitor != ""
+    competitor.id     <- if (has.competitor) FindId(competitor) else NA
+
+    # Substrate is consumed (reactant), species is produced (product); competitor
+    # appears in the rate as a modifier (no ODE contribution).
+    reactants    <- substrate
+    reactants.id <- substrate.id
+    products     <- growth.species
+    products.id  <- growth.species.id
+    if (has.competitor) {
+      species      <- c(growth.species, substrate, competitor)
+      species.id   <- c(growth.species.id, substrate.id, competitor.id)
+      modifiers    <- competitor
+      modifiers.id <- competitor.id
+    } else {
+      species      <- c(growth.species, substrate)
+      species.id   <- c(growth.species.id, substrate.id)
+      modifiers    <- NA
+      modifiers.id <- NA
+    }
+
+    k.name      <- input$TI_sub_syn_comp_k
+    k.val       <- input$NI_sub_syn_comp_k_value
+    alpha.name  <- input$TI_sub_syn_comp_alpha
+    alpha.val   <- input$NI_sub_syn_comp_alpha_value
+    Kc.name     <- input$TI_sub_syn_comp_Kc
+    Kc.val      <- input$NI_sub_syn_comp_Kc_value
+
+    unit.description.k  <- "num <div> time"
+    base.unit.k         <- paste0("1/", rv.UNITS$units.base$Duration)
+    param.unit.k        <- paste0("1/", rv.UNITS$units.selected$Duration)
+    param.description.k <- paste0("Synthesis rate constant for ", growth.species)
+    if (param.unit.k != base.unit.k) {
+      base.val.k <- UnitConversion(unit.description.k, param.unit.k,
+                                   base.unit.k, as.numeric(k.val))
+    } else {
+      base.val.k <- k.val
+    }
+
+    unit.Kc              <- rv.UNITS$units.selected$For.Var
+    base.Kc              <- rv.UNITS$units.base$For.Var
+    unit.description.Kc  <- paste0("conc (", base.Kc, ")")
+    param.description.Kc <- "Community carrying capacity"
+    if (unit.Kc != base.Kc) {
+      base.val.Kc <- UnitConversion(unit.description.Kc, unit.Kc,
+                                    base.Kc, as.numeric(Kc.val))
+    } else {
+      base.val.Kc <- Kc.val
+    }
+
+    param.description.alpha <- if (has.competitor)
+      paste0("Effect of ", competitor, " on ", growth.species)
+    else
+      "Competition coefficient"
+
+    parameters         <- c(parameters, k.name, alpha.name, Kc.name)
+    param.vals         <- c(param.vals, k.val, alpha.val, Kc.val)
+    param.units        <- c(param.units, param.unit.k, "dimensionless", unit.Kc)
+    unit.descriptions  <- c(unit.descriptions, unit.description.k, "dimensionless", unit.description.Kc)
+    param.descriptions <- c(param.descriptions, param.description.k,
+                            param.description.alpha, param.description.Kc)
+    base.units         <- c(base.units, base.unit.k, "dimensionless", base.Kc)
+    base.values        <- c(base.values, base.val.k, alpha.val, base.val.Kc)
+
+    compartment    <- input$eqnCreate_active_compartment
+    compartment.id <- FindId(compartment)
+    volume.var     <- rv.COMPARTMENTS$compartments[[compartment.id]]$Volume
+
+    laws <- Substrate_Synthesis_Competition(
+      rateConstant      = k.name,
+      substrate         = substrate,
+      species           = growth.species,
+      competitor        = if (has.competitor) competitor else NA,
+      alpha             = alpha.name,
+      Kc                = Kc.name,
+      speciesDependent  = species.dependent,
+      volumeVar         = volume.var
+    )
+
+    rate.law    <- laws$string
+    p.rate.law  <- laws$pretty.string
+    latex.law   <- laws$latex
+    mathjax.law <- laws$mj
+    mathml.law  <- laws$mathml
+    content.ml  <- laws$content.ml
+
+    if (species.dependent) {
+      eqn.d <- paste0("Substrate synthesis (competition): d", growth.species,
+                      "/dt = ", k.name, "*", substrate, "*", growth.species,
+                      if (has.competitor)
+                        paste0("*(1-(", growth.species, "+", alpha.name, "*", competitor, ")/", Kc.name, ")")
+                      else
+                        paste0("*(1-", growth.species, "/", Kc.name, ")"))
+    } else {
+      eqn.d <- paste0("Substrate synthesis (competition): d", growth.species,
+                      "/dt = ", k.name, "*", substrate,
+                      if (has.competitor)
+                        paste0("*(1-(", growth.species, "+", alpha.name, "*", competitor, ")/", Kc.name, ")")
+                      else
+                        paste0("*(1-", growth.species, "/", Kc.name, ")"))
+    }
+  }
   else if (input$eqnCreate_reaction_law == "monod_growth") {
     reaction.id  <- NA
     eqn.display  <- "Monod Growth"
@@ -2410,6 +2525,35 @@ observeEvent(input$eqnCreate_addEqnToVector, {
       n <- length(rv.REACTIONS$monodGrowth)
       rv.REACTIONS$monodGrowth[[n + 1]] <- sub.entry
       names(rv.REACTIONS$monodGrowth)[n + 1] <- ID.to.add
+    }
+    else if (input$eqnCreate_reaction_law == "substrate_synthesis_competition") {
+      k.id     <- par.ids[1]
+      alpha.id <- par.ids[2]
+      Kc.id    <- par.ids[3]
+      ssc.entry <- list(
+        "ID"                = ID.to.add,
+        "Reaction.Law"      = input$eqnCreate_reaction_law,
+        "Species"           = growth.species,
+        "Species.id"        = growth.species.id,
+        "Substrate"         = substrate,
+        "Substrate.id"      = substrate.id,
+        "Competitor"        = if (has.competitor) competitor else NA,
+        "Competitor.id"     = if (has.competitor) competitor.id else NA,
+        "Species.Dependent" = species.dependent,
+        "k"                 = parameters[1],
+        "k.id"              = k.id,
+        "k.val"             = param.vals[1],
+        "alpha"             = parameters[2],
+        "alpha.id"          = alpha.id,
+        "alpha.val"         = param.vals[2],
+        "Kc"                = parameters[3],
+        "Kc.id"             = Kc.id,
+        "Kc.val"            = param.vals[3]
+      )
+
+      n <- length(rv.REACTIONS$substrateSynthesisCompetition)
+      rv.REACTIONS$substrateSynthesisCompetition[[n + 1]] <- ssc.entry
+      names(rv.REACTIONS$substrateSynthesisCompetition)[n + 1] <- ID.to.add
     }
     else if (input$eqnCreate_reaction_law == "competitive_monod") {
       # Single-row architecture: shared code already wrote one reaction.entry

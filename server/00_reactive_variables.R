@@ -267,6 +267,20 @@ rv.REACTIONS <- reactiveValues(
   # Kc               || Community carrying capacity
   # Parameter ids/values/units stored with reaction
 
+  # Substrate Synthesis (Competition) - linear substrate consumption with optional
+  # competitor and a logistic-style competition term on the synthesized species.
+  # rate = k*S*X*(1-(X+alpha*Y)/Kc)   (species-dependent)
+  # rate = k*S*  (1-(X+alpha*Y)/Kc)   (not species-dependent)
+  # Y is optional; when absent, the term collapses to (1-X/Kc).
+  substrateSynthesisCompetition = list(),
+  # ID               || ID of reaction
+  # Species          || Synthesized species (X)
+  # Substrate        || Substrate species (S)
+  # Competitor       || Optional competitor (Y) - NA if not used
+  # Species.Dependent|| TRUE if rate has *X factor
+  # k, alpha, Kc     || Parameter names
+  # *.id, *.val      || IDs and values of parameters
+
   # Lists above get converted to dataframes below for various reasons
   reactions.df = data.frame(),
   massAction.df = data.frame(),
@@ -280,8 +294,9 @@ rv.REACTIONS <- reactiveValues(
   monodGrowth.df = data.frame(),
   competitiveMonod.df = data.frame(),
   predatorPrey.df = data.frame(),
-  
-  # This is used to keep track of how many eqns were made 
+  substrateSynthesisCompetition.df = data.frame(),
+
+  # This is used to keep track of how many eqns were made
   # (specifically keeping strack of pregenerated rate constant naming)
   reaction.id.counter = 0,
 
@@ -585,7 +600,8 @@ rv.REACTIONLAWS <- reactiveValues(
              "Logistic Competition",
              "Monod Growth",
              "Competitive Monod Growth",
-             "Predator-Prey"),
+             "Predator-Prey",
+             "Substrate Synthesis (Competition)"),
     BackendName = c("mass_action",
                     "mass_action_w_reg",
                     "synthesis",
@@ -596,13 +612,15 @@ rv.REACTIONLAWS <- reactiveValues(
                     "logistic_competition",
                     "monod_growth",
                     "competitive_monod",
-                    "predator_prey"),
+                    "predator_prey",
+                    "substrate_synthesis_competition"),
     Type = c("chemical",
              "chemical",
              "chemical",
              "chemical",
              "chemical",
              "enzyme",
+             "bacterial",
              "bacterial",
              "bacterial",
              "bacterial",
@@ -735,7 +753,8 @@ rv.sbml.temp <- reactiveValues(
              "Logistic Competition",
              "Monod Growth",
              "Competitive Monod Growth",
-             "Predator-Prey"),
+             "Predator-Prey",
+             "Substrate Synthesis (Competition)"),
     BackendName = c("mass_action",
                     "mass_action_w_reg",
                     "synthesis",
@@ -746,13 +765,15 @@ rv.sbml.temp <- reactiveValues(
                     "logistic_competition",
                     "monod_growth",
                     "competitive_monod",
-                    "predator_prey"),
+                    "predator_prey",
+                    "substrate_synthesis_competition"),
     Type = c("chemical",
              "chemical",
              "chemical",
              "chemical",
              "chemical",
              "enzyme",
+             "bacterial",
              "bacterial",
              "bacterial",
              "bacterial",

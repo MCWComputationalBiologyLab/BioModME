@@ -238,6 +238,27 @@ equationMathJaxBuilder <- reactive({
     # Show scheme: S -> X (with Monod kinetics)
     textOut <- paste0("\\ce{", substrate.mj, "->[{", mu_max.mj, "}][{", K_s.mj, "}]", species.mj, "}")
   }
+  else if (input$eqnCreate_reaction_law == "substrate_synthesis_competition") {
+    x  <- Var2MathJ(input$PI_sub_syn_comp_species)
+    s  <- Var2MathJ(input$PI_sub_syn_comp_substrate)
+    k  <- Var2MathJ(input$TI_sub_syn_comp_k)
+    a  <- Var2MathJ(input$TI_sub_syn_comp_alpha)
+    Kc <- Var2MathJ(input$TI_sub_syn_comp_Kc)
+    species.dependent <- isTruthy(input$CB_sub_syn_comp_species_dependent)
+    competitor <- input$PI_sub_syn_comp_competitor
+    has.comp <- isTruthy(competitor) && competitor != ""
+    growth.body <- if (species.dependent) paste0(k, "*", s, "*", x) else paste0(k, "*", s)
+    comp.term   <- if (has.comp) {
+      y <- Var2MathJ(competitor)
+      paste0("\\left(1-\\frac{", x, "+", a, y, "}{", Kc, "}\\right)")
+    } else {
+      paste0("\\left(1-\\frac{", x, "}{", Kc, "}\\right)")
+    }
+    textOut <- paste0("\\begin{aligned}",
+                      "\\frac{d", x, "}{dt} &= ",  growth.body, comp.term, " \\\\",
+                      "\\frac{d", s, "}{dt} &= -", growth.body, comp.term,
+                      "\\end{aligned}")
+  }
   else if (input$eqnCreate_reaction_law == "predator_prey") {
     x <- Var2MathJ(input$PI_pred_prey_prey)
     y <- Var2MathJ(input$PI_pred_prey_predator)
@@ -663,6 +684,25 @@ equationLatexBuilder <- reactive({
     mu_max <- Var2Latex(input$TI_monod_mu_max)
     K_s <- Var2Latex(input$TI_monod_K_s)
     textOut <- paste0("\\frac{d", species, "}{dt} = ", mu_max, "*", species, "*\\frac{", substrate, "}{", K_s, "+", substrate, "}")
+  }
+  else if (input$eqnCreate_reaction_law == "substrate_synthesis_competition") {
+    x  <- Var2Latex(input$PI_sub_syn_comp_species)
+    s  <- Var2Latex(input$PI_sub_syn_comp_substrate)
+    k  <- Var2Latex(input$TI_sub_syn_comp_k)
+    a  <- Var2Latex(input$TI_sub_syn_comp_alpha)
+    Kc <- Var2Latex(input$TI_sub_syn_comp_Kc)
+    species.dependent <- isTruthy(input$CB_sub_syn_comp_species_dependent)
+    competitor <- input$PI_sub_syn_comp_competitor
+    has.comp <- isTruthy(competitor) && competitor != ""
+    growth.body <- if (species.dependent) paste0(k, "*", s, "*", x) else paste0(k, "*", s)
+    comp.term   <- if (has.comp) {
+      y <- Var2Latex(competitor)
+      paste0("*\\left(1-\\frac{", x, "+", a, "*", y, "}{", Kc, "}\\right)")
+    } else {
+      paste0("*\\left(1-\\frac{", x, "}{", Kc, "}\\right)")
+    }
+    textOut <- paste0("\\frac{d", x, "}{dt} = ",  growth.body, comp.term, ", ",
+                      "\\frac{d", s, "}{dt} = -", growth.body, comp.term)
   }
   else if (input$eqnCreate_reaction_law == "predator_prey") {
     x <- Var2Latex(input$PI_pred_prey_prey)
@@ -1168,6 +1208,17 @@ equationBuilder <- reactive({
     mu_max <- input$TI_monod_mu_max
     textOut <- paste0(substrate, " --> (", mu_max, ", ", input$TI_monod_K_s, ") ", species)
   }
+  else if (input$eqnCreate_reaction_law == "substrate_synthesis_competition") {
+    species   <- input$PI_sub_syn_comp_species
+    substrate <- input$PI_sub_syn_comp_substrate
+    k         <- input$TI_sub_syn_comp_k
+    competitor <- input$PI_sub_syn_comp_competitor
+    if (isTruthy(competitor) && competitor != "") {
+      textOut <- paste0(substrate, " --> (", k, ", competition) ", species, " (", competitor, " as competitor)")
+    } else {
+      textOut <- paste0(substrate, " --> (", k, ", competition) ", species)
+    }
+  }
   else if (input$eqnCreate_reaction_law == "predator_prey") {
     species.x <- input$PI_pred_prey_prey
     species.y <- input$PI_pred_prey_predator
@@ -1510,6 +1561,17 @@ equationBuilder_edit <- reactive({
     substrate <- input$PI_monod_substrate_edit
     mu_max <- input$TI_monod_mu_max_edit
     textOut <- paste0(substrate, " --> (", mu_max, ", ", input$TI_monod_K_s_edit, ") ", species)
+  }
+  else if (eqn.reaction.law == "substrate_synthesis_competition") {
+    species   <- input$PI_sub_syn_comp_species_edit
+    substrate <- input$PI_sub_syn_comp_substrate_edit
+    k         <- input$TI_sub_syn_comp_k_edit
+    competitor <- input$PI_sub_syn_comp_competitor_edit
+    if (isTruthy(competitor) && competitor != "") {
+      textOut <- paste0(substrate, " --> (", k, ", competition) ", species, " (", competitor, " as competitor)")
+    } else {
+      textOut <- paste0(substrate, " --> (", k, ", competition) ", species)
+    }
   }
   else if (eqn.reaction.law == "predator_prey") {
     species.x <- input$PI_pred_prey_prey_edit
@@ -1895,6 +1957,25 @@ equationLatexBuilder_edit <- reactive({
     mu_max <- Var2Latex(input$TI_monod_mu_max_edit)
     K_s <- Var2Latex(input$TI_monod_K_s_edit)
     textOut <- paste0("\\frac{d", species, "}{dt} = ", mu_max, "*", species, "*\\frac{", substrate, "}{", K_s, "+", substrate, "}")
+  }
+  else if (eqn.reaction.law == "substrate_synthesis_competition") {
+    x  <- Var2Latex(input$PI_sub_syn_comp_species_edit)
+    s  <- Var2Latex(input$PI_sub_syn_comp_substrate_edit)
+    k  <- Var2Latex(input$TI_sub_syn_comp_k_edit)
+    a  <- Var2Latex(input$TI_sub_syn_comp_alpha_edit)
+    Kc <- Var2Latex(input$TI_sub_syn_comp_Kc_edit)
+    species.dependent <- isTruthy(input$CB_sub_syn_comp_species_dependent_edit)
+    competitor <- input$PI_sub_syn_comp_competitor_edit
+    has.comp <- isTruthy(competitor) && competitor != ""
+    growth.body <- if (species.dependent) paste0(k, "*", s, "*", x) else paste0(k, "*", s)
+    comp.term   <- if (has.comp) {
+      y <- Var2Latex(competitor)
+      paste0("*\\left(1-\\frac{", x, "+", a, "*", y, "}{", Kc, "}\\right)")
+    } else {
+      paste0("*\\left(1-\\frac{", x, "}{", Kc, "}\\right)")
+    }
+    textOut <- paste0("\\frac{d", x, "}{dt} = ",  growth.body, comp.term, ", ",
+                      "\\frac{d", s, "}{dt} = -", growth.body, comp.term)
   }
   else if (eqn.reaction.law == "predator_prey") {
     x <- Var2Latex(input$PI_pred_prey_prey_edit)
@@ -2297,6 +2378,27 @@ equationBuilder_edit_mathJax <- reactive({
     mu_max.mj <- Var2MathJ(input$TI_monod_mu_max_edit)
     K_s.mj <- Var2MathJ(input$TI_monod_K_s_edit)
     textOut <- paste0("\\ce{", substrate.mj, "->[{", mu_max.mj, "}][{", K_s.mj, "}]", species.mj, "}")
+  }
+  else if (eqn.reaction.law == "substrate_synthesis_competition") {
+    x  <- Var2MathJ(input$PI_sub_syn_comp_species_edit)
+    s  <- Var2MathJ(input$PI_sub_syn_comp_substrate_edit)
+    k  <- Var2MathJ(input$TI_sub_syn_comp_k_edit)
+    a  <- Var2MathJ(input$TI_sub_syn_comp_alpha_edit)
+    Kc <- Var2MathJ(input$TI_sub_syn_comp_Kc_edit)
+    species.dependent <- isTruthy(input$CB_sub_syn_comp_species_dependent_edit)
+    competitor <- input$PI_sub_syn_comp_competitor_edit
+    has.comp <- isTruthy(competitor) && competitor != ""
+    growth.body <- if (species.dependent) paste0(k, "*", s, "*", x) else paste0(k, "*", s)
+    comp.term   <- if (has.comp) {
+      y <- Var2MathJ(competitor)
+      paste0("\\left(1-\\frac{", x, "+", a, y, "}{", Kc, "}\\right)")
+    } else {
+      paste0("\\left(1-\\frac{", x, "}{", Kc, "}\\right)")
+    }
+    textOut <- paste0("\\begin{aligned}",
+                      "\\frac{d", x, "}{dt} &= ",  growth.body, comp.term, " \\\\",
+                      "\\frac{d", s, "}{dt} &= -", growth.body, comp.term,
+                      "\\end{aligned}")
   }
   else if (eqn.reaction.law == "predator_prey") {
     x <- Var2MathJ(input$PI_pred_prey_prey_edit)

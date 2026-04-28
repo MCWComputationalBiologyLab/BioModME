@@ -281,6 +281,7 @@ reset_all_storage_variables <- function() {
   rv.REACTIONS$monodGrowth = list()
   rv.REACTIONS$competitiveMonod = list()
   rv.REACTIONS$predatorPrey = list()
+  rv.REACTIONS$substrateSynthesisCompetition = list()
   rv.REACTIONS$reactions.df = data.frame()
   rv.REACTIONS$massAction.df = data.frame()
   rv.REACTIONS$massActionwReg.df = data.frame()
@@ -293,6 +294,7 @@ reset_all_storage_variables <- function() {
   rv.REACTIONS$monodGrowth.df = data.frame()
   rv.REACTIONS$competitiveMonod.df = data.frame()
   rv.REACTIONS$predatorPrey.df = data.frame()
+  rv.REACTIONS$substrateSynthesisCompetition.df = data.frame()
   rv.REACTIONS$reaction.id.counter = 0
   
   rv.IO$InputOutput = list()

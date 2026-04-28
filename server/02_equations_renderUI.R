@@ -591,6 +591,48 @@ output$equationBuilder_predator_prey <- renderUI({
   )
 })
 
+output$equationBuilder_substrate_synthesis_competition <- renderUI({
+  n.existing <- length(rv.REACTIONS$substrateSynthesisCompetition)
+  param.suffix <- if (n.existing > 0) paste0("_", n.existing + 1) else ""
+
+  div(
+    fluidRow(
+      column(width = 4,
+        pickerInput("PI_sub_syn_comp_species", "Species (X)",
+                    choices = sort(rv.SPECIES$df.by.compartment$Name),
+                    options = pickerOptions(liveSearch = TRUE,
+                                            liveSearchStyle = "startsWith"))),
+      column(width = 4,
+        pickerInput("PI_sub_syn_comp_substrate", "Substrate (S)",
+                    choices = sort(rv.SPECIES$df.by.compartment$Name),
+                    options = pickerOptions(liveSearch = TRUE,
+                                            liveSearchStyle = "startsWith"))),
+      column(width = 4,
+        pickerInput("PI_sub_syn_comp_competitor", "Competitor (Y) - optional",
+                    choices = c("None" = "", sort(rv.SPECIES$df.by.compartment$Name)),
+                    options = pickerOptions(liveSearch = TRUE,
+                                            liveSearchStyle = "startsWith")))
+    ),
+    hr(),
+    fluidRow(
+      column(width = 3, textInput("TI_sub_syn_comp_k", "k (rate constant)",
+                                  value = paste0("k_sub_syn", param.suffix))),
+      column(width = 3, numericInput("NI_sub_syn_comp_k_value", "Value",
+                                     value = 0.1, min = 0, step = 0.01)),
+      column(width = 3, textInput("TI_sub_syn_comp_alpha", "alpha (competition coef.)",
+                                  value = paste0("alpha", param.suffix))),
+      column(width = 3, numericInput("NI_sub_syn_comp_alpha_value", "Value",
+                                     value = 0.1, min = 0, step = 0.01))
+    ),
+    fluidRow(
+      column(width = 3, textInput("TI_sub_syn_comp_Kc", "Kc (carrying capacity)",
+                                  value = paste0("Kc", param.suffix))),
+      column(width = 3, numericInput("NI_sub_syn_comp_Kc_value", "Value",
+                                     value = 1, min = 0.0001, step = 0.1))
+    )
+  )
+})
+
 output$equationBuilder_synthesis <- renderUI({
 
   div(

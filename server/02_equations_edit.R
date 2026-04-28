@@ -218,6 +218,51 @@ output$equationBuilder_monod_growth_edit <- renderUI({
   )
 })
 
+output$equationBuilder_substrate_synthesis_competition_edit <- renderUI({
+  div(
+    fluidRow(
+      column(width = 4,
+        pickerInput("PI_sub_syn_comp_species_edit", "Species (X)",
+                    choices = sort(rv.SPECIES$df.by.compartment$Name),
+                    selected = input$PI_sub_syn_comp_species_edit,
+                    options = pickerOptions(liveSearch = TRUE,
+                                            liveSearchStyle = "startsWith"))),
+      column(width = 4,
+        pickerInput("PI_sub_syn_comp_substrate_edit", "Substrate (S)",
+                    choices = sort(rv.SPECIES$df.by.compartment$Name),
+                    selected = input$PI_sub_syn_comp_substrate_edit,
+                    options = pickerOptions(liveSearch = TRUE,
+                                            liveSearchStyle = "startsWith"))),
+      column(width = 4,
+        pickerInput("PI_sub_syn_comp_competitor_edit", "Competitor (Y) - optional",
+                    choices = c("None" = "", sort(rv.SPECIES$df.by.compartment$Name)),
+                    selected = if (is.null(input$PI_sub_syn_comp_competitor_edit)) "" else input$PI_sub_syn_comp_competitor_edit,
+                    options = pickerOptions(liveSearch = TRUE,
+                                            liveSearchStyle = "startsWith")))
+    ),
+    hr(),
+    fluidRow(
+      column(width = 3, textInput("TI_sub_syn_comp_k_edit", "k (rate constant)",
+                                  value = if (is.null(input$TI_sub_syn_comp_k_edit)) "k_sub_syn" else input$TI_sub_syn_comp_k_edit)),
+      column(width = 3, numericInput("NI_sub_syn_comp_k_value_edit", "Value",
+                                     value = if (is.null(input$NI_sub_syn_comp_k_value_edit)) 0.1 else input$NI_sub_syn_comp_k_value_edit,
+                                     min = 0, step = 0.01)),
+      column(width = 3, textInput("TI_sub_syn_comp_alpha_edit", "alpha (competition coef.)",
+                                  value = if (is.null(input$TI_sub_syn_comp_alpha_edit)) "alpha" else input$TI_sub_syn_comp_alpha_edit)),
+      column(width = 3, numericInput("NI_sub_syn_comp_alpha_value_edit", "Value",
+                                     value = if (is.null(input$NI_sub_syn_comp_alpha_value_edit)) 0.1 else input$NI_sub_syn_comp_alpha_value_edit,
+                                     min = 0, step = 0.01))
+    ),
+    fluidRow(
+      column(width = 3, textInput("TI_sub_syn_comp_Kc_edit", "Kc (carrying capacity)",
+                                  value = if (is.null(input$TI_sub_syn_comp_Kc_edit)) "Kc" else input$TI_sub_syn_comp_Kc_edit)),
+      column(width = 3, numericInput("NI_sub_syn_comp_Kc_value_edit", "Value",
+                                     value = if (is.null(input$NI_sub_syn_comp_Kc_value_edit)) 1 else input$NI_sub_syn_comp_Kc_value_edit,
+                                     min = 0.0001, step = 0.1))
+    )
+  )
+})
+
 # Left Box: Equation Edit Options ----------------------------------------------
 output$eqnCreate_edit_rendering_sidebar <- renderUI({
 # browser()
@@ -1517,6 +1562,62 @@ output$eqnCreate_edit_rending_mainbar <- renderUI({
       )
     )
   }
+  else if (eqn.reaction.law == "substrate_synthesis_competition") {
+    info <- rv.REACTIONS$substrateSynthesisCompetition[[eqn.ID]]
+    if (is.null(info)) {
+      return(div(class = "alert alert-warning",
+                 "This Substrate Synthesis (Competition) reaction has stale state. ",
+                 "Please delete this reaction row and add a new one."))
+    }
+    species    <- info$Species
+    substrate  <- info$Substrate
+    competitor <- if (is.null(info$Competitor) || is.na(info$Competitor)) "" else info$Competitor
+    species.dependent <- if (is.null(info$Species.Dependent)) TRUE else info$Species.Dependent
+    k.name     <- info$k
+    alpha.name <- info$alpha
+    Kc.name    <- info$Kc
+
+    k.val     <- rv.PARAMETERS$parameters[[info$k.id]]$Value
+    alpha.val <- rv.PARAMETERS$parameters[[info$alpha.id]]$Value
+    Kc.val    <- rv.PARAMETERS$parameters[[info$Kc.id]]$Value
+
+    updateCheckboxInput(session, "CB_sub_syn_comp_species_dependent_edit",
+                        value = species.dependent)
+
+    div(
+      fluidRow(
+        column(width = 4,
+          pickerInput("PI_sub_syn_comp_species_edit", "Species (X)",
+                      choices = sort(rv.SPECIES$df.by.compartment$Name),
+                      selected = species,
+                      options = pickerOptions(liveSearch = TRUE,
+                                              liveSearchStyle = "startsWith"))),
+        column(width = 4,
+          pickerInput("PI_sub_syn_comp_substrate_edit", "Substrate (S)",
+                      choices = sort(rv.SPECIES$df.by.compartment$Name),
+                      selected = substrate,
+                      options = pickerOptions(liveSearch = TRUE,
+                                              liveSearchStyle = "startsWith"))),
+        column(width = 4,
+          pickerInput("PI_sub_syn_comp_competitor_edit", "Competitor (Y) - optional",
+                      choices = c("None" = "", sort(rv.SPECIES$df.by.compartment$Name)),
+                      selected = competitor,
+                      options = pickerOptions(liveSearch = TRUE,
+                                              liveSearchStyle = "startsWith")))
+      ),
+      hr(),
+      fluidRow(
+        column(width = 3, textInput("TI_sub_syn_comp_k_edit", "k (rate constant)", value = k.name)),
+        column(width = 3, numericInput("NI_sub_syn_comp_k_value_edit", "Value", value = k.val, min = 0, step = 0.01)),
+        column(width = 3, textInput("TI_sub_syn_comp_alpha_edit", "alpha (competition coef.)", value = alpha.name)),
+        column(width = 3, numericInput("NI_sub_syn_comp_alpha_value_edit", "Value", value = alpha.val, min = 0, step = 0.01))
+      ),
+      fluidRow(
+        column(width = 3, textInput("TI_sub_syn_comp_Kc_edit", "Kc (carrying capacity)", value = Kc.name)),
+        column(width = 3, numericInput("NI_sub_syn_comp_Kc_value_edit", "Value", value = Kc.val, min = 0.0001, step = 0.1))
+      )
+    )
+  }
   else if (eqn.reaction.law == "logistic_competition") {
     info <- rv.REACTIONS$logisticCompetition[[eqn.ID]]
     # Fallback for reactions saved by an earlier two-row design where eqn.ID
@@ -2584,6 +2685,109 @@ observeEvent(input$modal_editEqn_edit_button, {
       mathml        = NA,
       content.ml    = NA
     )
+  }
+  else if (eqn.reaction.law == "substrate_synthesis_competition") {
+    reaction.id  <- NA
+    eqn.display  <- "Substrate Synthesis (Competition)"
+    backend.call <- "substrate_synthesis_competition"
+    isReversible <- FALSE
+
+    species.dependent <- isTruthy(input$CB_sub_syn_comp_species_dependent_edit)
+
+    growth.species    <- input$PI_sub_syn_comp_species_edit
+    growth.species.id <- FindId(growth.species)
+    substrate         <- input$PI_sub_syn_comp_substrate_edit
+    substrate.id      <- FindId(substrate)
+    competitor        <- input$PI_sub_syn_comp_competitor_edit
+    has.competitor    <- isTruthy(competitor) && competitor != ""
+    competitor.id     <- if (has.competitor) FindId(competitor) else NA
+
+    reactants    <- substrate
+    reactants.id <- substrate.id
+    products     <- growth.species
+    products.id  <- growth.species.id
+    if (has.competitor) {
+      species      <- c(growth.species, substrate, competitor)
+      species.id   <- c(growth.species.id, substrate.id, competitor.id)
+      modifiers    <- competitor
+      modifiers.id <- competitor.id
+    } else {
+      species      <- c(growth.species, substrate)
+      species.id   <- c(growth.species.id, substrate.id)
+      modifiers    <- NA
+      modifiers.id <- NA
+    }
+
+    k.name      <- input$TI_sub_syn_comp_k_edit
+    k.val       <- input$NI_sub_syn_comp_k_value_edit
+    alpha.name  <- input$TI_sub_syn_comp_alpha_edit
+    alpha.val   <- input$NI_sub_syn_comp_alpha_value_edit
+    Kc.name     <- input$TI_sub_syn_comp_Kc_edit
+    Kc.val      <- input$NI_sub_syn_comp_Kc_value_edit
+
+    unit.description.k  <- "num <div> time"
+    base.unit.k         <- paste0("1/", rv.UNITS$units.base$Duration)
+    param.unit.k        <- paste0("1/", rv.UNITS$units.selected$Duration)
+    if (param.unit.k != base.unit.k) {
+      base.val.k <- UnitConversion(unit.description.k, param.unit.k,
+                                   base.unit.k, as.numeric(k.val))
+    } else {
+      base.val.k <- k.val
+    }
+
+    unit.Kc              <- rv.UNITS$units.selected$For.Var
+    base.Kc              <- rv.UNITS$units.base$For.Var
+    unit.description.Kc  <- paste0("conc (", base.Kc, ")")
+    if (unit.Kc != base.Kc) {
+      base.val.Kc <- UnitConversion(unit.description.Kc, unit.Kc,
+                                    base.Kc, as.numeric(Kc.val))
+    } else {
+      base.val.Kc <- Kc.val
+    }
+
+    parameters         <- c(parameters, k.name, alpha.name, Kc.name)
+    param.vals         <- c(param.vals, k.val, alpha.val, Kc.val)
+    param.units        <- c(param.units, param.unit.k, "dimensionless", unit.Kc)
+    unit.descriptions  <- c(unit.descriptions, unit.description.k, "dimensionless", unit.description.Kc)
+    param.descriptions <- c(param.descriptions,
+                            paste0("Synthesis rate constant for ", growth.species),
+                            if (has.competitor)
+                              paste0("Effect of ", competitor, " on ", growth.species)
+                            else
+                              "Competition coefficient",
+                            "Community carrying capacity")
+    base.units         <- c(base.units, base.unit.k, "dimensionless", base.Kc)
+    base.values        <- c(base.values, base.val.k, alpha.val, base.val.Kc)
+
+    compartment.id <- FindId(input$eqnCreate_active_compartment)
+    volume.var     <- rv.COMPARTMENTS$compartments[[compartment.id]]$Volume
+
+    laws <- Substrate_Synthesis_Competition(
+      rateConstant     = k.name,
+      substrate        = substrate,
+      species          = growth.species,
+      competitor       = if (has.competitor) competitor else NA,
+      alpha            = alpha.name,
+      Kc               = Kc.name,
+      speciesDependent = species.dependent,
+      volumeVar        = volume.var
+    )
+
+    if (species.dependent) {
+      eqn.d <- paste0("Substrate synthesis (competition): d", growth.species,
+                      "/dt = ", k.name, "*", substrate, "*", growth.species,
+                      if (has.competitor)
+                        paste0("*(1-(", growth.species, "+", alpha.name, "*", competitor, ")/", Kc.name, ")")
+                      else
+                        paste0("*(1-", growth.species, "/", Kc.name, ")"))
+    } else {
+      eqn.d <- paste0("Substrate synthesis (competition): d", growth.species,
+                      "/dt = ", k.name, "*", substrate,
+                      if (has.competitor)
+                        paste0("*(1-(", growth.species, "+", alpha.name, "*", competitor, ")/", Kc.name, ")")
+                      else
+                        paste0("*(1-", growth.species, "/", Kc.name, ")"))
+    }
   }
   else if (eqn.reaction.law == "logistic_competition") {
     reaction.id  <- NA
@@ -3746,6 +3950,32 @@ observeEvent(input$modal_editEqn_edit_button, {
         "K_s.base.val"     = base.values[2]
       )
       rv.REACTIONS$monodGrowth[[eqn.ID]] <- sub.entry
+    }
+    else if (eqn.reaction.law == "substrate_synthesis_competition") {
+      k.id     <- par.ids[1]
+      alpha.id <- par.ids[2]
+      Kc.id    <- par.ids[3]
+      ssc.entry <- list(
+        "ID"                = eqn.ID,
+        "Reaction.Law"      = eqn.reaction.law,
+        "Species"           = growth.species,
+        "Species.id"        = growth.species.id,
+        "Substrate"         = substrate,
+        "Substrate.id"      = substrate.id,
+        "Competitor"        = if (has.competitor) competitor else NA,
+        "Competitor.id"     = if (has.competitor) competitor.id else NA,
+        "Species.Dependent" = species.dependent,
+        "k"                 = parameters[1],
+        "k.id"              = k.id,
+        "k.val"             = param.vals[1],
+        "alpha"             = parameters[2],
+        "alpha.id"          = alpha.id,
+        "alpha.val"         = param.vals[2],
+        "Kc"                = parameters[3],
+        "Kc.id"             = Kc.id,
+        "Kc.val"            = param.vals[3]
+      )
+      rv.REACTIONS$substrateSynthesisCompetition[[eqn.ID]] <- ssc.entry
     }
     else if (eqn.reaction.law == "logistic_competition") {
       r.x.id      <- par.ids[1]; r.y.id <- par.ids[2]
