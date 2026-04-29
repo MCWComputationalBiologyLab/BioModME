@@ -65,10 +65,35 @@ HTMLWidgets.widget({
         .force('link', d3.forceLink()
                           .id(function(d) { return d.id; })
                           .distance(90))
-        .force('charge', d3.forceManyBody().strength(-260))
+        .force('charge', d3.forceManyBody().strength(-180))
         .force('center', d3.forceCenter(state.width / 2, state.height / 2))
         .force('collide', d3.forceCollide().radius(34));
       state.simulation.alphaDecay(0.05);
+
+      // Auto-pin every node once the simulation finishes settling. This
+      // eliminates the "spring bouncing" the user noticed: after the
+      // initial layout converges, dragging one node only moves that
+      // node. Connected springs no longer tug at neighbors because the
+      // neighbors have fx/fy set. New nodes that arrive later (via
+      // applyData) are still unpinned at the moment they appear, so the
+      // simulation re-runs briefly to place them and then 'end' fires
+      // again to pin them too.
+      state.simulation.on('end', function() {
+        state.nodes.forEach(function(n) {
+          if (n.fx == null) n.fx = n.x;
+          if (n.fy == null) n.fy = n.y;
+        });
+      });
+    }
+
+    // Clamp x/y to a small inset from the SVG bounds so dragging or
+    // simulation forces can't push nodes off-screen.
+    function clampToBounds(n) {
+      var pad = 30;
+      n.x = Math.max(pad, Math.min(state.width  - pad, n.x));
+      n.y = Math.max(pad, Math.min(state.height - pad, n.y));
+      if (n.fx != null) n.fx = Math.max(pad, Math.min(state.width  - pad, n.fx));
+      if (n.fy != null) n.fy = Math.max(pad, Math.min(state.height - pad, n.fy));
     }
 
     // ---- Drag behavior -----------------------------------------------------
@@ -79,16 +104,34 @@ HTMLWidgets.widget({
     function makeDragBehavior() {
       return d3.drag()
         .on('start', function(event, d) {
-          if (!event.active) state.simulation.alphaTarget(0.3).restart();
+          // Don't reheat the simulation on drag — we want the rest of
+          // the graph to stay fixed. Just set fx/fy on the dragged node.
           d.fx = d.x;
           d.fy = d.y;
         })
         .on('drag', function(event, d) {
           d.fx = event.x;
           d.fy = event.y;
+          clampToBounds(d);
+          // Manually update this node's transform and any connected
+          // edges' endpoints, since the simulation is no longer ticking.
+          state.nodesG.selectAll('g.modelDiagram-node')
+            .filter(function(nd) { return nd.id === d.id; })
+            .attr('transform', 'translate(' + d.fx + ',' + d.fy + ')');
+          state.edgesG.selectAll('line.modelDiagram-edge')
+            .filter(function(e) {
+              return e.source.id === d.id || e.target.id === d.id;
+            })
+            .attr('x1', function(e) { return e.source.x; })
+            .attr('y1', function(e) { return e.source.y; })
+            .attr('x2', function(e) { return e.target.x; })
+            .attr('y2', function(e) { return e.target.y; });
+          // Force-tracked node position must stay in sync with fx/fy
+          // so post-drag the data binding has the right coordinates.
+          d.x = d.fx;
+          d.y = d.fy;
         })
         .on('end', function(event, d) {
-          if (!event.active) state.simulation.alphaTarget(0);
           // Keep fx/fy set so the node stays where the user dropped it.
           // Notify R so commit 5's observer can persist it on rv.DIAGRAM.
           if (HTMLWidgets.shinyMode) {
@@ -219,8 +262,10 @@ HTMLWidgets.widget({
       var nodeAll = nodeEnter.merge(nodeSel);
 
       // Tick handler — replaced each update so we close over the right
-      // selections.
+      // selections. Clamp positions to viewport so nothing flies off
+      // screen during the initial settle.
       state.simulation.on('tick', function() {
+        state.nodes.forEach(clampToBounds);
         edgeAll
           .attr('x1', function(d) { return d.source.x; })
           .attr('y1', function(d) { return d.source.y; })
