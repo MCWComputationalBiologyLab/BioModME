@@ -194,7 +194,9 @@ HTMLWidgets.widget({
         .on('drag', function(event, d) {
           d.fx = event.x;
           d.fy = event.y;
-          clampToBounds(d);
+          // No clampToBounds here: with zoom the user should be able to drag
+          // nodes into any visible area. Clamping is kept in the simulation
+          // tick handler only, to prevent nodes flying off during initial layout.
           // Manually update this node's transform and any connected
           // edges' endpoints, since the simulation is no longer ticking.
           state.nodesG.selectAll('g.modelDiagram-node')
