@@ -55,6 +55,12 @@ server <- shinyServer(function(input, output, session) {
   source(file.path("server", "write_sbml.R"))
   source(file.path("server", "showTableInPopup.R"))
   source(file.path("server", "showPlotInPopup.R"))
+
+  # Model Diagram htmlwidget factory + graph derivation helper. Sourced
+  # plain (not local=TRUE) so the function definitions persist in the
+  # server function's environment for use by render reactives below.
+  source(file.path("htmlwidgets", "modelDiagram.R"))
+  source(file.path("server", "diagram_graph.R"))
   
   source(file.path("server", "000_init.R"), local = TRUE)$value
   source(file.path("server", "00_reactive_variables.R"), local = TRUE)$value
@@ -74,6 +80,7 @@ server <- shinyServer(function(input, output, session) {
   source(file.path("server", "12_run_post_processing.R"), local = TRUE)$value
   source(file.path("server", "13_0_run_lineplot.R"), local = TRUE)$value
   source(file.path("server", "13_compare_model.R"), local = TRUE)$value
+  source(file.path("server", "diagram_server.R"), local = TRUE)$value
   source(file.path("server", "31_documentation_server.R"), local = TRUE)$value
   source(file.path("server", "41_summary.R"), local = TRUE)$value
   source(file.path("server", "51_parameter_estimation.R"), local = TRUE)$value

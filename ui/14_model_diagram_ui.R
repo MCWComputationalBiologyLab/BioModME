@@ -1,0 +1,39 @@
+TAB_MODEL_DIAGRAM <-
+  tabItem(
+    tabName = "TAB_MODEL_DIAGRAM",
+    fluidRow(
+      column(
+        width = 12,
+        h4("Model Diagram"),
+        helpText("Bipartite view of the current model: species are circles, ",
+                 "reactions are squares. Reactant edges flow into reaction ",
+                 "nodes; product edges flow out; modifier influences are ",
+                 "shown dashed.")
+      )
+    ),
+    fluidRow(
+      column(
+        width = 9,
+        box(
+          width = 12,
+          solidHeader = FALSE,
+          collapsible = FALSE,
+          modelDiagramOutput("modelDiagram",
+                             width  = "100%",
+                             height = "700px")
+        )
+      ),
+      column(
+        width = 3,
+        box(
+          width = 12,
+          title = "Selection",
+          solidHeader = FALSE,
+          collapsible = FALSE,
+          helpText("Click a node or edge to see details.",
+                   "(Detail panel content lands in a follow-up commit.)"),
+          uiOutput("modelDiagram_info_panel")
+        )
+      )
+    )
+  )
