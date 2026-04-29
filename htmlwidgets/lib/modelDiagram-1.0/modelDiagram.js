@@ -30,12 +30,26 @@ HTMLWidgets.widget({
       height:            height
     };
 
+    // ---- Dimension helpers -------------------------------------------------
+    // When the Model Diagram tab is not active, the container element has
+    // offsetWidth/Height = 0, so the htmlwidgets runtime passes width=0 to
+    // the factory. We fall back to the element's actual bounding rect (or a
+    // safe default) whenever state.width/height look wrong.
+    function liveWidth()  {
+      var w = el.getBoundingClientRect().width  || el.offsetWidth;
+      return (w > 10) ? w : (state.width  > 10 ? state.width  : 900);
+    }
+    function liveHeight() {
+      var h = el.getBoundingClientRect().height || el.offsetHeight;
+      return (h > 10) ? h : (state.height > 10 ? state.height : 600);
+    }
+
     // ---- Setup helpers -----------------------------------------------------
     function ensureSvg() {
       if (state.svg) return;
       var svg = d3.select(el).append('svg')
         .attr('class', 'modelDiagram-svg')
-        .attr('width', state.width)
+        .attr('width',  state.width)
         .attr('height', state.height);
 
       var defs = svg.append('defs');
@@ -66,7 +80,7 @@ HTMLWidgets.widget({
                           .id(function(d) { return d.id; })
                           .distance(90))
         .force('charge', d3.forceManyBody().strength(-180))
-        .force('center', d3.forceCenter(state.width / 2, state.height / 2))
+        .force('center', d3.forceCenter(liveWidth() / 2, liveHeight() / 2))
         .force('collide', d3.forceCollide().radius(34));
       state.simulation.alphaDecay(0.05);
 
@@ -187,9 +201,10 @@ HTMLWidgets.widget({
       // the diff. Priority order for new nodes:
       //   1. In-memory position (within-session drag or prior render)
       //   2. R-side persisted layout (restored from saved .rds)
-      //   3. Center jitter (fresh auto-layout)
+      //   3. Circle placement (fresh auto-layout)
       var oldById = {};
       state.nodes.forEach(function(n) { oldById[n.id] = n; });
+      var freshNodes = [];
       newNodes.forEach(function(n) {
         var prev = oldById[n.id];
         if (prev) {
@@ -204,10 +219,22 @@ HTMLWidgets.widget({
           n.x = saved.x;  n.y = saved.y;
           n.fx = saved.x; n.fy = saved.y;
         } else {
-          n.x = state.width  / 2 + (Math.random() - 0.5) * 80;
-          n.y = state.height / 2 + (Math.random() - 0.5) * 80;
+          freshNodes.push(n);
         }
       });
+
+      // Spread fresh nodes evenly around a circle so the force simulation
+      // starts from a dispersed state rather than a pile at the center.
+      if (freshNodes.length > 0) {
+        var cx = liveWidth()  / 2;
+        var cy = liveHeight() / 2;
+        var r  = Math.min(liveWidth(), liveHeight()) * 0.35;
+        freshNodes.forEach(function(n, i) {
+          var angle = (i / freshNodes.length) * 2 * Math.PI;
+          n.x = cx + r * Math.cos(angle);
+          n.y = cy + r * Math.sin(angle);
+        });
+      }
 
       state.nodes = newNodes;
       state.edges = newEdges;
@@ -289,7 +316,35 @@ HTMLWidgets.widget({
 
       state.simulation.nodes(state.nodes);
       state.simulation.force('link').links(state.edges);
-      state.simulation.alpha(0.3).restart();
+
+      // If any nodes need placement (no fx/fy yet), run the simulation
+      // synchronously to convergence so the layout is ready immediately when
+      // the user navigates to the tab — requestAnimationFrame doesn't fire on
+      // hidden tabs, so animated settling would never happen.
+      var hasUnpinned = state.nodes.some(function(n) { return n.fx == null; });
+      if (hasUnpinned) {
+        // Also refresh the center force in case width was 0 at init time.
+        state.simulation.force('center',
+          d3.forceCenter(liveWidth() / 2, liveHeight() / 2));
+        state.simulation.stop();
+        for (var i = 0; i < 200; i++) {
+          state.simulation.tick();
+        }
+        state.nodes.forEach(function(n) {
+          clampToBounds(n);
+          if (n.fx == null) { n.fx = n.x; n.fy = n.y; }
+        });
+        edgeAll
+          .attr('x1', function(d) { return d.source.x; })
+          .attr('y1', function(d) { return d.source.y; })
+          .attr('x2', function(d) { return d.target.x; })
+          .attr('y2', function(d) { return d.target.y; });
+        nodeAll.attr('transform', function(d) {
+          return 'translate(' + d.x + ',' + d.y + ')';
+        });
+      } else {
+        state.simulation.alpha(0.3).restart();
+      }
     }
 
     function clearEmptyMessage() {
@@ -301,8 +356,8 @@ HTMLWidgets.widget({
       clearEmptyMessage();
       state.svg.append('text')
         .attr('class', 'modelDiagram-empty')
-        .attr('x', state.width / 2)
-        .attr('y', state.height / 2)
+        .attr('x', liveWidth()  / 2)
+        .attr('y', liveHeight() / 2)
         .attr('text-anchor', 'middle')
         .attr('dominant-baseline', 'middle')
         .text('Add species and reactions to see the diagram.');
@@ -312,7 +367,15 @@ HTMLWidgets.widget({
     return {
       renderValue: function(x) {
         if (!x) return;
+        // Refresh state dimensions from the live DOM. The factory receives
+        // width=0 when the tab is hidden; pick up the real size now.
+        var lw = liveWidth(), lh = liveHeight();
+        state.width  = lw;
+        state.height = lh;
         ensureSvg();
+        if (state.svg) {
+          state.svg.attr('width', lw).attr('height', lh);
+        }
         ensureSimulation();
 
         var hasNodes = false;
