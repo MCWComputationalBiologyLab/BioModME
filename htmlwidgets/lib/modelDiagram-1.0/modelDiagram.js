@@ -71,6 +71,18 @@ HTMLWidgets.widget({
       state.hullsG = g.append('g').attr('class', 'modelDiagram-hulls');
       state.edgesG = g.append('g').attr('class', 'modelDiagram-edges');
       state.nodesG = g.append('g').attr('class', 'modelDiagram-nodes');
+
+      // Click on the SVG background clears the current selection.
+      svg.on('click', function() {
+        state.nodesG.selectAll('g.modelDiagram-node')
+          .classed('modelDiagram-selected', false);
+        state.edgesG.selectAll('line.modelDiagram-edge')
+          .classed('modelDiagram-selected', false);
+        if (HTMLWidgets.shinyMode) {
+          Shiny.setInputValue('modelDiagram_node_click',
+            { id: null, type: null }, { priority: 'event' });
+        }
+      });
     }
 
     function ensureSimulation() {
@@ -374,6 +386,41 @@ HTMLWidgets.widget({
       nodeEnter.style('cursor', 'grab');
 
       var nodeAll = nodeEnter.merge(nodeSel);
+
+      // Refresh labels on all nodes so renames from the edit modal show up.
+      nodeAll.select('text.modelDiagram-node-label')
+        .text(function(d) { return d.label || d.id; });
+
+      // Click handlers — set on nodeAll/edgeAll every render so the closure
+      // always references the current selections for selection highlighting.
+      nodeAll.on('click', function(event, d) {
+        event.stopPropagation();
+        // Toggle selection highlight.
+        state.nodesG.selectAll('g.modelDiagram-node')
+          .classed('modelDiagram-selected', false);
+        state.edgesG.selectAll('line.modelDiagram-edge')
+          .classed('modelDiagram-selected', false);
+        d3.select(this).classed('modelDiagram-selected', true);
+        if (HTMLWidgets.shinyMode) {
+          Shiny.setInputValue('modelDiagram_node_click',
+            { id: d.id, type: d.type }, { priority: 'event' });
+        }
+      });
+      nodeAll.style('cursor', 'pointer');
+
+      edgeAll.on('click', function(event, d) {
+        event.stopPropagation();
+        state.nodesG.selectAll('g.modelDiagram-node')
+          .classed('modelDiagram-selected', false);
+        state.edgesG.selectAll('line.modelDiagram-edge')
+          .classed('modelDiagram-selected', false);
+        d3.select(this).classed('modelDiagram-selected', true);
+        if (HTMLWidgets.shinyMode) {
+          Shiny.setInputValue('modelDiagram_edge_click',
+            { reactionId: d.reactionId, role: d.role }, { priority: 'event' });
+        }
+      });
+      edgeAll.style('cursor', 'pointer');
 
       // Tick handler — replaced each update so we close over the right
       // selections. Clamp positions to viewport so nothing flies off

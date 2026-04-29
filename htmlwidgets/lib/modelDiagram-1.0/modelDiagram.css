@@ -46,6 +46,25 @@
   pointer-events: none;
 }
 
+/* --- Selection highlight ------------------------------------------------- */
+
+.modelDiagram-node.modelDiagram-selected circle,
+.modelDiagram-node.modelDiagram-selected rect {
+  stroke: #1a73e8;
+  stroke-width: 2.5px;
+}
+
+.modelDiagram-edge.modelDiagram-selected {
+  stroke: #1a73e8;
+  stroke-width: 2.5px;
+}
+
+.modelDiagram-edge {
+  /* Wider invisible hit area makes edges easier to click. */
+  pointer-events: stroke;
+  stroke-linecap: round;
+}
+
 /* --- Empty / placeholder state ------------------------------------------ */
 
 .modelDiagram-empty,
