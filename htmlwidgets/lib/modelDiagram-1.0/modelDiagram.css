@@ -1,0 +1,17 @@
+/* modelDiagram htmlwidget styles.
+ *
+ * Scaffolding stub committed in commit 1. Full node/edge/hull styling
+ * lands in commit 3 when actual shapes are rendered.
+ */
+
+.modelDiagram-svg {
+  display: block;
+  background: #fafafa;
+  border: 1px solid #e5e5e5;
+}
+
+.modelDiagram-placeholder {
+  fill: #666;
+  font-family: sans-serif;
+  font-size: 14px;
+}

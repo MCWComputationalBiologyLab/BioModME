@@ -1,0 +1,19 @@
+# Informational binding spec for the modelDiagram htmlwidget.
+#
+# BioModME is a Shiny app (not an R package), so the htmlwidgets
+# autoload mechanism that scans inst/htmlwidgets/<name>.yaml does
+# NOT pick this file up. Actual dependency wiring lives in
+# htmlwidgets/modelDiagram.R via htmltools::htmlDependency().
+# This YAML is kept for symmetry with the standard htmlwidgets
+# directory layout and to document what the widget needs.
+
+dependencies:
+  - name: d3
+    version: 7.9.0
+    src: htmlwidgets/lib/d3-7.9.0
+    script: d3.min.js
+  - name: modelDiagram
+    version: "1.0"
+    src: htmlwidgets/lib/modelDiagram-1.0
+    script: modelDiagram.js
+    stylesheet: modelDiagram.css
