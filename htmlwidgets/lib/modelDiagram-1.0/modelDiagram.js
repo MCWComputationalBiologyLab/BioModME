@@ -182,6 +182,91 @@ HTMLWidgets.widget({
       return out;
     }
 
+    // ---- Reaction-order initial placement ----------------------------------
+    // Lay out fresh nodes using the reaction definition order as a grid
+    // backbone. Reactions fill cells left-to-right, top-to-bottom. Each
+    // species is placed on the side of its connected reaction that matches
+    // its role (reactants left, products right, modifiers above). When a
+    // species connects to multiple reactions its position is the average of
+    // all those desired positions. The force simulation then refines from
+    // this semantically meaningful starting point.
+    function reactionOrderLayout(freshNodes, allNodes, edges) {
+      var W = liveWidth();
+      var H = liveHeight();
+
+      var freshById = {};
+      freshNodes.forEach(function(n) { freshById[n.id] = n; });
+
+      // Step 1 — place fresh reaction nodes on a grid.
+      // Use the global reaction index (position within allNodes) so that when
+      // a new reaction is added incrementally it slots into the next cell and
+      // doesn't shift existing pinned reactions.
+      var allRxn = allNodes.filter(function(n) { return n.type === 'reaction'; });
+      var padL = 90, padT = 80;
+      var nCols = Math.max(1, Math.ceil(Math.sqrt(allRxn.length * 1.6)));
+      var nRows = Math.max(1, Math.ceil(allRxn.length / nCols));
+      var xStep = nCols > 1 ? Math.min(220, (W - padL * 2) / (nCols - 1)) : 0;
+      var yStep = nRows > 1 ? Math.min(180, (H - padT * 2) / (nRows - 1)) : 0;
+
+      var rxnPos = {};
+      allRxn.forEach(function(n, i) {
+        var gx = padL + (i % nCols) * xStep;
+        var gy = padT + Math.floor(i / nCols) * yStep;
+        if (freshById[n.id]) {
+          n.x = gx;
+          n.y = gy;
+        }
+        // Record position for species placement below (prefer pinned position
+        // for existing nodes, grid position for fresh ones).
+        rxnPos[n.id] = freshById[n.id]
+          ? { x: gx, y: gy }
+          : { x: n.fx != null ? n.fx : n.x, y: n.fy != null ? n.fy : n.y };
+      });
+
+      // Step 2 — place fresh species near their connected reactions.
+      // Collect desired positions per species (one per connected reaction edge)
+      // then average them so a species shared across reactions lands in between.
+      var spcWanted = {};
+      freshNodes.forEach(function(n) {
+        if (n.type === 'species') spcWanted[n.id] = [];
+      });
+
+      var OFFSET = 95;
+      edges.forEach(function(e) {
+        var src  = typeof e.source === 'object' ? e.source.id : e.source;
+        var tgt  = typeof e.target === 'object' ? e.target.id : e.target;
+        var role = e.role;
+        // reactant: species→reaction  product: reaction→species  modifier: species→reaction
+        var rxnId = (role === 'product') ? src : tgt;
+        var spcId = (role === 'product') ? tgt : src;
+        if (!spcWanted[spcId] || !rxnPos[rxnId]) return;
+        var rp = rxnPos[rxnId];
+        if (role === 'reactant') {
+          spcWanted[spcId].push({ x: rp.x - OFFSET, y: rp.y });
+        } else if (role === 'product') {
+          spcWanted[spcId].push({ x: rp.x + OFFSET, y: rp.y });
+        } else {
+          spcWanted[spcId].push({ x: rp.x, y: rp.y - OFFSET });
+        }
+      });
+
+      freshNodes.forEach(function(n) {
+        if (n.type !== 'species') return;
+        var wanted = spcWanted[n.id] || [];
+        if (wanted.length > 0) {
+          var cx = 0, cy = 0;
+          wanted.forEach(function(p) { cx += p.x; cy += p.y; });
+          // Average + tiny jitter so species sharing a position don't stack.
+          n.x = cx / wanted.length + (Math.random() - 0.5) * 25;
+          n.y = cy / wanted.length + (Math.random() - 0.5) * 25;
+        } else {
+          // Disconnected species: scatter near centre.
+          n.x = W / 2 + (Math.random() - 0.5) * 200;
+          n.y = H / 2 + (Math.random() - 0.5) * 200;
+        }
+      });
+    }
+
     // ---- Position preservation across re-renders --------------------------
     function applyData(x) {
       var newNodes = pivotToArray(x.nodes);
@@ -223,17 +308,9 @@ HTMLWidgets.widget({
         }
       });
 
-      // Spread fresh nodes evenly around a circle so the force simulation
-      // starts from a dispersed state rather than a pile at the center.
+      // Place fresh nodes using reaction definition order as the grid backbone.
       if (freshNodes.length > 0) {
-        var cx = liveWidth()  / 2;
-        var cy = liveHeight() / 2;
-        var r  = Math.min(liveWidth(), liveHeight()) * 0.35;
-        freshNodes.forEach(function(n, i) {
-          var angle = (i / freshNodes.length) * 2 * Math.PI;
-          n.x = cx + r * Math.cos(angle);
-          n.y = cy + r * Math.sin(angle);
-        });
+        reactionOrderLayout(freshNodes, newNodes, newEdges);
       }
 
       state.nodes = newNodes;
