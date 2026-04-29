@@ -27,7 +27,8 @@ HTMLWidgets.widget({
       edges:             [],
       compartmentColor:  {},
       width:             width,
-      height:            height
+      height:            height,
+      resetToken:        null    // last seen token; change triggers full re-layout
     };
 
     // ---- Dimension helpers -------------------------------------------------
@@ -289,6 +290,15 @@ HTMLWidgets.widget({
       var colorMap = {};
       compArr.forEach(function(g) { colorMap[g.compartmentId] = g.color; });
       state.compartmentColor = colorMap;
+
+      // If the reset token changed, wipe in-memory positions so every node
+      // is treated as fresh and gets a clean reaction-order layout.
+      if (x.resetToken != null && x.resetToken !== state.resetToken) {
+        state.resetToken = x.resetToken;
+        state.nodes = [];
+      } else if (x.resetToken != null) {
+        state.resetToken = x.resetToken;
+      }
 
       // Build lookup for R-side persisted positions (from saved .rds).
       // x.layout is a named object: { nodeId: {x, y}, ... }

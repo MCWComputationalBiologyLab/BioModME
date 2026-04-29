@@ -12,6 +12,9 @@
 # cause a re-render.
 
 output$modelDiagram <- renderModelDiagram({
+  # Non-isolated read: makes the render reactive to Reset Layout clicks.
+  reset.tok <- rv.DIAGRAM$reset.token
+
   graph <- BuildDiagramGraph(
     species_list   = rv.SPECIES$species,
     reactions_list = rv.REACTIONS$reactions,
@@ -23,6 +26,7 @@ output$modelDiagram <- renderModelDiagram({
     nodes             = graph$nodes,
     edges             = graph$edges,
     layout            = saved.layout,
+    resetToken        = reset.tok,
     compartmentGroups = graph$compartmentGroups,
     width             = "100%",
     height            = "700px"
@@ -52,6 +56,14 @@ observeEvent(input$modelDiagram_node_click, {
     rv.DIAGRAM$selected.id   <- click$id
     rv.DIAGRAM$selected.kind <- "node"
   }
+})
+
+# Reset Layout — clear all saved positions and re-run auto-layout.
+observeEvent(input$modelDiagram_reset_layout, {
+  rv.DIAGRAM$layout        <- list()
+  rv.DIAGRAM$selected.id   <- NULL
+  rv.DIAGRAM$selected.kind <- NULL
+  rv.DIAGRAM$reset.token   <- rv.DIAGRAM$reset.token + 1L
 })
 
 # Edge click — record the reaction the edge belongs to.

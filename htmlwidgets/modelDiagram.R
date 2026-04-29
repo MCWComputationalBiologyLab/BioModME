@@ -50,6 +50,7 @@ modelDiagram <- function(nodes = NULL,
                          edges = NULL,
                          layout = NULL,
                          compartmentGroups = NULL,
+                         resetToken = NULL,
                          width = NULL,
                          height = NULL,
                          elementId = NULL) {
@@ -58,7 +59,8 @@ modelDiagram <- function(nodes = NULL,
     nodes             = nodes,
     edges             = edges,
     layout            = layout,
-    compartmentGroups = compartmentGroups
+    compartmentGroups = compartmentGroups,
+    resetToken        = resetToken
   )
 
   htmlwidgets::createWidget(

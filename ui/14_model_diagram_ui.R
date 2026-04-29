@@ -13,6 +13,18 @@ TAB_MODEL_DIAGRAM <-
     ),
     fluidRow(
       column(
+        width = 12,
+        actionButton(
+          inputId = "modelDiagram_reset_layout",
+          label   = "Reset Layout",
+          icon    = icon("rotate-left"),
+          class   = "btn btn-sm btn-default",
+          style   = "margin-bottom: 6px;"
+        )
+      )
+    ),
+    fluidRow(
+      column(
         width = 9,
         box(
           width = 12,
