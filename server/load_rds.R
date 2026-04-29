@@ -167,7 +167,10 @@ observeEvent(rv.LOADBUTTONS$LB.count, {
 
   # Load Custom Equations ------------------------------------------------------
   rv.CUSTOM.EQNS$ce.equations <- LoadCheck(model$ce.equations, list())
-  
+
+  # Load Diagram Layout --------------------------------------------------------
+  rv.DIAGRAM$layout <- LoadCheck(model$diagram$layout, list())
+
   # Load Reaction Laws ---------------------------------------------------------
   rv.REACTIONLAWS$laws <- model$laws
 

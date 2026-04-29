@@ -179,9 +179,15 @@ HTMLWidgets.widget({
       compArr.forEach(function(g) { colorMap[g.compartmentId] = g.color; });
       state.compartmentColor = colorMap;
 
+      // Build lookup for R-side persisted positions (from saved .rds).
+      // x.layout is a named object: { nodeId: {x, y}, ... }
+      var layoutMap = (x.layout && typeof x.layout === 'object') ? x.layout : {};
+
       // Carry forward (x, y, vx, vy, fx, fy) from any node that survives
-      // the diff. New nodes start near the model center with small jitter
-      // so the simulation can disperse them; removed nodes drop out.
+      // the diff. Priority order for new nodes:
+      //   1. In-memory position (within-session drag or prior render)
+      //   2. R-side persisted layout (restored from saved .rds)
+      //   3. Center jitter (fresh auto-layout)
       var oldById = {};
       state.nodes.forEach(function(n) { oldById[n.id] = n; });
       newNodes.forEach(function(n) {
@@ -193,6 +199,10 @@ HTMLWidgets.widget({
           n.vy = prev.vy;
           if (prev.fx != null) n.fx = prev.fx;
           if (prev.fy != null) n.fy = prev.fy;
+        } else if (layoutMap[n.id]) {
+          var saved = layoutMap[n.id];
+          n.x = saved.x;  n.y = saved.y;
+          n.fx = saved.x; n.fy = saved.y;
         } else {
           n.x = state.width  / 2 + (Math.random() - 0.5) * 80;
           n.y = state.height / 2 + (Math.random() - 0.5) * 80;
