@@ -2996,7 +2996,8 @@ observeEvent(input$modal_delete_eqn_button, {
   
   # Delete Equations from Reactive Variables
   for (i in eqn.ids) {
-    rv.REACTIONS$reactions[[i]] <- NULL
+    rv.REACTIONS$reactions[[i]]               <- NULL
+    rv.DIAGRAM$layout[[paste0("rxn_", i)]]    <- NULL   # drop saved diagram position
   }
   
   # Reform eqn df
