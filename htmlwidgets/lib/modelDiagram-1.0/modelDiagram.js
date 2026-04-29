@@ -23,6 +23,7 @@ HTMLWidgets.widget({
       edgesG:            null,   // <g> for edges
       nodesG:            null,   // <g> for nodes
       simulation:        null,
+      zoom:              null,   // d3.zoom() behavior instance
       nodes:             [],
       edges:             [],
       compartmentColor:  {},
@@ -84,6 +85,28 @@ HTMLWidgets.widget({
             { id: null, type: null }, { priority: 'event' });
         }
       });
+
+      // Zoom — panning and mouse-wheel zoom transform state.g. The zoom
+      // behavior is attached to the SVG so the full area is interactive;
+      // node drag events stop propagation so dragging a node doesn't pan.
+      state.zoom = d3.zoom()
+        .scaleExtent([0.1, 5])
+        .on('zoom', function(event) {
+          state.g.attr('transform', event.transform);
+        });
+      svg.call(state.zoom);
+      // Disable double-click-to-zoom (we use dblclick for deselect semantics).
+      svg.on('dblclick.zoom', null);
+
+      // Shiny message handler for the zoom/fit toolbar buttons.
+      // Registered once per widget creation; safe for single-instance use.
+      if (HTMLWidgets.shinyMode) {
+        Shiny.addCustomMessageHandler('modelDiagram_zoom', function(msg) {
+          if      (msg.action === 'in')  { zoomBy(1.4); }
+          else if (msg.action === 'out') { zoomBy(1 / 1.4); }
+          else if (msg.action === 'fit') { fitView(false); }
+        });
+      }
     }
 
     function ensureSimulation() {
@@ -111,6 +134,38 @@ HTMLWidgets.widget({
           if (n.fy == null) n.fy = n.y;
         });
       });
+    }
+
+    // ---- Zoom helpers ---------------------------------------------------------
+    function zoomBy(factor) {
+      if (!state.zoom || !state.svg) return;
+      state.svg.transition().duration(300).call(state.zoom.scaleBy, factor);
+    }
+
+    // Fit all nodes into view with a 50px margin on each side.
+    // Pass instant=true to skip the transition (used after initial layout).
+    function fitView(instant) {
+      if (!state.nodes.length || !state.zoom || !state.svg) return;
+      var W   = liveWidth();
+      var H   = liveHeight();
+      var xs  = state.nodes.map(function(n) { return n.fx != null ? n.fx : n.x; });
+      var ys  = state.nodes.map(function(n) { return n.fy != null ? n.fy : n.y; });
+      var pad = 55;
+      var minX = Math.min.apply(null, xs) - pad;
+      var maxX = Math.max.apply(null, xs) + pad;
+      var minY = Math.min.apply(null, ys) - pad;
+      var maxY = Math.max.apply(null, ys) + pad;
+      var dx   = maxX - minX;
+      var dy   = maxY - minY;
+      if (dx <= 0 || dy <= 0) return;
+      var scale = Math.min(W / dx, H / dy);
+      scale = Math.max(0.1, Math.min(scale, 3));
+      var t = d3.zoomIdentity
+        .translate(W / 2 - scale * (minX + maxX) / 2,
+                   H / 2 - scale * (minY + maxY) / 2)
+        .scale(scale);
+      state.svg.transition().duration(instant ? 0 : 400)
+        .call(state.zoom.transform, t);
     }
 
     // Clamp x/y to a small inset from the SVG bounds so dragging or
@@ -476,6 +531,8 @@ HTMLWidgets.widget({
         nodeAll.attr('transform', function(d) {
           return 'translate(' + d.x + ',' + d.y + ')';
         });
+        // Auto-fit the new layout into the viewport.
+        fitView(true);
       } else {
         state.simulation.alpha(0.3).restart();
       }
@@ -547,6 +604,7 @@ HTMLWidgets.widget({
             d3.forceCenter(newWidth / 2, newHeight / 2));
           state.simulation.alpha(0.3).restart();
         }
+        fitView(false);
       },
 
       _state: state

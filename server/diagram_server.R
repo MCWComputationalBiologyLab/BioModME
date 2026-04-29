@@ -58,6 +58,17 @@ observeEvent(input$modelDiagram_node_click, {
   }
 })
 
+# Zoom / fit toolbar buttons — forwarded to the widget via custom message.
+observeEvent(input$modelDiagram_zoom_in,  {
+  session$sendCustomMessage("modelDiagram_zoom", list(action = "in"))
+})
+observeEvent(input$modelDiagram_zoom_out, {
+  session$sendCustomMessage("modelDiagram_zoom", list(action = "out"))
+})
+observeEvent(input$modelDiagram_fit_view, {
+  session$sendCustomMessage("modelDiagram_zoom", list(action = "fit"))
+})
+
 # Reset Layout — clear all saved positions and re-run auto-layout.
 observeEvent(input$modelDiagram_reset_layout, {
   rv.DIAGRAM$layout        <- list()

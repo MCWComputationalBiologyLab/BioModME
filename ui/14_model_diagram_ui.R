@@ -20,6 +20,30 @@ TAB_MODEL_DIAGRAM <-
           icon    = icon("rotate-left"),
           class   = "btn btn-sm btn-default",
           style   = "margin-bottom: 6px;"
+        ),
+        actionButton(
+          inputId = "modelDiagram_zoom_in",
+          label   = NULL,
+          icon    = icon("magnifying-glass-plus"),
+          class   = "btn btn-sm btn-default",
+          style   = "margin-bottom: 6px;",
+          title   = "Zoom in"
+        ),
+        actionButton(
+          inputId = "modelDiagram_zoom_out",
+          label   = NULL,
+          icon    = icon("magnifying-glass-minus"),
+          class   = "btn btn-sm btn-default",
+          style   = "margin-bottom: 6px;",
+          title   = "Zoom out"
+        ),
+        actionButton(
+          inputId = "modelDiagram_fit_view",
+          label   = "Fit",
+          icon    = icon("expand"),
+          class   = "btn btn-sm btn-default",
+          style   = "margin-bottom: 6px;",
+          title   = "Fit all nodes into view"
         )
       )
     ),
