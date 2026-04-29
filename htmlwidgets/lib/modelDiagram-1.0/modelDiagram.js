@@ -71,6 +71,37 @@ HTMLWidgets.widget({
       state.simulation.alphaDecay(0.05);
     }
 
+    // ---- Drag behavior -----------------------------------------------------
+    // Pin-on-drag semantics: dragging sets fx/fy so the node sticks at the
+    // user's position. The simulation continues to settle other nodes around
+    // it. A future Reset Layout button (commit 8) clears all pins to allow a
+    // fresh auto-layout pass.
+    function makeDragBehavior() {
+      return d3.drag()
+        .on('start', function(event, d) {
+          if (!event.active) state.simulation.alphaTarget(0.3).restart();
+          d.fx = d.x;
+          d.fy = d.y;
+        })
+        .on('drag', function(event, d) {
+          d.fx = event.x;
+          d.fy = event.y;
+        })
+        .on('end', function(event, d) {
+          if (!event.active) state.simulation.alphaTarget(0);
+          // Keep fx/fy set so the node stays where the user dropped it.
+          // Notify R so commit 5's observer can persist it on rv.DIAGRAM.
+          if (HTMLWidgets.shinyMode) {
+            Shiny.setInputValue('modelDiagram_node_drag', {
+              id:    d.id,
+              x:     d.fx,
+              y:     d.fy,
+              fixed: true
+            }, { priority: 'event' });
+          }
+        });
+    }
+
     // ---- Data normalization ------------------------------------------------
     // R's data.frame -> JSON serializes as either an object-of-arrays (default
     // htmlwidgets behavior) or an array-of-objects depending on options. We
@@ -178,6 +209,12 @@ HTMLWidgets.widget({
         .style('fill', function(d) {
           return state.compartmentColor[d.compartmentId] || '#cccccc60';
         });
+
+      // Make new nodes draggable. D3 drag behavior persists on the DOM
+      // elements across subsequent re-renders, so this only needs to fire
+      // on enter, not on update.
+      nodeEnter.call(makeDragBehavior());
+      nodeEnter.style('cursor', 'grab');
 
       var nodeAll = nodeEnter.merge(nodeSel);
 
