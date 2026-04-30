@@ -49,25 +49,25 @@ TAB_MODEL_DIAGRAM <-
     ),
     fluidRow(
       column(
-        width = 9,
+        width = 12,
         box(
-          width = 12,
+          width      = 12,
           solidHeader = FALSE,
           collapsible = FALSE,
           modelDiagramOutput("modelDiagram",
                              width  = "100%",
                              height = "700px")
         )
-      ),
+      )
+    ),
+    fluidRow(
       column(
-        width = 3,
+        width = 12,
         box(
-          width = 12,
-          title = "Selection",
+          width       = 12,
+          title       = "Selection Details",
           solidHeader = FALSE,
-          collapsible = FALSE,
-          helpText("Click a node or edge to see details.",
-                   "(Detail panel content lands in a follow-up commit.)"),
+          collapsible = TRUE,
           uiOutput("modelDiagram_info_panel")
         )
       )

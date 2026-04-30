@@ -98,30 +98,72 @@ output$modelDiagram_info_panel <- renderUI({
     "setTimeout(function(){MathJax.Hub.Queue(['Typeset',MathJax.Hub]);},50);"
   ))
 
+  # Helper: coerce NULL / NA / "" to a fallback string.
+  val_or <- function(x, fallback = "—") {
+    if (is.null(x) || (length(x) == 1 && (is.na(x) || !nzchar(trimws(as.character(x)))))) fallback
+    else as.character(x)
+  }
+
+  info_row <- function(label, value) {
+    tags$tr(
+      tags$td(style = "white-space:nowrap; padding-right:12px; color:#666;",
+              tags$em(label)),
+      tags$td(value)
+    )
+  }
+
+  info_table <- function(...) {
+    tags$table(
+      class = "table table-sm table-borderless",
+      style = "font-size:90%; margin-bottom:0;",
+      tags$tbody(...)
+    )
+  }
+
   if (kind == "node" && !startsWith(sid, "rxn_")) {
     # ---- Species node ----
     sp <- rv.SPECIES$species[[sid]]
     if (is.null(sp)) return(helpText("Species not found."))
-    tagList(
-      tags$strong(sp$Name),
-      tags$br(),
-      tags$small(paste0("Compartment: ", sp$Compartment)),
-      tags$hr(style = "margin: 6px 0;"),
-      tags$table(
-        class = "table table-sm table-borderless",
-        style = "font-size:90%;margin-bottom:0;",
-        tags$tbody(
-          tags$tr(
-            tags$td(tags$em("Initial value")),
-            tags$td(paste0(sp$Value, " ", sp$Unit))
-          ),
-          tags$tr(
-            tags$td(tags$em("Boundary")),
-            tags$td(if (isTRUE(sp$BoundaryCondition)) "Fixed" else "Dynamic")
-          )
+
+    # Collect reactions involving this species.
+    rxn.rows <- list()
+    if (length(sp$Reaction.ids) > 0) {
+      for (rid in sp$Reaction.ids) {
+        rxn <- rv.REACTIONS$reactions[[rid]]
+        if (!is.null(rxn)) {
+          rxn.rows <- c(rxn.rows, list(tags$li(rxn$Eqn.Display.Type)))
+        }
+      }
+    }
+
+    fluidRow(
+      column(width = 5,
+        tags$h5(tags$strong(sp$Name), style = "margin-top:0;"),
+        info_table(
+          info_row("ID",           tags$code(val_or(sp$ID))),
+          info_row("Compartment",  val_or(sp$Compartment)),
+          info_row("Initial value",paste0(val_or(sp$Value), " ", val_or(sp$Unit, ""))),
+          info_row("Base value",   paste0(val_or(sp$BaseValue), " ", val_or(sp$BaseUnit, ""))),
+          info_row("Boundary",     if (isTRUE(sp$BoundaryCondition)) "Fixed" else "Dynamic")
         )
+      ),
+      column(width = 7,
+        if (nzchar(trimws(val_or(sp$Description, "")))) {
+          tagList(
+            tags$p(tags$em("Description:"), style = "margin-bottom:4px; color:#666;"),
+            tags$p(sp$Description, style = "margin-bottom:10px;")
+          )
+        },
+        tags$p(tags$em("Involved in reactions:"),
+               style = "margin-bottom:4px; color:#666;"),
+        if (length(rxn.rows) > 0) {
+          tags$ul(rxn.rows, style = "padding-left:18px; margin-bottom:0;")
+        } else {
+          tags$span("— not yet part of any reaction", style = "color:#999;")
+        }
       )
     )
+
   } else {
     # ---- Reaction node or edge ----
     rxn.id <- if (kind == "node") sub("^rxn_", "", sid) else sid
@@ -130,20 +172,48 @@ output$modelDiagram_info_panel <- renderUI({
 
     latex.law <- if (isTruthy(rxn$Latex.Rate.Law)) rxn$Latex.Rate.Law else ""
 
-    tagList(
-      tags$strong(rxn$Eqn.Display.Type),
-      tags$br(),
-      tags$small(tags$em(rxn$Reaction.Law)),
-      tags$hr(style = "margin: 6px 0;"),
-      if (nzchar(trimws(latex.law))) {
-        tagList(
-          tags$p(tags$em("Rate law:"), style = "margin-bottom:2px;"),
-          tags$p(paste0("$$", latex.law, "$$")),
-          retypeset
+    # Build participants list, skipping blank entries.
+    participant_rows <- list(
+      info_row("Reactants",  val_or(rxn$Reactants)),
+      info_row("Products",   val_or(rxn$Products))
+    )
+    if (nzchar(trimws(val_or(rxn$Modifiers, "")))) {
+      participant_rows <- c(participant_rows,
+        list(info_row("Modifiers", rxn$Modifiers)))
+    }
+    if (nzchar(trimws(val_or(rxn$Parameters, "")))) {
+      participant_rows <- c(participant_rows,
+        list(info_row("Parameters", rxn$Parameters)))
+    }
+
+    fluidRow(
+      column(width = 3,
+        tags$h5(tags$strong(val_or(rxn$Eqn.Display.Type)), style = "margin-top:0;"),
+        info_table(
+          info_row("Law",        val_or(rxn$Reaction.Law)),
+          info_row("Compartment",val_or(rxn$Compartment)),
+          info_row("Reversible", if (isTRUE(rxn$Reversible)) "Yes" else "No"),
+          if (nzchar(trimws(val_or(rxn$Description, "")))) {
+            info_row("Description", rxn$Description)
+          }
         )
-      } else {
-        tags$p(tags$em("No rate law stored."))
-      }
+      ),
+      column(width = 4,
+        tags$p(tags$em("Participants:"), style = "margin-bottom:4px; color:#666;"),
+        do.call(info_table, participant_rows)
+      ),
+      column(width = 5,
+        tags$p(tags$em("Rate law:"), style = "margin-bottom:4px; color:#666;"),
+        if (nzchar(trimws(latex.law))) {
+          tagList(
+            tags$p(paste0("$$", latex.law, "$$"),
+                   style = "overflow-x:auto;"),
+            retypeset
+          )
+        } else {
+          tags$span("No rate law stored.", style = "color:#999;")
+        }
+      )
     )
   }
 })
