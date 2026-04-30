@@ -536,7 +536,19 @@ HTMLWidgets.widget({
         // Auto-fit the new layout into the viewport.
         fitView(true);
       } else {
-        state.simulation.alpha(0.3).restart();
+        // All nodes already pinned — sync positions once without restarting
+        // the simulation. Restarting would run clampToBounds in the tick
+        // handler on every frame using the current state.width, which jolts
+        // nodes near the SVG edges whenever the container resizes slightly
+        // (e.g., a Shiny panel rendering below triggers a resize event).
+        edgeAll
+          .attr('x1', function(d) { return d.source.x; })
+          .attr('y1', function(d) { return d.source.y; })
+          .attr('x2', function(d) { return d.target.x; })
+          .attr('y2', function(d) { return d.target.y; });
+        nodeAll.attr('transform', function(d) {
+          return 'translate(' + d.x + ',' + d.y + ')';
+        });
       }
     }
 
@@ -596,23 +608,15 @@ HTMLWidgets.widget({
       },
 
       resize: function(newWidth, newHeight) {
+        // Only update SVG dimensions. Do not restart the simulation or call
+        // fitView — the user may have manually zoomed/panned, and any Shiny
+        // output rendering (e.g. the info panel below) triggers resize() with
+        // a trivial size change that must not disturb the current viewport.
+        // Use the Fit button to re-center after a genuine window resize.
         state.width  = newWidth;
         state.height = newHeight;
         if (state.svg) {
           state.svg.attr('width', newWidth).attr('height', newHeight);
-        }
-        if (state.simulation) {
-          state.simulation.force('center',
-            d3.forceCenter(newWidth / 2, newHeight / 2));
-          // Only reheat + refit when nodes still need settling. A Shiny panel
-          // rendering below the diagram triggers resize() with a trivial width
-          // change; restarting the sim or animating fitView would disturb a
-          // layout the user has already arranged.
-          var hasUnpinned = state.nodes.some(function(n) { return n.fx == null; });
-          if (hasUnpinned) {
-            state.simulation.alpha(0.3).restart();
-            fitView(false);
-          }
         }
       },
 

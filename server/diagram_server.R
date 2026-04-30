@@ -135,9 +135,28 @@ output$modelDiagram_info_panel <- renderUI({
       rxn.entry <- rv.REACTIONS$reactions[[rid]]
       if (is.null(rxn.entry)) next
       roles <- DiagramRoleAssignments(rxn.entry, companions)
-      involved <- unique(c(roles$reactants, roles$products, roles$modifiers))
-      if (sid %in% involved) {
-        rxn.rows <- c(rxn.rows, list(tags$li(val_or(rxn.entry$Eqn.Display.Type, rid))))
+      role.label <- if (sid %in% roles$reactants && sid %in% roles$products) {
+        "reactant / product"
+      } else if (sid %in% roles$reactants) {
+        "reactant"
+      } else if (sid %in% roles$products) {
+        "product"
+      } else if (sid %in% roles$modifiers) {
+        "modifier"
+      } else {
+        NULL
+      }
+      if (!is.null(role.label)) {
+        rxn.label <- val_or(rxn.entry$Eqn.Display.Type, rid)
+        rxn.rows <- c(rxn.rows, list(
+          tags$li(
+            rxn.label,
+            tags$span(
+              paste0(" — ", role.label),
+              style = "color:#888; font-size:88%;"
+            )
+          )
+        ))
       }
     }
 
