@@ -95,6 +95,56 @@ TAB_MODEL_DIAGRAM <-
         )
       )
     ),
+    # Animation row — only visible after a simulation has been run.
+    # Sync checkbox enables size scaling; the time slider scrubs through
+    # the result matrix; log scale toggles linear vs log radius mapping.
+    conditionalPanel(
+      condition = "output.modelDiagram_has_results == true",
+      fluidRow(
+        column(
+          width = 12,
+          box(
+            width       = 12,
+            title       = "Animate over simulation",
+            solidHeader = FALSE,
+            collapsible = TRUE,
+            div(
+              class = "modelDiagram-toolbar",
+              checkboxInput(
+                inputId = "modelDiagram_anim_sync",
+                label   = "Scale species to results",
+                value   = FALSE
+              ),
+              tags$span(class = "modelDiagram-divider"),
+              tagAppendAttributes(
+                conditionalPanel(
+                  condition = "input.modelDiagram_anim_sync == true",
+                  checkboxInput(
+                    inputId = "modelDiagram_anim_log",
+                    label   = "Log scale",
+                    value   = FALSE
+                  )
+                ),
+                style = "display: inline-block;"
+              )
+            ),
+            conditionalPanel(
+              condition = "input.modelDiagram_anim_sync == true",
+              sliderInput(
+                inputId = "modelDiagram_anim_time",
+                label   = "Time",
+                min     = 0,
+                max     = 1,
+                value   = 0,
+                step    = 0.01,
+                width   = "100%",
+                animate = animationOptions(interval = 250, loop = TRUE)
+              )
+            )
+          )
+        )
+      )
+    ),
     fluidRow(
       column(
         width = 12,

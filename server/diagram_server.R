@@ -339,3 +339,127 @@ output$modelDiagram_info_panel <- renderUI({
     )
   }
 })
+
+# ---- Animation: scale species circles by simulation results ---------------
+# The diagram tab listens for results in rv.RESULTS$results.model.final and
+# turns the user's scrubbing of the time slider into a {speciesId: radius}
+# map that the widget applies to its circle nodes. Conditional panels in the
+# UI hide everything until results exist.
+
+# Boolean output that drives the conditionalPanel visibility.
+output$modelDiagram_has_results <- reactive({
+  isTRUE(rv.RESULTS$results.model.has.been.solved)
+})
+outputOptions(output, "modelDiagram_has_results", suspendWhenHidden = FALSE)
+
+# When new results arrive, update the time slider's range to match.
+observe({
+  req(rv.RESULTS$results.model.has.been.solved)
+  res <- rv.RESULTS$results.model.final
+  if (is.null(res) || !"time" %in% colnames(res)) return()
+  times <- res[, "time"]
+  if (length(times) < 2) return()
+  t.min <- min(times, na.rm = TRUE)
+  t.max <- max(times, na.rm = TRUE)
+  if (!is.finite(t.min) || !is.finite(t.max) || t.max <= t.min) return()
+  step  <- (t.max - t.min) / 200
+  unit  <- if (isTruthy(rv.RESULTS$results.time.units)) {
+    rv.RESULTS$results.time.units
+  } else {
+    ""
+  }
+  current <- isolate(input$modelDiagram_anim_time)
+  if (is.null(current) || !is.finite(current) || current < t.min || current > t.max) {
+    current <- t.min
+  }
+  updateSliderInput(
+    session, "modelDiagram_anim_time",
+    label = paste0("Time", if (nzchar(unit)) paste0(" (", unit, ")") else ""),
+    min   = t.min,
+    max   = t.max,
+    value = current,
+    step  = step
+  )
+})
+
+# Compute and push radii whenever sync is on AND any of (slider, log,
+# results matrix) change.
+observe({
+  if (!isTRUE(input$modelDiagram_anim_sync))             return()
+  if (!isTRUE(rv.RESULTS$results.model.has.been.solved)) return()
+  res <- rv.RESULTS$results.model.final
+  if (is.null(res) || !"time" %in% colnames(res))        return()
+
+  t.target <- input$modelDiagram_anim_time
+  use.log  <- isTRUE(input$modelDiagram_anim_log)
+  if (is.null(t.target) || !is.finite(t.target))         return()
+
+  # Pick the row closest to the requested time.
+  times   <- res[, "time"]
+  row.idx <- which.min(abs(times - t.target))
+  row     <- res[row.idx, , drop = TRUE]
+
+  # Build species name -> id lookup. deSolve sometimes mangles names through
+  # make.names() so we register both spellings.
+  species_list <- rv.SPECIES$species
+  if (length(species_list) == 0) return()
+  ids   <- names(species_list)
+  names_ <- vapply(species_list, function(s) {
+    if (!is.null(s$Name) && nzchar(s$Name)) s$Name else (if (!is.null(s$ID)) s$ID else "")
+  }, character(1))
+  name_to_id <- setNames(ids, names_)
+  safe_to_id <- setNames(ids, make.names(names_))
+  resolve.id <- function(col) {
+    if (col %in% names(name_to_id)) return(name_to_id[[col]])
+    if (col %in% names(safe_to_id)) return(safe_to_id[[col]])
+    NULL
+  }
+
+  # Global max across the whole result matrix (excluding time) so the scale
+  # is consistent across the animation.
+  species_cols <- setdiff(colnames(res), "time")
+  if (length(species_cols) == 0) return()
+  vals.all <- as.numeric(unlist(res[, species_cols, drop = FALSE]))
+  vals.all <- vals.all[is.finite(vals.all)]
+  if (length(vals.all) == 0) return()
+  global.max <- max(vals.all, na.rm = TRUE)
+  if (!is.finite(global.max) || global.max <= 0) return()
+
+  r.min <- 8
+  r.max <- 35
+  if (use.log) {
+    eps.floor <- max(1e-12, global.max * 1e-9)
+    log.min   <- log10(eps.floor)
+    log.max   <- log10(global.max)
+    log.range <- log.max - log.min
+  }
+
+  radii <- list()
+  for (col in species_cols) {
+    sid <- resolve.id(col)
+    if (is.null(sid)) next
+    v <- as.numeric(row[[col]])
+    if (!is.finite(v) || v < 0) v <- 0
+    norm <- if (use.log) {
+      log.v <- log10(max(v, eps.floor))
+      (log.v - log.min) / log.range
+    } else {
+      v / global.max
+    }
+    norm <- max(0, min(1, norm))
+    radii[[sid]] <- r.min + norm * (r.max - r.min)
+  }
+
+  if (length(radii) == 0) return()
+  session$sendCustomMessage(
+    "modelDiagram_set_radii",
+    list(radii = radii)
+  )
+})
+
+# Reset all species circles to default size when sync turns off.
+observeEvent(input$modelDiagram_anim_sync, {
+  if (!isTRUE(input$modelDiagram_anim_sync)) {
+    session$sendCustomMessage("modelDiagram_reset_radii", list())
+  }
+}, ignoreInit = TRUE)

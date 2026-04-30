@@ -210,6 +210,29 @@ HTMLWidgets.widget({
             .classed('modelDiagram-selected', false);
           if (state.highlightMode) applyPathwayHighlight(msg.id, 'node');
         });
+
+        // Apply per-species circle radii from the simulation animation.
+        // msg.radii is a plain object: { speciesId: radiusPx, ... }
+        Shiny.addCustomMessageHandler('modelDiagram_set_radii', function(msg) {
+          if (!msg || !msg.radii) return;
+          var radii = msg.radii;
+          state.nodesG.selectAll('g.modelDiagram-node-species').each(function(d) {
+            var r = radii[d.id];
+            if (typeof r !== 'number' || !isFinite(r)) return;
+            d3.select(this).select('circle')
+              .transition().duration(250)
+              .attr('r', r);
+          });
+        });
+
+        // Reset all species circles back to the default radius.
+        Shiny.addCustomMessageHandler('modelDiagram_reset_radii', function() {
+          state.nodesG.selectAll('g.modelDiagram-node-species').each(function() {
+            d3.select(this).select('circle')
+              .transition().duration(250)
+              .attr('r', 18);
+          });
+        });
       }
     }
 
