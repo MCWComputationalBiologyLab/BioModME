@@ -50,17 +50,50 @@
   pointer-events: none;
 }
 
-/* --- Selection highlight ------------------------------------------------- */
+/* --- Selection highlight + pathway focus -------------------------------- */
 
+/* Smooth transitions for the focus effect (selection + dim others). */
+.modelDiagram-node,
+.modelDiagram-node circle,
+.modelDiagram-node rect,
+.modelDiagram-edge {
+  transition: opacity 0.25s ease-out,
+              filter 0.25s ease-out,
+              stroke 0.2s ease-out,
+              stroke-width 0.2s ease-out;
+}
+
+/* Unrelated nodes/edges fade to background when something is selected. */
+.modelDiagram-faded {
+  opacity: 0.12;
+}
+
+/* Pathway: nodes/edges directly connected to the selected element. */
+.modelDiagram-node.modelDiagram-pathway circle,
+.modelDiagram-node.modelDiagram-pathway rect {
+  stroke: #1a73e8;
+  stroke-width: 2px;
+  filter: drop-shadow(0 0 3px rgba(26, 115, 232, 0.5));
+}
+
+.modelDiagram-edge.modelDiagram-pathway {
+  stroke: #1a73e8;
+  stroke-width: 2.25px;
+  filter: drop-shadow(0 0 2.5px rgba(26, 115, 232, 0.45));
+}
+
+/* The selected element itself gets the strongest glow. */
 .modelDiagram-node.modelDiagram-selected circle,
 .modelDiagram-node.modelDiagram-selected rect {
   stroke: #1a73e8;
-  stroke-width: 2.5px;
+  stroke-width: 3px;
+  filter: drop-shadow(0 0 5px rgba(26, 115, 232, 0.75));
 }
 
 .modelDiagram-edge.modelDiagram-selected {
   stroke: #1a73e8;
-  stroke-width: 2.5px;
+  stroke-width: 3px;
+  filter: drop-shadow(0 0 4px rgba(26, 115, 232, 0.6));
 }
 
 .modelDiagram-edge {

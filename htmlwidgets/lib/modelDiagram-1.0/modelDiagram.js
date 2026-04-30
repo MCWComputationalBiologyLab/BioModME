@@ -29,7 +29,8 @@ HTMLWidgets.widget({
       compartmentColor:  {},
       width:             width,
       height:            height,
-      resetToken:        null    // last seen token; change triggers full re-layout
+      resetToken:        null,   // last seen token; change triggers full re-layout
+      highlightMode:     true    // toggled by Shiny — when false, clicks don't fade
     };
 
     // ---- Dimension helpers -------------------------------------------------
@@ -44,6 +45,88 @@ HTMLWidgets.widget({
     function liveHeight() {
       var h = el.getBoundingClientRect().height || el.offsetHeight;
       return (h > 10) ? h : (state.height > 10 ? state.height : 600);
+    }
+
+    // ---- Pathway highlight -------------------------------------------------
+    // When a node or edge is selected, dim every unrelated node/edge and
+    // gently glow the directly-connected pathway. We apply BOTH a CSS class
+    // (for the smooth transition + drop-shadow glow) and inline style
+    // attributes (so the fade still works if a stale modelDiagram.css gets
+    // served by browser cache).
+    var FADE_OPACITY      = 0.10;
+    var GLOW_SELECTED     = 'drop-shadow(0 0 6px rgba(26,115,232,0.85))';
+    var GLOW_PATHWAY      = 'drop-shadow(0 0 4px rgba(26,115,232,0.55))';
+
+    function applyPathwayHighlight(selectedId, kind) {
+      var connectedNodeIds = {};
+      var connectedEdgeIds = {};
+      if (kind === 'node') {
+        connectedNodeIds[selectedId] = true;
+        state.edges.forEach(function(e) {
+          var src = (typeof e.source === 'object') ? e.source.id : e.source;
+          var tgt = (typeof e.target === 'object') ? e.target.id : e.target;
+          if (src === selectedId || tgt === selectedId) {
+            connectedEdgeIds[e.id] = true;
+            connectedNodeIds[src] = true;
+            connectedNodeIds[tgt] = true;
+          }
+        });
+      } else {
+        state.edges.forEach(function(e) {
+          if (e.id === selectedId) {
+            connectedEdgeIds[e.id] = true;
+            var src = (typeof e.source === 'object') ? e.source.id : e.source;
+            var tgt = (typeof e.target === 'object') ? e.target.id : e.target;
+            connectedNodeIds[src] = true;
+            connectedNodeIds[tgt] = true;
+          }
+        });
+      }
+
+      state.nodesG.selectAll('g.modelDiagram-node')
+        .classed('modelDiagram-faded',   function(d) { return !connectedNodeIds[d.id]; })
+        .classed('modelDiagram-pathway', function(d) {
+          return !!connectedNodeIds[d.id] && d.id !== selectedId;
+        })
+        .style('opacity', function(d) { return connectedNodeIds[d.id] ? null : FADE_OPACITY; })
+        .style('filter',  function(d) {
+          if (d.id === selectedId)        return GLOW_SELECTED;
+          if (connectedNodeIds[d.id])     return GLOW_PATHWAY;
+          return null;
+        });
+
+      state.edgesG.selectAll('line.modelDiagram-edge')
+        .classed('modelDiagram-faded',   function(d) { return !connectedEdgeIds[d.id]; })
+        .classed('modelDiagram-pathway', function(d) {
+          return !!connectedEdgeIds[d.id] && d.id !== selectedId;
+        })
+        .style('opacity',      function(d) { return connectedEdgeIds[d.id] ? null : FADE_OPACITY; })
+        .style('filter',       function(d) {
+          if (d.id === selectedId)         return GLOW_SELECTED;
+          if (connectedEdgeIds[d.id])      return GLOW_PATHWAY;
+          return null;
+        })
+        .style('stroke',       function(d) { return connectedEdgeIds[d.id] ? '#1a73e8' : null; })
+        .style('stroke-width', function(d) {
+          if (d.id === selectedId)         return '3px';
+          if (connectedEdgeIds[d.id])      return '2.25px';
+          return null;
+        });
+    }
+
+    function clearPathwayHighlight() {
+      state.nodesG.selectAll('g.modelDiagram-node')
+        .classed('modelDiagram-faded',   false)
+        .classed('modelDiagram-pathway', false)
+        .style('opacity', null)
+        .style('filter',  null);
+      state.edgesG.selectAll('line.modelDiagram-edge')
+        .classed('modelDiagram-faded',   false)
+        .classed('modelDiagram-pathway', false)
+        .style('opacity',      null)
+        .style('filter',       null)
+        .style('stroke',       null)
+        .style('stroke-width', null);
     }
 
     // ---- Setup helpers -----------------------------------------------------
@@ -87,12 +170,14 @@ HTMLWidgets.widget({
       // on the background to clear the selection instead.
       svg.on('dblclick.zoom', null);
 
-      // Double-click on the SVG background clears the current selection.
+      // Double-click on the SVG background clears the current selection
+      // and the pathway highlight.
       svg.on('dblclick', function() {
         state.nodesG.selectAll('g.modelDiagram-node')
           .classed('modelDiagram-selected', false);
         state.edgesG.selectAll('line.modelDiagram-edge')
           .classed('modelDiagram-selected', false);
+        clearPathwayHighlight();
         if (HTMLWidgets.shinyMode) {
           Shiny.setInputValue('modelDiagram_node_click',
             { id: null, type: null }, { priority: 'event' });
@@ -106,6 +191,24 @@ HTMLWidgets.widget({
           if      (msg.action === 'in')  { zoomBy(1.4); }
           else if (msg.action === 'out') { zoomBy(1 / 1.4); }
           else if (msg.action === 'fit') { fitView(false); }
+        });
+
+        // Highlight-mode on/off toggle from the UI checkbox.
+        Shiny.addCustomMessageHandler('modelDiagram_highlight_mode', function(msg) {
+          state.highlightMode = !!(msg && msg.enabled);
+          // Turning it off immediately undoes any current fade/glow.
+          if (!state.highlightMode) clearPathwayHighlight();
+        });
+
+        // Focus a specific species (driven by the dropdown). Marks it as
+        // selected and applies the pathway highlight.
+        Shiny.addCustomMessageHandler('modelDiagram_highlight_species', function(msg) {
+          if (!msg || !msg.id) return;
+          state.nodesG.selectAll('g.modelDiagram-node')
+            .classed('modelDiagram-selected', function(d) { return d.id === msg.id; });
+          state.edgesG.selectAll('line.modelDiagram-edge')
+            .classed('modelDiagram-selected', false);
+          if (state.highlightMode) applyPathwayHighlight(msg.id, 'node');
         });
       }
     }
@@ -468,6 +571,9 @@ HTMLWidgets.widget({
         state.edgesG.selectAll('line.modelDiagram-edge')
           .classed('modelDiagram-selected', false);
         d3.select(this).classed('modelDiagram-selected', true);
+        if (state.highlightMode) {
+          applyPathwayHighlight(d.id, 'node');
+        }
         if (HTMLWidgets.shinyMode) {
           Shiny.setInputValue('modelDiagram_node_click',
             { id: d.id, type: d.type }, { priority: 'event' });
@@ -484,6 +590,9 @@ HTMLWidgets.widget({
         state.edgesG.selectAll('line.modelDiagram-edge')
           .classed('modelDiagram-selected', false);
         d3.select(this).classed('modelDiagram-selected', true);
+        if (state.highlightMode) {
+          applyPathwayHighlight(d.id, 'edge');
+        }
         if (HTMLWidgets.shinyMode) {
           Shiny.setInputValue('modelDiagram_edge_click',
             { reactionId: d.reactionId, role: d.role }, { priority: 'event' });

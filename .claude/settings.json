@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git commit -m ' *)",
+      "Bash(grep -n 'output$main_eqns_table\\\\|colnames\\\\|select\\\\|rv\\\\.REACTIONS' /c/Users/3536womackj/Documents/GitHub/BioModME/server/02_equations.R)",
+      "Bash(grep -n 'output$main_eqns_table' /c/Users/3536womackj/Documents/GitHub/BioModME/server/02_equations.R)"
+    ]
+  }
+}

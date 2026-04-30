@@ -85,6 +85,77 @@ observeEvent(input$modelDiagram_edge_click, {
   rv.DIAGRAM$selected.kind <- "edge"
 })
 
+# Highlight mode toggle — push the on/off state to the widget. JS clears
+# the fade/glow when this turns off and skips applying it on subsequent
+# clicks; turning it back on does NOT auto-restore highlight on the prior
+# selection — the user clicks again or picks from the dropdown.
+observeEvent(input$modelDiagram_highlight_mode, {
+  session$sendCustomMessage(
+    "modelDiagram_highlight_mode",
+    list(enabled = isTRUE(input$modelDiagram_highlight_mode))
+  )
+}, ignoreInit = FALSE)
+
+# Keep the species dropdown choices in sync with rv.SPECIES. Display name
+# is used as the label, species id is the value.
+observe({
+  sp <- rv.SPECIES$species
+  if (length(sp) == 0) {
+    choices <- c("(no species yet)" = "")
+  } else {
+    nm <- vapply(sp, function(s) {
+      if (!is.null(s$Name) && nzchar(s$Name))    s$Name
+      else if (!is.null(s$ID))                   s$ID
+      else                                       ""
+    }, character(1))
+    choices <- c("(pick a species)" = "",
+                 setNames(names(sp), nm))
+  }
+  current <- isolate(input$modelDiagram_highlight_species)
+  if (is.null(current)) current <- ""
+  updateSelectInput(
+    session, "modelDiagram_highlight_species",
+    choices  = choices,
+    selected = current
+  )
+})
+
+# Dropdown -> selection. Picking a species drives the same selection state
+# a click would set, then tells the widget to apply the pathway highlight.
+# The identity guard avoids loops with the sync-back observer below.
+observeEvent(input$modelDiagram_highlight_species, {
+  sid <- input$modelDiagram_highlight_species
+  if (!isTruthy(sid)) return()
+  cur.sid  <- isolate(rv.DIAGRAM$selected.id)
+  cur.kind <- isolate(rv.DIAGRAM$selected.kind)
+  if (identical(cur.sid, sid) && identical(cur.kind, "node")) return()
+  rv.DIAGRAM$selected.id   <- sid
+  rv.DIAGRAM$selected.kind <- "node"
+  session$sendCustomMessage(
+    "modelDiagram_highlight_species", list(id = sid)
+  )
+}, ignoreInit = TRUE)
+
+# Selection -> dropdown. When the user clicks a species in the diagram
+# (or dblclicks the background to clear), keep the dropdown in sync so it
+# always reflects the current focus.
+observe({
+  sid  <- rv.DIAGRAM$selected.id
+  kind <- rv.DIAGRAM$selected.kind
+  cur  <- isolate(input$modelDiagram_highlight_species)
+  if (is.null(cur)) cur <- ""
+  new <- if (!is.null(sid) && identical(kind, "node") &&
+             !startsWith(sid, "rxn_")) {
+    sid
+  } else {
+    ""
+  }
+  if (!identical(cur, new)) {
+    updateSelectInput(session, "modelDiagram_highlight_species",
+                      selected = new)
+  }
+})
+
 # Info panel — rendered whenever the selection changes.
 output$modelDiagram_info_panel <- renderUI({
   kind <- rv.DIAGRAM$selected.kind
@@ -168,45 +239,47 @@ output$modelDiagram_info_panel <- renderUI({
       }
     }
 
-    fluidRow(
-      column(width = 4,
-        tags$h5(tags$strong(sp$Name), style = "margin-top:0;"),
-        info_table(
-          info_row("ID",           tags$code(val_or(sp$ID))),
-          info_row("Compartment",  val_or(sp$Compartment)),
-          info_row("Initial value",paste0(val_or(sp$Value), " ", val_or(sp$Unit, ""))),
-          info_row("Base value",   paste0(val_or(sp$BaseValue), " ", val_or(sp$BaseUnit, ""))),
-          info_row("Boundary",     if (isTRUE(sp$BoundaryCondition)) "Fixed" else "Dynamic")
+    has.desc <- nzchar(trimws(val_or(sp$Description, "")))
+
+    tagList(
+      tags$h5(tags$strong(sp$Name), style = "margin-top:0;"),
+      fluidRow(
+        column(width = if (has.desc) 6 else 12,
+          info_table(
+            info_row("ID",            tags$code(val_or(sp$ID))),
+            info_row("Compartment",   val_or(sp$Compartment)),
+            info_row("Initial value", paste0(val_or(sp$Value), " ", val_or(sp$Unit, ""))),
+            info_row("Base value",    paste0(val_or(sp$BaseValue), " ", val_or(sp$BaseUnit, ""))),
+            info_row("Boundary",      if (isTRUE(sp$BoundaryCondition)) "Fixed" else "Dynamic")
+          )
         ),
-        if (nzchar(trimws(val_or(sp$Description, "")))) {
-          tagList(
+        if (has.desc) {
+          column(width = 6,
             tags$p(tags$em("Description:"),
-                   style = "margin-top:8px; margin-bottom:2px; color:#666;"),
+                   style = "margin-bottom:2px; color:#666;"),
             tags$p(sp$Description)
           )
         }
       ),
-      column(width = 8,
-        tags$p(tags$em("Involved in reactions:"),
-               style = "margin-bottom:6px; color:#666;"),
-        if (length(rxn.table.rows) > 0) {
-          tags$table(
-            class = "table table-sm table-hover table-bordered",
-            style = "font-size:88%; margin-bottom:0;",
-            tags$thead(
-              tags$tr(
-                tags$th("Equation",    style = "width:42%;"),
-                tags$th("Type",        style = "width:28%;"),
-                tags$th("Compartment", style = "width:18%;"),
-                tags$th("Role",        style = "width:12%;")
-              )
-            ),
-            tags$tbody(rxn.table.rows)
-          )
-        } else {
-          tags$span("— not yet part of any reaction", style = "color:#999;")
-        }
-      )
+      tags$p(tags$em("Involved in reactions:"),
+             style = "margin-top:14px; margin-bottom:6px; color:#666;"),
+      if (length(rxn.table.rows) > 0) {
+        tags$table(
+          class = "table table-sm table-hover table-bordered",
+          style = "font-size:90%; margin-bottom:0;",
+          tags$thead(
+            tags$tr(
+              tags$th("Equation",    style = "width:45%;"),
+              tags$th("Type",        style = "width:25%;"),
+              tags$th("Compartment", style = "width:18%;"),
+              tags$th("Role",        style = "width:12%;")
+            )
+          ),
+          tags$tbody(rxn.table.rows)
+        )
+      } else {
+        tags$span("— not yet part of any reaction", style = "color:#999;")
+      }
     )
 
   } else {
@@ -231,34 +304,38 @@ output$modelDiagram_info_panel <- renderUI({
         list(info_row("Parameters", rxn$Parameters)))
     }
 
-    fluidRow(
-      column(width = 3,
-        tags$h5(tags$strong(val_or(rxn$Eqn.Display.Type)), style = "margin-top:0;"),
-        info_table(
-          info_row("Law",        val_or(rxn$Reaction.Law)),
-          info_row("Compartment",val_or(rxn$Compartment)),
-          info_row("Reversible", if (isTRUE(rxn$Reversible)) "Yes" else "No"),
-          if (nzchar(trimws(val_or(rxn$Description, "")))) {
-            info_row("Description", rxn$Description)
-          }
+    tagList(
+      tags$h5(tags$strong(val_or(rxn$Eqn.Display.Type)), style = "margin-top:0;"),
+      fluidRow(
+        column(width = 6,
+          tags$p(tags$em("Identity:"),
+                 style = "margin-bottom:4px; color:#666;"),
+          info_table(
+            info_row("Law",        val_or(rxn$Reaction.Law)),
+            info_row("Compartment",val_or(rxn$Compartment)),
+            info_row("Reversible", if (isTRUE(rxn$Reversible)) "Yes" else "No"),
+            if (nzchar(trimws(val_or(rxn$Description, "")))) {
+              info_row("Description", rxn$Description)
+            }
+          )
+        ),
+        column(width = 6,
+          tags$p(tags$em("Participants:"),
+                 style = "margin-bottom:4px; color:#666;"),
+          do.call(info_table, participant_rows)
         )
       ),
-      column(width = 4,
-        tags$p(tags$em("Participants:"), style = "margin-bottom:4px; color:#666;"),
-        do.call(info_table, participant_rows)
-      ),
-      column(width = 5,
-        tags$p(tags$em("Rate law:"), style = "margin-bottom:4px; color:#666;"),
-        if (nzchar(trimws(latex.law))) {
-          tagList(
-            tags$p(paste0("$$", latex.law, "$$"),
-                   style = "overflow-x:auto;"),
-            retypeset
-          )
-        } else {
-          tags$span("No rate law stored.", style = "color:#999;")
-        }
-      )
+      tags$p(tags$em("Rate law:"),
+             style = "margin-top:14px; margin-bottom:6px; color:#666;"),
+      if (nzchar(trimws(latex.law))) {
+        tagList(
+          tags$p(paste0("$$", latex.law, "$$"),
+                 style = "overflow-x:auto; font-size:110%;"),
+          retypeset
+        )
+      } else {
+        tags$span("No rate law stored.", style = "color:#999;")
+      }
     )
   }
 })

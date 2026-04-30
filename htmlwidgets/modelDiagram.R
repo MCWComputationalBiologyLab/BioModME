@@ -36,7 +36,10 @@ modelDiagramDependencies <- function() {
     ),
     htmltools::htmlDependency(
       name       = "modelDiagram",
-      version    = "1.0",
+      # Bump this whenever modelDiagram.js or modelDiagram.css changes — the
+      # version is part of the URL Shiny serves the asset under, so bumping
+      # forces browsers to fetch the fresh file instead of using a stale cache.
+      version    = "1.0.2",
       src        = c(file = normalizePath("htmlwidgets/lib/modelDiagram-1.0",
                                           mustWork = TRUE)),
       script     = "modelDiagram.js",
