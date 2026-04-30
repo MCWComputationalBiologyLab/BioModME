@@ -604,9 +604,16 @@ HTMLWidgets.widget({
         if (state.simulation) {
           state.simulation.force('center',
             d3.forceCenter(newWidth / 2, newHeight / 2));
-          state.simulation.alpha(0.3).restart();
+          // Only reheat + refit when nodes still need settling. A Shiny panel
+          // rendering below the diagram triggers resize() with a trivial width
+          // change; restarting the sim or animating fitView would disturb a
+          // layout the user has already arranged.
+          var hasUnpinned = state.nodes.some(function(n) { return n.fx == null; });
+          if (hasUnpinned) {
+            state.simulation.alpha(0.3).restart();
+            fitView(false);
+          }
         }
-        fitView(false);
       },
 
       _state: state

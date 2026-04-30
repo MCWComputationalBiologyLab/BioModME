@@ -125,14 +125,19 @@ output$modelDiagram_info_panel <- renderUI({
     sp <- rv.SPECIES$species[[sid]]
     if (is.null(sp)) return(helpText("Species not found."))
 
-    # Collect reactions involving this species.
+    # Find all reactions involving this species by scanning every reaction
+    # with DiagramRoleAssignments — the same function used by the diagram
+    # renderer. This captures modifiers, enzymes, and growth-law companions
+    # that sp$Reaction.ids does not reliably track.
+    companions <- reactiveValuesToList(rv.REACTIONS)
     rxn.rows <- list()
-    if (length(sp$Reaction.ids) > 0) {
-      for (rid in sp$Reaction.ids) {
-        rxn <- rv.REACTIONS$reactions[[rid]]
-        if (!is.null(rxn)) {
-          rxn.rows <- c(rxn.rows, list(tags$li(rxn$Eqn.Display.Type)))
-        }
+    for (rid in names(rv.REACTIONS$reactions)) {
+      rxn.entry <- rv.REACTIONS$reactions[[rid]]
+      if (is.null(rxn.entry)) next
+      roles <- DiagramRoleAssignments(rxn.entry, companions)
+      involved <- unique(c(roles$reactants, roles$products, roles$modifiers))
+      if (sid %in% involved) {
+        rxn.rows <- c(rxn.rows, list(tags$li(val_or(rxn.entry$Eqn.Display.Type, rid))))
       }
     }
 
