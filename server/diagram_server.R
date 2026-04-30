@@ -130,7 +130,7 @@ output$modelDiagram_info_panel <- renderUI({
     # renderer. This captures modifiers, enzymes, and growth-law companions
     # that sp$Reaction.ids does not reliably track.
     companions <- reactiveValuesToList(rv.REACTIONS)
-    rxn.rows <- list()
+    rxn.table.rows <- list()
     for (rid in names(rv.REACTIONS$reactions)) {
       rxn.entry <- rv.REACTIONS$reactions[[rid]]
       if (is.null(rxn.entry)) next
@@ -147,13 +147,21 @@ output$modelDiagram_info_panel <- renderUI({
         NULL
       }
       if (!is.null(role.label)) {
-        rxn.label <- val_or(rxn.entry$Eqn.Display.Type, rid)
-        rxn.rows <- c(rxn.rows, list(
-          tags$li(
-            rxn.label,
-            tags$span(
-              paste0(" — ", role.label),
-              style = "color:#888; font-size:88%;"
+        rxn.table.rows <- c(rxn.table.rows, list(
+          tags$tr(
+            tags$td(val_or(rxn.entry$Equation.Text,   val_or(rxn.entry$Eqn.Display.Type, rid))),
+            tags$td(val_or(rxn.entry$Eqn.Display.Type, "")),
+            tags$td(val_or(rxn.entry$Compartment,      "")),
+            tags$td(
+              tags$span(role.label,
+                style = switch(role.label,
+                  "reactant"           = "color:#c0392b;",
+                  "product"            = "color:#27ae60;",
+                  "modifier"           = "color:#2980b9;",
+                  "reactant / product" = "color:#8e44ad;",
+                  ""
+                )
+              )
             )
           )
         ))
@@ -161,7 +169,7 @@ output$modelDiagram_info_panel <- renderUI({
     }
 
     fluidRow(
-      column(width = 5,
+      column(width = 4,
         tags$h5(tags$strong(sp$Name), style = "margin-top:0;"),
         info_table(
           info_row("ID",           tags$code(val_or(sp$ID))),
@@ -169,19 +177,32 @@ output$modelDiagram_info_panel <- renderUI({
           info_row("Initial value",paste0(val_or(sp$Value), " ", val_or(sp$Unit, ""))),
           info_row("Base value",   paste0(val_or(sp$BaseValue), " ", val_or(sp$BaseUnit, ""))),
           info_row("Boundary",     if (isTRUE(sp$BoundaryCondition)) "Fixed" else "Dynamic")
-        )
-      ),
-      column(width = 7,
+        ),
         if (nzchar(trimws(val_or(sp$Description, "")))) {
           tagList(
-            tags$p(tags$em("Description:"), style = "margin-bottom:4px; color:#666;"),
-            tags$p(sp$Description, style = "margin-bottom:10px;")
+            tags$p(tags$em("Description:"),
+                   style = "margin-top:8px; margin-bottom:2px; color:#666;"),
+            tags$p(sp$Description)
           )
-        },
+        }
+      ),
+      column(width = 8,
         tags$p(tags$em("Involved in reactions:"),
-               style = "margin-bottom:4px; color:#666;"),
-        if (length(rxn.rows) > 0) {
-          tags$ul(rxn.rows, style = "padding-left:18px; margin-bottom:0;")
+               style = "margin-bottom:6px; color:#666;"),
+        if (length(rxn.table.rows) > 0) {
+          tags$table(
+            class = "table table-sm table-hover table-bordered",
+            style = "font-size:88%; margin-bottom:0;",
+            tags$thead(
+              tags$tr(
+                tags$th("Equation",    style = "width:42%;"),
+                tags$th("Type",        style = "width:28%;"),
+                tags$th("Compartment", style = "width:18%;"),
+                tags$th("Role",        style = "width:12%;")
+              )
+            ),
+            tags$tbody(rxn.table.rows)
+          )
         } else {
           tags$span("— not yet part of any reaction", style = "color:#999;")
         }

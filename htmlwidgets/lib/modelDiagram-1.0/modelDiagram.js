@@ -74,18 +74,6 @@ HTMLWidgets.widget({
       state.edgesG = g.append('g').attr('class', 'modelDiagram-edges');
       state.nodesG = g.append('g').attr('class', 'modelDiagram-nodes');
 
-      // Click on the SVG background clears the current selection.
-      svg.on('click', function() {
-        state.nodesG.selectAll('g.modelDiagram-node')
-          .classed('modelDiagram-selected', false);
-        state.edgesG.selectAll('line.modelDiagram-edge')
-          .classed('modelDiagram-selected', false);
-        if (HTMLWidgets.shinyMode) {
-          Shiny.setInputValue('modelDiagram_node_click',
-            { id: null, type: null }, { priority: 'event' });
-        }
-      });
-
       // Zoom — panning and mouse-wheel zoom transform state.g. The zoom
       // behavior is attached to the SVG so the full area is interactive;
       // node drag events stop propagation so dragging a node doesn't pan.
@@ -95,8 +83,21 @@ HTMLWidgets.widget({
           state.g.attr('transform', event.transform);
         });
       svg.call(state.zoom);
-      // Disable double-click-to-zoom (we use dblclick for deselect semantics).
+      // Disable D3 zoom's built-in double-click-to-zoom; we use dblclick
+      // on the background to clear the selection instead.
       svg.on('dblclick.zoom', null);
+
+      // Double-click on the SVG background clears the current selection.
+      svg.on('dblclick', function() {
+        state.nodesG.selectAll('g.modelDiagram-node')
+          .classed('modelDiagram-selected', false);
+        state.edgesG.selectAll('line.modelDiagram-edge')
+          .classed('modelDiagram-selected', false);
+        if (HTMLWidgets.shinyMode) {
+          Shiny.setInputValue('modelDiagram_node_click',
+            { id: null, type: null }, { priority: 'event' });
+        }
+      });
 
       // Shiny message handler for the zoom/fit toolbar buttons.
       // Registered once per widget creation; safe for single-instance use.
@@ -462,7 +463,6 @@ HTMLWidgets.widget({
       // always references the current selections for selection highlighting.
       nodeAll.on('click', function(event, d) {
         event.stopPropagation();
-        // Toggle selection highlight.
         state.nodesG.selectAll('g.modelDiagram-node')
           .classed('modelDiagram-selected', false);
         state.edgesG.selectAll('line.modelDiagram-edge')
@@ -473,6 +473,8 @@ HTMLWidgets.widget({
             { id: d.id, type: d.type }, { priority: 'event' });
         }
       });
+      // Stop dblclick on nodes from bubbling to the SVG background handler.
+      nodeAll.on('dblclick', function(event) { event.stopPropagation(); });
       nodeAll.style('cursor', 'pointer');
 
       edgeAll.on('click', function(event, d) {
@@ -487,6 +489,7 @@ HTMLWidgets.widget({
             { reactionId: d.reactionId, role: d.role }, { priority: 'event' });
         }
       });
+      edgeAll.on('dblclick', function(event) { event.stopPropagation(); });
       edgeAll.style('cursor', 'pointer');
 
       // Tick handler — replaced each update so we close over the right
