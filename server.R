@@ -43,6 +43,7 @@ server <- shinyServer(function(input, output, session) {
   
   source(file.path("server", "helper_id_generator.R"))
   source(file.path("server", "sbml_fxns.R"))
+  source(file.path("server", "sbml_function_recognizer.R"))
   source(file.path("server", "rate_laws_equations.R"))
   source(file.path("server", "rate_laws_IO.R"))
   source(file.path("server", "DeriveODEs.R"))

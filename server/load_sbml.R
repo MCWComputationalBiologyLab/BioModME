@@ -462,6 +462,15 @@ sbml_2_biomodme_functions <- function(sbml.model) {
       )
       
       
+      # Best-effort recognition against BioModME's predefined kinetic laws.
+      # The user's String.Rate.Law is preserved verbatim; only the labels
+      # below are populated. Promotion to canonical form is opt-in elsewhere.
+      recognized <- RecognizeKnownLaw(string.law, bvars = SplitEntry(parameters))
+      if (recognized$matched) {
+        description <- paste0(law.name,
+                              " (recognized as: ", recognized$backend.name, ")")
+      }
+
       # Add Custom Law Data
       to.list <- list("ID" = unique.id,
                       "Type" = "Reaction",
@@ -479,13 +488,19 @@ sbml_2_biomodme_functions <- function(sbml.model) {
                       "Latex.Rate.Law" = latex.rate,
                       "MathJax.Rate.Law" = mathjax.rate,
                       "Rate.MathML" = mathml.rate,
-                      "Reversible" = FALSE)
-      
+                      "Reversible" = FALSE,
+                      "Type.Recognized" = recognized$matched,
+                      "Recognized.Backend" = recognized$backend.name,
+                      "Recognized.Confidence" = recognized$confidence,
+                      "Recognized.Binding" = recognized$binding)
+
       rv.sbml.temp$cl.reaction[[unique.id]] <- to.list
-      
-      # Add to reaction laws RV
+
+      # Add to reaction laws RV. Type column reflects the recognition outcome
+      # ("custom" when no template matched).
       backend.entry <- backend
-      row.to.add <- c(law.name, backend.entry, "custom")
+      laws.type <- if (recognized$matched) recognized$backend.name else "custom"
+      row.to.add <- c(law.name, backend.entry, laws.type)
       rv.sbml.temp$laws <- rbind(rv.sbml.temp$laws, row.to.add)
       
       reaction.type <- input$eqnCreate_type_of_equation

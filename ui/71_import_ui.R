@@ -46,7 +46,7 @@ TAB_IMPORT <-
          <ul>
            <li>MathML coverage is limited to a known set of operators (root, degree, +, -, *, /, ^, exp, ln); other tags (trig, log, piecewise, etc.) are not yet supported.</li>
            <li>UnitDefinitions are read and round-tripped for the common SI/metric kinds (mole, gram, metre, litre, second, minute, hour, day, joule). Unrecognized kinds (kelvin, ampere, etc.) fall back to NA with a warning.</li>
-           <li>While we can read function definitions and use those to build equations, we have not currently incorporated a converter to add the functions to the UI. As such, all functions will load as type 'CUSTOM'.</li>
+           <li>Function definitions are imported as custom laws and best-effort matched against predefined kinetic-law shapes (mass action, Michaelis-Menten, synthesis, degradation, MM-no-Vmax). Recognition is annotation only; the user's original SBML body is preserved verbatim and used during simulation.</li>
          </ul>")
           ),
           

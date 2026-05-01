@@ -14,6 +14,7 @@ source(file.path(repo_root, "functions", "mathml_ops.R"))
 source(file.path(repo_root, "functions", "expToMathML.R"))
 source(file.path(repo_root, "functions", "string2mathml.R"))
 source(file.path(repo_root, "server", "sbml_fxns.R"))
+source(file.path(repo_root, "server", "sbml_function_recognizer.R"))
 
 fixture_path <- function(...) {
   file.path(repo_root, "tests", "testthat", "fixtures", "sbml", ...)
