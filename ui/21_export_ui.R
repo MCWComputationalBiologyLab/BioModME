@@ -96,6 +96,10 @@ TAB_EXPORT <-
         downloadButton(
           outputId = "export_data_to_python_script",
           label = "Python"
+        ),
+        downloadButton(
+          outputId = "export_data_to_mathematica_script",
+          label = "Mathematica"
         )
       )
     ),

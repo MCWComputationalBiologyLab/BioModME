@@ -51,6 +51,7 @@ server <- shinyServer(function(input, output, session) {
   source(file.path("server", "write_R.R"))
   source(file.path("server", "write_julia.R"))
   source(file.path("server", "write_python.R"))
+  source(file.path("server", "write_mathematica.R"))
   source(file.path("server", "write_sbml.R"))
   source(file.path("server", "showTableInPopup.R"))
   source(file.path("server", "showPlotInPopup.R"))
