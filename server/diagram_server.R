@@ -85,14 +85,26 @@ observeEvent(input$modelDiagram_edge_click, {
   rv.DIAGRAM$selected.kind <- "edge"
 })
 
-# Highlight mode toggle — push the on/off state to the widget. JS clears
-# the fade/glow when this turns off and skips applying it on subsequent
-# clicks; turning it back on does NOT auto-restore highlight on the prior
-# selection — the user clicks again or picks from the dropdown.
-observeEvent(input$modelDiagram_highlight_mode, {
+# Shrink-reactions toggle — push the on/off state to the widget. Shrinks
+# reaction squares to a small dot and hides their labels so the diagram
+# focuses on the species circles. Edges stay visible because they still
+# terminate at the (now small) reaction node.
+observeEvent(input$modelDiagram_shrink_reactions, {
   session$sendCustomMessage(
-    "modelDiagram_highlight_mode",
-    list(enabled = isTRUE(input$modelDiagram_highlight_mode))
+    "modelDiagram_shrink_reactions",
+    list(shrink = isTRUE(input$modelDiagram_shrink_reactions))
+  )
+}, ignoreInit = FALSE)
+
+# Highlight depth (hops) — pushes an integer 0..3 to the widget. 0 disables
+# the fade/glow entirely; 1..3 set the BFS depth so each hop level can be
+# colored differently in the diagram.
+observeEvent(input$modelDiagram_highlight_hops, {
+  hops <- suppressWarnings(as.integer(input$modelDiagram_highlight_hops))
+  if (length(hops) != 1 || is.na(hops)) hops <- 0L
+  session$sendCustomMessage(
+    "modelDiagram_highlight_hops",
+    list(hops = hops)
   )
 }, ignoreInit = FALSE)
 

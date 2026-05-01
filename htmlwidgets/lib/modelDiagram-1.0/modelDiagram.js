@@ -30,7 +30,8 @@ HTMLWidgets.widget({
       width:             width,
       height:            height,
       resetToken:        null,   // last seen token; change triggers full re-layout
-      highlightMode:     true    // toggled by Shiny — when false, clicks don't fade
+      hopDepth:          2,      // BFS depth for pathway highlight (0 = off)
+      shrinkReactions:   false   // toggled by Shiny — shrinks reaction squares
     };
 
     // ---- Dimension helpers -------------------------------------------------
@@ -48,70 +49,170 @@ HTMLWidgets.widget({
     }
 
     // ---- Pathway highlight -------------------------------------------------
-    // When a node or edge is selected, dim every unrelated node/edge and
-    // gently glow the directly-connected pathway. We apply BOTH a CSS class
-    // (for the smooth transition + drop-shadow glow) and inline style
-    // attributes (so the fade still works if a stale modelDiagram.css gets
-    // served by browser cache).
-    var FADE_OPACITY      = 0.10;
-    var GLOW_SELECTED     = 'drop-shadow(0 0 6px rgba(26,115,232,0.85))';
-    var GLOW_PATHWAY      = 'drop-shadow(0 0 4px rgba(26,115,232,0.55))';
+    // BFS from the selected element out to state.hopDepth. Each node and edge
+    // is tagged with the minimum hop distance from the selection (0 = the
+    // selected one) and rendered in a hop-specific colour so the user can see
+    // at a glance how many steps away each thing is. Inline styles + CSS
+    // class fallbacks keep this working even when modelDiagram.css gets
+    // served stale from browser cache.
+    var FADE_OPACITY = 0.10;
+
+    // Per-hop visuals. Index 0 = selected element. Subsequent entries are
+    // the styling used for items found at that BFS distance.
+    var HOP_GLOW_NODE = [
+      'drop-shadow(0 0 6px rgba(26, 115, 232, 0.85))',  // 0 — vivid blue
+      'drop-shadow(0 0 4px rgba(67, 160, 71, 0.70))',   // 1 — green
+      'drop-shadow(0 0 4px rgba(251, 140, 0, 0.65))',   // 2 — amber
+      'drop-shadow(0 0 3px rgba(233, 30, 99, 0.55))'    // 3 — pink
+    ];
+    var HOP_GLOW_EDGE = [
+      'drop-shadow(0 0 4px rgba(26, 115, 232, 0.65))',
+      'drop-shadow(0 0 3px rgba(67, 160, 71, 0.55))',
+      'drop-shadow(0 0 3px rgba(251, 140, 0, 0.50))',
+      'drop-shadow(0 0 3px rgba(233, 30, 99, 0.45))'
+    ];
+    var HOP_STROKE       = ['#1a73e8', '#43a047', '#fb8c00', '#e91e63'];
+    var HOP_STROKE_WIDTH = ['3px',     '2.5px',   '2.25px',  '2px'];
+
+    function pickIdx(arr, h) { return arr[Math.min(h, arr.length - 1)]; }
 
     function applyPathwayHighlight(selectedId, kind) {
-      var connectedNodeIds = {};
-      var connectedEdgeIds = {};
+      var maxHops = state.hopDepth || 0;
+      if (maxHops <= 0) { clearPathwayHighlight(); return; }
+
+      // Adjacency map: node id -> [{edge, other}]. Built once so BFS is fast.
+      var adj = {};
+      state.edges.forEach(function(e) {
+        var src = (typeof e.source === 'object') ? e.source.id : e.source;
+        var tgt = (typeof e.target === 'object') ? e.target.id : e.target;
+        if (!adj[src]) adj[src] = [];
+        if (!adj[tgt]) adj[tgt] = [];
+        adj[src].push({ edge: e.id, other: tgt });
+        adj[tgt].push({ edge: e.id, other: src });
+      });
+
+      // BFS — record minimum hop distance to each node and edge.
+      var nodeHops = {};
+      var edgeHops = {};
+
       if (kind === 'node') {
-        connectedNodeIds[selectedId] = true;
+        nodeHops[selectedId] = 0;
+        var frontier = [selectedId];
+        while (frontier.length > 0) {
+          var next = [];
+          frontier.forEach(function(id) {
+            var h = nodeHops[id];
+            if (h >= maxHops) return;
+            (adj[id] || []).forEach(function(nb) {
+              var nh = h + 1;
+              if (edgeHops[nb.edge] === undefined || nh < edgeHops[nb.edge]) {
+                edgeHops[nb.edge] = nh;
+              }
+              if (nodeHops[nb.other] === undefined || nh < nodeHops[nb.other]) {
+                nodeHops[nb.other] = nh;
+                next.push(nb.other);
+              }
+            });
+          });
+          frontier = next;
+        }
+      } else {
+        // Edge selected: edge is hop 0, its endpoints are hop 1.
         state.edges.forEach(function(e) {
+          if (e.id !== selectedId) return;
+          edgeHops[e.id] = 0;
           var src = (typeof e.source === 'object') ? e.source.id : e.source;
           var tgt = (typeof e.target === 'object') ? e.target.id : e.target;
-          if (src === selectedId || tgt === selectedId) {
-            connectedEdgeIds[e.id] = true;
-            connectedNodeIds[src] = true;
-            connectedNodeIds[tgt] = true;
-          }
+          nodeHops[src] = 1;
+          nodeHops[tgt] = 1;
         });
-      } else {
-        state.edges.forEach(function(e) {
-          if (e.id === selectedId) {
-            connectedEdgeIds[e.id] = true;
-            var src = (typeof e.source === 'object') ? e.source.id : e.source;
-            var tgt = (typeof e.target === 'object') ? e.target.id : e.target;
-            connectedNodeIds[src] = true;
-            connectedNodeIds[tgt] = true;
-          }
-        });
+        var frontierE = Object.keys(nodeHops);
+        while (frontierE.length > 0) {
+          var nextE = [];
+          frontierE.forEach(function(id) {
+            var h = nodeHops[id];
+            if (h >= maxHops) return;
+            (adj[id] || []).forEach(function(nb) {
+              var nh = h + 1;
+              if (edgeHops[nb.edge] === undefined || nh < edgeHops[nb.edge]) {
+                edgeHops[nb.edge] = nh;
+              }
+              if (nodeHops[nb.other] === undefined || nh < nodeHops[nb.other]) {
+                nodeHops[nb.other] = nh;
+                nextE.push(nb.other);
+              }
+            });
+          });
+          frontierE = nextE;
+        }
       }
 
       state.nodesG.selectAll('g.modelDiagram-node')
-        .classed('modelDiagram-faded',   function(d) { return !connectedNodeIds[d.id]; })
-        .classed('modelDiagram-pathway', function(d) {
-          return !!connectedNodeIds[d.id] && d.id !== selectedId;
+        .classed('modelDiagram-faded',   function(d) { return nodeHops[d.id] === undefined; })
+        .classed('modelDiagram-pathway', function(d) { return nodeHops[d.id] > 0; })
+        .style('opacity', function(d) {
+          return nodeHops[d.id] === undefined ? FADE_OPACITY : null;
         })
-        .style('opacity', function(d) { return connectedNodeIds[d.id] ? null : FADE_OPACITY; })
-        .style('filter',  function(d) {
-          if (d.id === selectedId)        return GLOW_SELECTED;
-          if (connectedNodeIds[d.id])     return GLOW_PATHWAY;
-          return null;
+        .style('filter', function(d) {
+          var h = nodeHops[d.id];
+          if (h === undefined) return null;
+          return pickIdx(HOP_GLOW_NODE, h);
         });
 
       state.edgesG.selectAll('line.modelDiagram-edge')
-        .classed('modelDiagram-faded',   function(d) { return !connectedEdgeIds[d.id]; })
+        .classed('modelDiagram-faded',   function(d) { return edgeHops[d.id] === undefined; })
         .classed('modelDiagram-pathway', function(d) {
-          return !!connectedEdgeIds[d.id] && d.id !== selectedId;
+          return edgeHops[d.id] !== undefined && d.id !== selectedId;
         })
-        .style('opacity',      function(d) { return connectedEdgeIds[d.id] ? null : FADE_OPACITY; })
-        .style('filter',       function(d) {
-          if (d.id === selectedId)         return GLOW_SELECTED;
-          if (connectedEdgeIds[d.id])      return GLOW_PATHWAY;
-          return null;
+        .style('opacity', function(d) {
+          return edgeHops[d.id] === undefined ? FADE_OPACITY : null;
         })
-        .style('stroke',       function(d) { return connectedEdgeIds[d.id] ? '#1a73e8' : null; })
+        .style('filter', function(d) {
+          var h = edgeHops[d.id];
+          return h === undefined ? null : pickIdx(HOP_GLOW_EDGE, h);
+        })
+        .style('stroke', function(d) {
+          var h = edgeHops[d.id];
+          return h === undefined ? null : pickIdx(HOP_STROKE, h);
+        })
         .style('stroke-width', function(d) {
-          if (d.id === selectedId)         return '3px';
-          if (connectedEdgeIds[d.id])      return '2.25px';
-          return null;
+          var h = edgeHops[d.id];
+          return h === undefined ? null : pickIdx(HOP_STROKE_WIDTH, h);
         });
+    }
+
+    // Apply / unapply the shrink-reactions appearance. When state.shrinkReactions
+    // is true we shrink each reaction <rect> to a small dot and hide its
+    // label so species circles dominate the canvas. Edges are left alone —
+    // they still terminate naturally at the (now small) reaction node.
+    // Called from the Shiny message handler AND from update() so that any
+    // new reaction nodes added by a re-render adopt the current state.
+    var RXN_W_DEFAULT = 30, RXN_H_DEFAULT = 22;
+    var RXN_W_SHRUNK = 10, RXN_H_SHRUNK = 8;
+    function applyShrinkReactions() {
+      var shrink = !!state.shrinkReactions;
+      if (state.svg) {
+        state.svg.classed('modelDiagram-shrink-reactions', shrink);
+      }
+      if (!state.nodesG) return;
+      var rxn = state.nodesG.selectAll('g.modelDiagram-node-reaction');
+      if (shrink) {
+        rxn.select('rect')
+          .attr('width',  RXN_W_SHRUNK)
+          .attr('height', RXN_H_SHRUNK)
+          .attr('x', -RXN_W_SHRUNK / 2)
+          .attr('y', -RXN_H_SHRUNK / 2);
+        rxn.select('text.modelDiagram-node-label')
+          .style('display', 'none');
+      } else {
+        rxn.select('rect')
+          .attr('width',  RXN_W_DEFAULT)
+          .attr('height', RXN_H_DEFAULT)
+          .attr('x', -RXN_W_DEFAULT / 2)
+          .attr('y', -RXN_H_DEFAULT / 2);
+        rxn.select('text.modelDiagram-node-label')
+          .style('display', null);
+      }
     }
 
     function clearPathwayHighlight() {
@@ -193,22 +294,39 @@ HTMLWidgets.widget({
           else if (msg.action === 'fit') { fitView(false); }
         });
 
-        // Highlight-mode on/off toggle from the UI checkbox.
-        Shiny.addCustomMessageHandler('modelDiagram_highlight_mode', function(msg) {
-          state.highlightMode = !!(msg && msg.enabled);
-          // Turning it off immediately undoes any current fade/glow.
-          if (!state.highlightMode) clearPathwayHighlight();
+        // Highlight depth: 0 = off, 1..3 = BFS hops to expand from selection.
+        // When the user changes the dropdown while something is selected, we
+        // re-run the highlight at the new depth so the change takes effect
+        // without forcing them to click the node again.
+        Shiny.addCustomMessageHandler('modelDiagram_highlight_hops', function(msg) {
+          var hops = (msg && typeof msg.hops === 'number') ? msg.hops : 0;
+          state.hopDepth = Math.max(0, Math.min(3, Math.round(hops)));
+          if (state.hopDepth === 0) {
+            clearPathwayHighlight();
+            return;
+          }
+          // Find the current selection (if any) and re-apply at new depth.
+          var selNode = state.nodesG.select('g.modelDiagram-node.modelDiagram-selected');
+          if (!selNode.empty()) {
+            var nd = selNode.datum();
+            if (nd && nd.id) { applyPathwayHighlight(nd.id, 'node'); return; }
+          }
+          var selEdge = state.edgesG.select('line.modelDiagram-edge.modelDiagram-selected');
+          if (!selEdge.empty()) {
+            var ed = selEdge.datum();
+            if (ed && ed.id) applyPathwayHighlight(ed.id, 'edge');
+          }
         });
 
         // Focus a specific species (driven by the dropdown). Marks it as
-        // selected and applies the pathway highlight.
+        // selected and applies the pathway highlight at the current depth.
         Shiny.addCustomMessageHandler('modelDiagram_highlight_species', function(msg) {
           if (!msg || !msg.id) return;
           state.nodesG.selectAll('g.modelDiagram-node')
             .classed('modelDiagram-selected', function(d) { return d.id === msg.id; });
           state.edgesG.selectAll('line.modelDiagram-edge')
             .classed('modelDiagram-selected', false);
-          if (state.highlightMode) applyPathwayHighlight(msg.id, 'node');
+          if (state.hopDepth > 0) applyPathwayHighlight(msg.id, 'node');
         });
 
         // Apply per-species circle radii from the simulation animation.
@@ -225,13 +343,23 @@ HTMLWidgets.widget({
           });
         });
 
-        // Reset all species circles back to the default radius.
-        Shiny.addCustomMessageHandler('modelDiagram_reset_radii', function() {
+        // Reset all species circles back to the default radius. The msg
+        // parameter is unused but newer Shiny versions reject custom message
+        // handlers whose function arity is zero.
+        Shiny.addCustomMessageHandler('modelDiagram_reset_radii', function(msg) {
           state.nodesG.selectAll('g.modelDiagram-node-species').each(function() {
             d3.select(this).select('circle')
               .transition().duration(250)
               .attr('r', 18);
           });
+        });
+
+        // Shrink reaction squares to a small dot and hide their labels
+        // (or restore defaults). Edges keep terminating at the now-small
+        // reaction node so connectivity is still visible.
+        Shiny.addCustomMessageHandler('modelDiagram_shrink_reactions', function(msg) {
+          state.shrinkReactions = !!(msg && msg.shrink);
+          applyShrinkReactions();
         });
       }
     }
@@ -594,7 +722,7 @@ HTMLWidgets.widget({
         state.edgesG.selectAll('line.modelDiagram-edge')
           .classed('modelDiagram-selected', false);
         d3.select(this).classed('modelDiagram-selected', true);
-        if (state.highlightMode) {
+        if (state.hopDepth > 0) {
           applyPathwayHighlight(d.id, 'node');
         }
         if (HTMLWidgets.shinyMode) {
@@ -613,7 +741,7 @@ HTMLWidgets.widget({
         state.edgesG.selectAll('line.modelDiagram-edge')
           .classed('modelDiagram-selected', false);
         d3.select(this).classed('modelDiagram-selected', true);
-        if (state.highlightMode) {
+        if (state.hopDepth > 0) {
           applyPathwayHighlight(d.id, 'edge');
         }
         if (HTMLWidgets.shinyMode) {
@@ -685,6 +813,10 @@ HTMLWidgets.widget({
           return 'translate(' + d.x + ',' + d.y + ')';
         });
       }
+
+      // Re-apply the shrink-reactions sizing so any reactions added by this
+      // render pass honour the current toggle state.
+      applyShrinkReactions();
     }
 
     function clearEmptyMessage() {

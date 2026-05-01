@@ -62,13 +62,27 @@ TAB_MODEL_DIAGRAM <-
           ),
           tags$span(class = "modelDiagram-divider"),
           checkboxInput(
-            inputId = "modelDiagram_highlight_mode",
-            label   = "Highlight pathways",
-            value   = TRUE
+            inputId = "modelDiagram_shrink_reactions",
+            label   = "Shrink reactions",
+            value   = FALSE
+          ),
+          tags$span(class = "modelDiagram-divider"),
+          tagAppendAttributes(
+            selectInput(
+              inputId  = "modelDiagram_highlight_hops",
+              label    = NULL,
+              choices  = c("Highlight: off" = "0",
+                           "1 hop"          = "1",
+                           "2 hops"         = "2",
+                           "3 hops"         = "3"),
+              selected = "2",
+              width    = "140px"
+            ),
+            style = "min-width: 140px;"
           ),
           tagAppendAttributes(
             conditionalPanel(
-              condition = "input.modelDiagram_highlight_mode == true",
+              condition = "input.modelDiagram_highlight_hops != '0'",
               selectInput(
                 inputId  = "modelDiagram_highlight_species",
                 label    = NULL,
