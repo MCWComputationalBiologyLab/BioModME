@@ -92,6 +92,10 @@ TAB_EXPORT <-
         downloadButton(
           outputId = "export_data_to_julia_script",
           label = "Julia"
+        ),
+        downloadButton(
+          outputId = "export_data_to_python_script",
+          label = "Python"
         )
       )
     ),
