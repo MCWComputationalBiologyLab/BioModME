@@ -7,8 +7,118 @@ FindIdName <- function(Id, id_df) {
   } else {
     var.name <- NA
   }
-  
+
   return(var.name)
+}
+
+# Inverse of sbml_unit_short_name: BioModME display token -> SBML kind+scale.
+# Cover the prefix combos BioModME actually emits (mol, mmol, umol, nmol,
+# L, mL, uL, g, kg, mg, m, cm, mm, s, min, hr, day, J).
+BIOMODME_UNIT_TO_SBML <- list(
+  "mol"  = list(kind = "mole",     scale =  0),
+  "mmol" = list(kind = "mole",     scale = -3),
+  "umol" = list(kind = "mole",     scale = -6),
+  "nmol" = list(kind = "mole",     scale = -9),
+  "pmol" = list(kind = "mole",     scale = -12),
+  "item" = list(kind = "item",     scale =  0),
+
+  "L"    = list(kind = "litre",    scale =  0),
+  "mL"   = list(kind = "litre",    scale = -3),
+  "uL"   = list(kind = "litre",    scale = -6),
+  "nL"   = list(kind = "litre",    scale = -9),
+
+  "g"    = list(kind = "gram",     scale =  0),
+  "mg"   = list(kind = "gram",     scale = -3),
+  "ug"   = list(kind = "gram",     scale = -6),
+  "kg"   = list(kind = "kilogram", scale =  0),
+
+  "m"    = list(kind = "metre",    scale =  0),
+  "cm"   = list(kind = "metre",    scale = -2),
+  "mm"   = list(kind = "metre",    scale = -3),
+  "um"   = list(kind = "metre",    scale = -6),
+
+  "s"    = list(kind = "second",   scale =  0),
+  "min"  = list(kind = "minute",   scale =  0),
+  "hr"   = list(kind = "hour",     scale =  0),
+  "day"  = list(kind = "day",      scale =  0),
+
+  "J"    = list(kind = "joule",    scale =  0),
+  "kJ"   = list(kind = "joule",    scale =  3)
+)
+
+SbmlUnitsFromString <- function(unit_str) {
+  # Decompose a BioModME display string (e.g. "mol/L", "mmol/(L*min)") into a
+  # list of <unit/> attribute lists. Returns NULL for anything unparseable, so
+  # the caller can fall back to omitting the unit reference.
+  if (is.null(unit_str) || length(unit_str) == 0 ||
+      is.na(unit_str)   || unit_str == "" || unit_str == "dimensionless") {
+    return(NULL)
+  }
+
+  parse_token <- function(token, sign_) {
+    token <- trimws(token)
+    token <- gsub("^\\(|\\)$", "", token)
+    sub_terms <- strsplit(token, "*", fixed = TRUE)[[1]]
+
+    out <- list()
+    for (st in sub_terms) {
+      st <- trimws(st)
+      if (st == "" || st == "1") next
+      pieces <- strsplit(st, "^", fixed = TRUE)[[1]]
+      base   <- pieces[1]
+      exp    <- if (length(pieces) >= 2) suppressWarnings(as.numeric(pieces[2])) else 1
+      if (is.na(exp)) return(NULL)
+
+      lookup <- BIOMODME_UNIT_TO_SBML[[base]]
+      if (is.null(lookup)) return(NULL)
+
+      out[[length(out) + 1]] <- list(
+        kind     = lookup$kind,
+        exponent = sign_ * exp,
+        scale    = lookup$scale
+      )
+    }
+    out
+  }
+
+  parts <- strsplit(unit_str, "/", fixed = TRUE)[[1]]
+  if (length(parts) > 2) return(NULL)
+
+  num <- parse_token(parts[1], 1)
+  if (is.null(num)) return(NULL)
+  den <- if (length(parts) == 2) parse_token(parts[2], -1) else list()
+  if (length(parts) == 2 && is.null(den)) return(NULL)
+
+  c(num, den)
+}
+
+CollectModelUnits <- function(compartments, species, parameters) {
+  # Walks the model and returns a tibble of (display, sbml_id) plus the parsed
+  # <unit/> structure for each. Units that can't be decomposed are skipped.
+  raw <- character(0)
+  for (e in compartments) raw <- c(raw, e$Unit)
+  for (e in species)      raw <- c(raw, e$Unit)
+  for (e in parameters)   raw <- c(raw, e$Unit)
+  raw <- unique(raw[!is.na(raw) & raw != "" & raw != "dimensionless"])
+
+  out <- list()
+  for (u in raw) {
+    decomposed <- SbmlUnitsFromString(u)
+    if (is.null(decomposed)) next
+    out[[u]] <- list(display = u,
+                     id      = paste0("bm_unit_", length(out) + 1),
+                     units   = decomposed)
+  }
+  out
+}
+
+EscapeXmlAttr <- function(value) {
+  v <- as.character(value)
+  v <- gsub("&", "&amp;", v, fixed = TRUE)
+  v <- gsub("<", "&lt;",  v, fixed = TRUE)
+  v <- gsub(">", "&gt;",  v, fixed = TRUE)
+  v <- gsub('"', "&quot;",v, fixed = TRUE)
+  v
 }
 
 
@@ -29,7 +139,6 @@ createSBML <- function(model, id_df) {
   rules        <- model[["rules"]]
   reactions    <- model[["reactions"]]
   functions    <- model[["functions"]]
-  # units        <- model[["units"]]
   
   # Find lengths
   n.compartments <- length(compartments)
@@ -44,15 +153,42 @@ createSBML <- function(model, id_df) {
                                   get,
                                   x = "id"))
 
+  # Collect unique units used across compartments/species/parameters; each gets
+  # an SBML id so entities can reference them.
+  unit_table  <- CollectModelUnits(compartments, species, parameters)
+  unit_id_for <- function(display) {
+    if (is.null(display) || length(display) == 0 || is.na(display) || display == "") return(NULL)
+    entry <- unit_table[[display]]
+    if (is.null(entry)) NULL else entry$id
+  }
+
   out <- c()
   # Build SBML Beginning Text --------------------------------------
   out <- c(out, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>")
-  out <- 
-    c(out, 
+  out <-
+    c(out,
     "<sbml xmlns=\"http://www.sbml.org/sbml/level2\" level=\"2\" version=\"5\">")
   out <- c(out, paste0("<model id=", '"', "NAMETOADD", '"', ">"))
-  
+
   tryCatch(expr = {
+    # Write Unit Definitions ---------------------------------------------------
+    if (length(unit_table) > 0) {
+      out <- c(out, "<listOfUnitDefinitions>")
+      for (entry in unit_table) {
+        out <- c(out, paste0('<unitDefinition id="', entry$id, '">'),
+                      "<listOfUnits>")
+        for (u in entry$units) {
+          attrs <- paste0(' kind="',     u$kind,     '"',
+                          ' exponent="', u$exponent, '"',
+                          ' scale="',    u$scale,    '"',
+                          ' multiplier="1"')
+          out <- c(out, paste0("<unit", attrs, "/>"))
+        }
+        out <- c(out, "</listOfUnits>", "</unitDefinition>")
+      }
+      out <- c(out, "</listOfUnitDefinitions>")
+    }
+
     # Write Functions ----------------------------------------------------------
     if (n.functions > 0) {
       out <- c(out, "<listOfFunctionDefinitions>")
@@ -100,11 +236,14 @@ createSBML <- function(model, id_df) {
         size  <- entry$size
         cont  <- entry$constant
         s.dim <- entry$spatialDimensions
-        
+        unit_id <- unit_id_for(entry$Unit)
+        units_attr <- if (!is.null(unit_id)) paste0('units="', unit_id, '" ') else ""
+
         out <- c(out,
                  paste0("<compartment id=", '"', name, '" ',
                         "size=", '"', size, '" ',
                         "name=", '"', name, '" ',
+                        units_attr,
                         "constant=", '"', cont, '" ',
                         "spatialDimensions=", '"', s.dim, '"', "/>")
                  )
@@ -112,50 +251,54 @@ createSBML <- function(model, id_df) {
 
       out <- c(out, "</listOfCompartments>")
     }
-    
+
     # Write Species ------------------------------------------------------------
     if (n.species > 0) {
       out <- c(out, "<listOfSpecies>")
       for (i in seq_along(species)) {
         entry      <- species[[i]]
-        
+
         id         <- entry$name
         name       <- entry$name
         init.conc  <- entry$initialConcentration
-        sub.units  <- entry$substanceUnits
         compart    <- FindIdName(entry$compartment, id_df)
         cont       <- entry$constant
         bc         <- entry$boundaryCondition
-        
+        unit_id    <- unit_id_for(entry$Unit)
+        sub_attr   <- if (!is.null(unit_id)) paste0('substanceUnits="', unit_id, '" ') else ""
+
         out <- c(out,
                  paste0("<species id=", '"', name, '" ',
                         "name=", '"', name, '" ',
                         "initialConcentration=", '"', init.conc, '" ',
-                        #"substanceUnits=", '"', sub.units, '" ',
+                        sub_attr,
                         "compartment=", '"', compart, '" ',
                         "constant=", '"', cont, '" ',
-                        "boundaryCondition=", '"', bc, '"', 
+                        "boundaryCondition=", '"', bc, '"',
                         "/>")
         )
       }
       out <- c(out, "</listOfSpecies>")
     }
-    
+
     # Write Parameters ---------------------------------------------------------
     if (n.parameters > 0) {
       out <- c(out, "<listOfParameters>")
       for (i in seq_along(parameters)) {
         entry      <- parameters[[i]]
-        
+
         id         <- entry$name
         name       <- entry$name
         value      <- entry$value
         cont       <- entry$constant
-        
+        unit_id    <- unit_id_for(entry$Unit)
+        units_attr <- if (!is.null(unit_id)) paste0('units="', unit_id, '" ') else ""
+
         out <- c(out,
                  paste0("<parameter id=", '"', name, '" ',
                         "name=", '"', name, '" ',
                         "value=", '"', value, '" ',
+                        units_attr,
                         "constant=", '"', cont, '" ',
                         "/>")
         )

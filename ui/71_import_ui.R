@@ -44,8 +44,8 @@ TAB_IMPORT <-
             ),
             HTML("<h5>Current Known Limitations:</h3>
          <ul>
-           <li>MathML parser cannot read expressions with root and degree (other keywords may be an issue)</li>
-           <li>Models are rendered as unitless. We do not currently parse UnitDefinitions in SBML markup.</li>
+           <li>MathML coverage is limited to a known set of operators (root, degree, +, -, *, /, ^, exp, ln); other tags (trig, log, piecewise, etc.) are not yet supported.</li>
+           <li>UnitDefinitions are read and round-tripped for the common SI/metric kinds (mole, gram, metre, litre, second, minute, hour, day, joule). Unrecognized kinds (kelvin, ampere, etc.) fall back to NA with a warning.</li>
            <li>While we can read function definitions and use those to build equations, we have not currently incorporated a converter to add the functions to the UI. As such, all functions will load as type 'CUSTOM'.</li>
          </ul>")
           ),

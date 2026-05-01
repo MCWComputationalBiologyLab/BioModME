@@ -95,6 +95,14 @@ LoadSBML <- function(sbmlFile) {
     exists.listOfRules <- TRUE
   }
   
+  # Extract Unit Definitions
+  if (!is.null(modelList$listOfUnitDefinitions)) {
+    out[["unit_definitions"]] <- ParseUnitDefinitions(modelList$listOfUnitDefinitions)
+    exists.listOfUnitDefinitions <- TRUE
+  } else {
+    out[["unit_definitions"]] <- list()
+  }
+
   # Extract Function Definitions
   if (!is.null(modelList$listOfFunctionDefinitions)) {
     func.info <- Attributes2Tibble(modelList$listOfFunctionDefinitions)
@@ -169,6 +177,140 @@ LoadSBML <- function(sbmlFile) {
                                                rules.list)
   out[["parameters"]] <- final.parameters.df
   return(out)
+}
+
+# Unit Definitions -------------------------------------------------------------
+
+# SBML unit kinds we know how to display. Unrecognized kinds (kelvin, ampere,
+# pascal, ...) fall through to a warning and an unparsed display.
+SBML_KIND_TO_DIMENSION <- list(
+  mole          = list(short = "mol", dim = "Count"),
+  item          = list(short = "item", dim = "Count"),
+  avogadro      = list(short = "mol", dim = "Count"),
+  gram          = list(short = "g",   dim = "Mass"),
+  kilogram      = list(short = "kg",  dim = "Mass"),
+  metre         = list(short = "m",   dim = "Length"),
+  meter         = list(short = "m",   dim = "Length"),
+  litre         = list(short = "L",   dim = "Volume"),
+  liter         = list(short = "L",   dim = "Volume"),
+  second        = list(short = "s",   dim = "Duration"),
+  minute        = list(short = "min", dim = "Duration"),
+  hour          = list(short = "hr",  dim = "Duration"),
+  day           = list(short = "day", dim = "Duration"),
+  joule         = list(short = "J",   dim = "Energy"),
+  dimensionless = list(short = "",    dim = NA)
+)
+
+# Apply an SI scale prefix where idiomatic (mol, mol/L, g, m, s).
+SCALE_PREFIX <- list(
+  `-12` = "p", `-9` = "n", `-6` = "u", `-3` = "m",
+  `0`   = "",
+  `3`   = "k", `6` = "M", `9` = "G"
+)
+
+sbml_kind_dim <- function(kind) {
+  entry <- SBML_KIND_TO_DIMENSION[[kind]]
+  if (is.null(entry)) NA_character_ else entry$dim
+}
+
+sbml_unit_short_name <- function(kind, scale = 0) {
+  entry <- SBML_KIND_TO_DIMENSION[[kind]]
+  if (is.null(entry)) {
+    warning(sprintf("Unrecognized SBML unit kind '%s' -- treated as opaque", kind))
+    return(kind)
+  }
+  if (entry$short == "") return("")
+  prefix <- SCALE_PREFIX[[as.character(scale)]]
+  if (is.null(prefix)) prefix <- ""
+  paste0(prefix, entry$short)
+}
+
+ParseUnitDefinitions <- function(listOfUnitDefinitions) {
+  # Parse SBML <listOfUnitDefinitions> (xml2 as_list shape) into a named list
+  # keyed by unit id. Each entry has $id, $display (e.g. "mol/L"), $description
+  # (a one-word category like "concentration") and $base_dim.
+  if (is.null(listOfUnitDefinitions)) return(list())
+
+  out <- list()
+  for (i in seq_along(listOfUnitDefinitions)) {
+    ud <- listOfUnitDefinitions[[i]]
+    ud_attrs <- attributes(ud)
+    id <- ud_attrs$id
+    if (is.null(id)) next
+
+    units_list <- ud$listOfUnits
+    if (is.null(units_list)) {
+      out[[id]] <- list(id = id, display = "dimensionless",
+                        description = "", base_dim = NA_character_)
+      next
+    }
+
+    numerator   <- character(0)
+    denominator <- character(0)
+    dims_pos    <- character(0)
+    dims_neg    <- character(0)
+
+    for (j in seq_along(units_list)) {
+      unit_attrs <- attributes(units_list[[j]])
+      kind       <- unit_attrs$kind
+      exponent   <- if (is.null(unit_attrs$exponent)) 1 else as.numeric(unit_attrs$exponent)
+      scale      <- if (is.null(unit_attrs$scale))    0 else as.numeric(unit_attrs$scale)
+
+      short <- sbml_unit_short_name(kind, scale)
+      if (is.na(short) || short == "") next
+
+      token <- if (exponent == 1 || exponent == -1) short else paste0(short, "^", abs(exponent))
+      if (exponent > 0) {
+        numerator <- c(numerator, token)
+        dims_pos  <- c(dims_pos, sbml_kind_dim(kind))
+      } else if (exponent < 0) {
+        denominator <- c(denominator, token)
+        dims_neg    <- c(dims_neg, sbml_kind_dim(kind))
+      }
+    }
+
+    num_str <- if (length(numerator) > 0) paste(numerator, collapse = "*") else "1"
+    if (length(denominator) > 0) {
+      den_str <- if (length(denominator) > 1) {
+        paste0("(", paste(denominator, collapse = "*"), ")")
+      } else {
+        denominator
+      }
+      display <- paste0(num_str, "/", den_str)
+    } else {
+      display <- num_str
+    }
+
+    description <- biomodme_unit_description(dims_pos, dims_neg)
+    base_dim    <- if (length(dims_pos) == 1 && length(dims_neg) == 0) dims_pos else NA_character_
+
+    out[[id]] <- list(id = id, display = display,
+                      description = description, base_dim = base_dim)
+  }
+
+  out
+}
+
+biomodme_unit_description <- function(pos_dims, neg_dims) {
+  # Heuristic: name common compound dimensions. Examples:
+  #   Count / Volume         -> "concentration"
+  #   Count / Duration       -> "rate"
+  #   Mass / Volume          -> "mass concentration"
+  #   Volume / Duration      -> "flow"
+  #   Volume                 -> "volume"
+  if (length(pos_dims) == 1 && length(neg_dims) == 0) return(tolower(pos_dims))
+  if (identical(pos_dims, "Count")    && identical(neg_dims, "Volume"))   return("concentration")
+  if (identical(pos_dims, "Mass")     && identical(neg_dims, "Volume"))   return("mass concentration")
+  if (identical(pos_dims, "Count")    && identical(neg_dims, "Duration")) return("rate")
+  if (identical(pos_dims, "Volume")   && identical(neg_dims, "Duration")) return("flow")
+  if (identical(pos_dims, "Mass")     && identical(neg_dims, "Duration")) return("mass rate")
+  ""
+}
+
+ResolveUnitRef <- function(unit_id, unit_definitions) {
+  # Look up an SBML unit reference. Returns NULL if not found.
+  if (is.null(unit_id) || is.na(unit_id) || unit_id == "") return(NULL)
+  unit_definitions[[unit_id]]
 }
 
 # Parameter Finalizing ---------------------------------------------------------
@@ -315,9 +457,10 @@ FinalizeCompartmentData <- function(compartmentsFromSBML) {
   }
 
   # Sort Column Order
-  column.order <- c("id", "name", "size", "constant", "spatialDimensions")
-  out <- out %>% select(column.order)
-  
+  column.order <- c("id", "name", "size", "constant", "spatialDimensions", "units")
+  column.order <- intersect(column.order, colnames(out))
+  out <- out %>% select(all_of(column.order))
+
   # Return Output
   return(list(out = out, error = message))
 }
@@ -365,19 +508,20 @@ FinalizeParameterData <- function(parsFromSBMLMain,
         constant <- rep(TRUE, nrow(out))
         out <- cbind(out, constant)
       }
-      out <- out %>% select(c("id", 
-                              "name",
-                              "value",
-                              "constant"))
+      out <- out %>% select(any_of(c("id",
+                                     "name",
+                                     "value",
+                                     "constant",
+                                     "units")))
     }
   }
-  
+
   # Check for reaction parameters
   if (isTruthy(parsFromReactions)) {
     if (nrow(parsFromReactions) > 0) {
       react.par.exist <- TRUE
-      df <- parsFromReactions %>% 
-        select(any_of(c("id", "name","value", "constant")))
+      df <- parsFromReactions %>%
+        select(any_of(c("id", "name", "value", "constant", "units")))
       if (main.par.exist) {
         out <- rbind(out, df)
       } else {
@@ -419,9 +563,10 @@ FinalizeParameterData <- function(parsFromSBMLMain,
     }
   }
   
-  column.order <- c("id", "name", "value", "constant")
-  constant.parameters <- constant.parameters %>% 
-                         select(column.order)%>%
+  column.order <- c("id", "name", "value", "constant", "units")
+  column.order <- intersect(column.order, colnames(constant.parameters))
+  constant.parameters <- constant.parameters %>%
+                         select(all_of(column.order)) %>%
                          dplyr::distinct(id, .keep_all = TRUE)
 
   out <- list("Parameters" = constant.parameters,
@@ -1010,9 +1155,9 @@ ExtractRulesMathFromSBML <- function(doc, assignmentVars) {
     })
     
     if (is.null(e)) {
-      message <- "Something went wrong in parsing the 'Rules' Section. It could 
-                  be possible this file contains conversions we do not yet 
-                  support (including root and degree)."
+      message <- "Something went wrong in parsing the 'Rules' Section. It could
+                  be possible this file contains conversions we do not yet
+                  support."
       return(list(out = NULL, error = message))
     }
     
@@ -1207,6 +1352,30 @@ convertML2R.XMLNode <-function(node){
 
   } else if(nm == "apply") {
     # print("IN APPlY")
+
+    # SBML root + optional degree:
+    #   <apply><root/>[<degree>n</degree>]<radicand/></apply>
+    # n defaults to 2 (sqrt) when <degree> is absent.
+    if (length(node$children) >= 1 &&
+        xmlName(node$children[[1]]) == "root") {
+      n <- "2"
+      radicand <- NULL
+      for (i in seq_along(node$children)[-1]) {
+        child <- node$children[[i]]
+        if (xmlName(child) == "degree") {
+          n <- convertML2R(xmlChildren(child)[[1]])
+        } else if (is.null(radicand)) {
+          radicand <- convertML2R(child)
+        }
+      }
+      if (identical(n, "2")) {
+        out <- paste0("sqrt(", radicand, ")")
+      } else {
+        out <- paste0("(", radicand, ")^(1/(", n, "))")
+      }
+      return(out)
+    }
+
     # If apply, recurse function to solve
     val <- convertML2R(node$children)
     # Once recursive term has ended condense the expression
@@ -1303,6 +1472,27 @@ mathml2R.XMLNode <-function(node){
       val <- as.numeric(node$children[[1]]$value)
     } 
   }  else if(nm == "apply") {
+    # SBML root + optional degree (parallel to convertML2R above).
+    if (length(node$children) >= 1 &&
+        xmlName(node$children[[1]]) == "root") {
+      n <- 2
+      radicand <- NULL
+      for (i in seq_along(node$children)[-1]) {
+        child <- node$children[[i]]
+        if (xmlName(child) == "degree") {
+          n <- mathml2R(xmlChildren(child)[[1]])[[1]]
+        } else if (is.null(radicand)) {
+          radicand <- mathml2R(child)[[1]]
+        }
+      }
+      if (identical(n, 2) || identical(n, 2L)) {
+        val <- bquote(sqrt(.(radicand)))
+      } else {
+        val <- bquote((.(radicand))^(1 / .(n)))
+      }
+      return(as.expression(val))
+    }
+
     val <- mathml2R(node$children)
     mode(val) <- "call"
   } else  {cat("error: nm =",nm," not in set!\n")}

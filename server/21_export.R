@@ -578,7 +578,8 @@ createSBMLParameterExport <- function(parameterRV,
     entry <- list(id = id,
                   name = name,
                   value = value,
-                  constant = cont)
+                  constant = cont,
+                  Unit = parameterRV[[i]]$Unit)
     parameters[[i]] <- entry
     
     if (id %in% comp.vol.names) {
@@ -614,8 +615,9 @@ createSBMLSpeciesExport <- function(speciesRV) {
                   substanceUnits = sub.units,
                   compartment = compart,
                   constant = cont,
-                  boundaryCondition = bc)
-    
+                  boundaryCondition = bc,
+                  Unit = speciesRV[[i]]$Unit)
+
     species[[i]] <- entry
   }
   return(species)
@@ -639,8 +641,9 @@ createSBMLCompartmentExport <- function(compartmentsRV) {
                   name = compartmentsRV[[i]]$Name,
                   size = compartmentsRV[[i]]$BaseValue,
                   constant = "true",
-                  spatialDimensions = 3)
-    
+                  spatialDimensions = 3,
+                  Unit = compartmentsRV[[i]]$Unit)
+
     compartments[[i]] <- entry
   }
   

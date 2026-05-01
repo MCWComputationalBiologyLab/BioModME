@@ -104,28 +104,46 @@ sbml_2_biomodme_compartments <- function(sbml.model) {
     rv.sbml.temp$id.df[idx.to.add, ] <- c(new.id$id, comp.vol.names[i])
   }
   
+  # Optional per-compartment SBML unit reference (may be NULL/missing).
+  comp.unit.refs <- if ("units" %in% colnames(compartments)) {
+    compartments %>% pull(units)
+  } else {
+    rep(NA_character_, n.compartments)
+  }
+  unit.defs <- sbml.model$unit_definitions
+  if (is.null(unit.defs)) unit.defs <- list()
+
   comp.list     <- vector("list", n.compartments)
   comp.vol.list <- vector("list", n.compartments)
   # Add additional list tags for our problem
   for (i in seq_along(comp.list)) {
+    resolved <- ResolveUnitRef(comp.unit.refs[i], unit.defs)
+    if (!is.null(resolved)) {
+      vol.unit  <- resolved$display
+      vol.descr <- if (nzchar(resolved$description)) resolved$description else "volume"
+    } else {
+      vol.unit  <- rv.UNITS$units.base$Volume
+      vol.descr <- "volume"
+    }
+
     # Build Compartment Entry
     comp.list[[i]]$ID              <- comp.ids[i]
     comp.list[[i]]$Name            <- comp.names[i]
     comp.list[[i]]$Value           <- comp.values[i]
     comp.list[[i]]$Volume          <- comp.vol.names[i]
     comp.list[[i]]$par.id          <- vol.ids[i]
-    comp.list[[i]]$Unit            <- rv.UNITS$units.base$Volume
-    comp.list[[i]]$UnitDescription <- "volume"
-    comp.list[[i]]$BaseUnit        <- rv.UNITS$units.base$Volume
+    comp.list[[i]]$Unit            <- vol.unit
+    comp.list[[i]]$UnitDescription <- vol.descr
+    comp.list[[i]]$BaseUnit        <- vol.unit
     comp.list[[i]]$BaseValue       <- comp.values[i]
     comp.list[[i]]$Description     <- ""
-    
+
     comp.vol.list[[i]]$Name            <- comp.vol.names[i]
     comp.vol.list[[i]]$ID              <- vol.ids[i]
     comp.vol.list[[i]]$Value           <- as.numeric(comp.values[i])
-    comp.vol.list[[i]]$Unit            <- rv.UNITS$units.base$Volume
-    comp.vol.list[[i]]$UnitDescription <- "volume"
-    comp.vol.list[[i]]$BaseUnit        <- rv.UNITS$units.base$Volume
+    comp.vol.list[[i]]$Unit            <- vol.unit
+    comp.vol.list[[i]]$UnitDescription <- vol.descr
+    comp.vol.list[[i]]$BaseUnit        <- vol.unit
     comp.vol.list[[i]]$BaseValue       <- as.numeric(comp.values[i])
     comp.vol.list[[i]]$Description     <- ""
     comp.vol.list[[i]]$Type            <- "Compartment"
@@ -193,7 +211,16 @@ sbml_2_biomodme_species <- function(sbml.model) {
   
   # Need Compartment Ids
   species.comp.id <- unname(sapply(species.comp, FindIdTEMPsbml))
-  
+
+  # Per-species SBML unit reference (substanceUnits).
+  species.unit.refs <- if ("substanceUnits" %in% colnames(species)) {
+    species %>% pull(substanceUnits)
+  } else {
+    rep(NA_character_, n.species)
+  }
+  unit.defs <- sbml.model$unit_definitions
+  if (is.null(unit.defs)) unit.defs <- list()
+
   # Extract Boundary Condition
   species.bounds <- species %>% pull(boundaryCondition)
   
@@ -208,20 +235,29 @@ sbml_2_biomodme_species <- function(sbml.model) {
     rv.sbml.temp$id.df[idx.to.add, ] <- c(new.id$id, species.names[i])
   }
   
+  default.species.unit  <- paste0(rv.UNITS$units.base$For.Var, "/",
+                                  rv.UNITS$units.base$Volume)
+  default.species.descr <- "conc (mol)"
+
   species.list     <- vector("list", n.species)
   # Add additional list tags for our problem
   for (i in seq_along(species.list)) {
+    resolved <- ResolveUnitRef(species.unit.refs[i], unit.defs)
+    if (!is.null(resolved)) {
+      species.unit  <- resolved$display
+      species.descr <- if (nzchar(resolved$description)) resolved$description else default.species.descr
+    } else {
+      species.unit  <- default.species.unit
+      species.descr <- default.species.descr
+    }
+
     # Build Compartment Entry
     species.list[[i]]$ID                <- species.ids[i]
     species.list[[i]]$Name              <- species.names[i]
     species.list[[i]]$Value             <- species.values[i]
-    species.list[[i]]$Unit              <- paste0(rv.UNITS$units.base$For.Var,
-                                                  "/",
-                                                  rv.UNITS$units.base$Volume)
-    species.list[[i]]$UnitDescription   <- "conc (mol)"
-    species.list[[i]]$BaseUnit          <- paste0(rv.UNITS$units.base$For.Var,
-                                                  "/",
-                                                  rv.UNITS$units.base$Volume)
+    species.list[[i]]$Unit              <- species.unit
+    species.list[[i]]$UnitDescription   <- species.descr
+    species.list[[i]]$BaseUnit          <- species.unit
     species.list[[i]]$BaseValue         <- species.values[i]
     species.list[[i]]$Description       <- ""
     species.list[[i]]$Compartment       <- species.comp[i]
@@ -294,16 +330,28 @@ sbml_2_biomodme_parameters <- function(sbml.model) {
     rv.sbml.temp$id.df[idx.to.add, ] <- c(new.id$id, parameters.names[i])
   }
   
+  par.unit.refs <- if ("units" %in% colnames(pars)) {
+    pars %>% pull(units)
+  } else {
+    rep(NA_character_, n.pars)
+  }
+  unit.defs <- sbml.model$unit_definitions
+  if (is.null(unit.defs)) unit.defs <- list()
+
   par.list <- vector("list", n.pars)
   # TODO add custom to pars (change constant to custom and flip bool propbably)
   # Add additional list tags for our problem
   for (i in seq(n.pars)) {
+    resolved <- ResolveUnitRef(par.unit.refs[i], unit.defs)
+    par.unit  <- if (!is.null(resolved)) resolved$display     else NA
+    par.descr <- if (!is.null(resolved)) resolved$description else NA
+
     par.list[[i]]$Name            <- parameters.names[i]
     par.list[[i]]$ID              <- par.ids[i]
     par.list[[i]]$Value           <- as.numeric(par.vals[i])
-    par.list[[i]]$Unit            <- NA
-    par.list[[i]]$UnitDescription <- NA
-    par.list[[i]]$BaseUnit        <- NA
+    par.list[[i]]$Unit            <- par.unit
+    par.list[[i]]$UnitDescription <- par.descr
+    par.list[[i]]$BaseUnit        <- par.unit
     par.list[[i]]$BaseValue       <- as.numeric(par.vals[i])
     par.list[[i]]$Description     <- ""
     par.list[[i]]$Type            <- "Loaded From SBML File"
@@ -978,6 +1026,14 @@ LoadSBML_show_progress <- function(sbmlFile, w_sbml, spinner) {
   
   w_sbml$update(html = waiter_fxn("Extracting Function Definitions", 
                                   spinner, 40))
+  # Extract Unit Definitions____________________________________________________
+  if (!is.null(modelList$listOfUnitDefinitions)) {
+    out[["unit_definitions"]] <- ParseUnitDefinitions(modelList$listOfUnitDefinitions)
+    exists.listOfUnitDefinitions <- TRUE
+  } else {
+    out[["unit_definitions"]] <- list()
+  }
+
   # Extract Function Definitions________________________________________________
   if (!is.null(modelList$listOfFunctionDefinitions)) {
     
