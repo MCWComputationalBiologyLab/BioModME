@@ -773,3 +773,11 @@ rv.TIMELINK <- reactiveValues(
   step = 1,
   unit = "mol"
 )
+
+# rv.DIAGRAM -------------------------------------------------------------------
+rv.DIAGRAM <- reactiveValues(
+  layout        = list(),   # named list: layout[[node_id]] = list(x, y)
+  selected.id   = NULL,
+  selected.kind = NULL,     # "node" | "edge" | NULL
+  reset.token   = 0L        # incremented by Reset Layout; JS clears in-memory positions on change
+)

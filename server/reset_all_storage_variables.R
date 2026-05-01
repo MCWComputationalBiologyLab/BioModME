@@ -363,8 +363,12 @@ reset_all_storage_variables <- function() {
   
   rv.CUSTOM.LAWS$cl.reaction = list()
   rv.CUSTOM.LAWS$reaction.names = vector()
-  
+
   rv.CUSTOM.EQNS$ce.equations = list()
+
+  rv.DIAGRAM$layout       = list()
+  rv.DIAGRAM$selected.id  = NULL
+  rv.DIAGRAM$selected.kind = NULL
   
   # shinyjs::click("createVar_add_compartment_button")
   # 

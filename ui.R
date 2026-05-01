@@ -35,12 +35,17 @@ sapply(fxn.sources, source)
 source(file.path("modules", "tableDownloadButtonsUI.R"))
 source(file.path("modules", "tableDownloadButtons.R"))
 
+# Source htmlwidget factory (provides modelDiagramOutput for the UI side
+# and modelDiagram / renderModelDiagram for server.R).
+source(file.path("htmlwidgets", "modelDiagram.R"))
+
 # Source in UI tabs
 source(file.path("ui", "00_home_ui.R"))
 source(file.path("ui", "01_create_model_ui.R"))
 source(file.path("ui", "11_run_execute_ui.R"))
 source(file.path("ui", "12_run_post_processing_ui.R"))
 source(file.path("ui", "13_run_lineplot_ui.R"))
+source(file.path("ui", "14_model_diagram_ui.R"))
 source(file.path("ui", "21_export_ui.R"))
 source(file.path("ui", "31_documentation_ui.R"))
 source(file.path("ui", "41_summary_ui.R"))
@@ -96,6 +101,11 @@ ui <- dashboardPage(
           "Create Model",
           tabName = "TAB_VAR_CREATE",
           icon = icon("tasks", lib = "glyphicon")
+        ),
+        menuItem(
+          "Model Diagram",
+          tabName = "TAB_MODEL_DIAGRAM",
+          icon = icon("project-diagram")
         ),
         menuItem(
           "Execute Model",
@@ -227,6 +237,7 @@ ui <- dashboardPage(
     tabItems(
       TAB_HOME,
       TAB_VAR_CREATE,
+      TAB_MODEL_DIAGRAM,
       TAB_EXPORT,
       TAB_IMPORT,
       TAB_RUN_EXECUTE,

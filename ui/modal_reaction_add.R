@@ -362,29 +362,16 @@ shinyBS::bsModal(
              )
             )
           )
+        ),
+        tabPanel(
+          "About",
+          fluidRow(
+            column(
+              width = 12,
+              uiOutput("equationBuilder_about")
+            )
+          )
         )
-        
-        # tabPanel(
-        #   "Info",
-        #   # conditionalPanel(
-        #   #   condition = 
-        #   #"input.eqnCreate_type_of_equation == 'chem_rxn'",
-        #   #   conditionalPanel(
-        #   #     condition = "input.eqn_chem_law == 'MA'",
-        #   #     uiOutput("mathjax_MA")
-        #   #   ),
-        #   #   conditionalPanel(
-        #   #     condition = "input.eqn_chem_law == 'MAwR'",
-        #   #     uiOutput("mathjax_MA_with_regulators")
-        #   #   ),
-        #   # ),
-        #   # conditionalPanel(
-        #   #   condition = 
-        #   #"input.eqnCreate_type_of_equation =='enzyme_rxn'",
-        #   #   uiOutput("enzyme_MM")
-        #   #   )
-        #   "Coming Soon..."
-        # )
       )
     )
     

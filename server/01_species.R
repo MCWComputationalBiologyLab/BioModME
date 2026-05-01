@@ -480,7 +480,8 @@ observeEvent(input$button_modal_delete_species, {
   } else {
     # If not remove variable from variable data structures.
     rv.SPECIES$species[[var.id]] <- NULL
-    
+    rv.DIAGRAM$layout[[var.id]]  <- NULL   # drop saved diagram position
+
     # Remove from id structure
     rv.ID$id.df <- rv.ID$id.df[rv.ID$id.df$id != var.id, ]
     

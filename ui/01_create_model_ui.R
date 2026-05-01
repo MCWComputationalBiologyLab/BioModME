@@ -259,12 +259,12 @@ TAB_VAR_CREATE <-
                     column(
                       width = 12,
                       actionButton(
-                        inputId = "eqns_edit_open_modal",
-                        label = "Edit"
-                      ),
-                      actionButton(
                         inputId = "eqns_add_open_modal",
                         label = "Add"
+                      ),
+                      actionButton(
+                        inputId = "eqns_edit_open_modal",
+                        label = "Edit"
                       ),
                       actionButton(
                         inputId = "eqns_delete_open_modal",
