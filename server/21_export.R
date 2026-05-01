@@ -737,6 +737,27 @@ output$export_data_to_mathematica_script <- downloadHandler(
   }
 )
 
+# Export to C++ Script ---------------------------------------------------------
+output$export_data_to_cpp_script <- downloadHandler(
+  filename = function(){
+    paste0(input$export_code_file_name, ".cpp")
+  },
+  content = function(file){
+    file_out <- cpp_generate_script(
+      rv.SPECIES$species.names,
+      rv.PARAMETERS$parameters.names,
+      rv.DE$de.eqns.for.solver,
+      rv.PARAMETERS$parameters.df$BaseValue,
+      rv.PARAMETERS$parameters.df$Description,
+      unname(sapply(rv.CUSTOM.EQNS$ce.equations, get, x = "Equation")),
+      rv.SPECIES$species.df$BaseValue,
+      rv.SPECIES$species.df$Description,
+      rv.SOLVER.OPTIONS$time.start,
+      rv.SOLVER.OPTIONS$time.end)
+    writeLines(file_out, file)
+  }
+)
+
 # Export to R Script -----------------------------------------------------------
 output$export_data_to_R_script <- downloadHandler(
   filename = function(){

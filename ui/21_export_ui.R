@@ -60,7 +60,28 @@ TAB_EXPORT <-
         )
       )
     ), 
-    tags$head(tags$style("#latex_popup .modal-footer{ display:none}")),
+    tags$head(tags$style(HTML(
+      "#latex_popup .modal-footer{ display:none}
+       /* Equal-width download buttons in a tidy grid so labels of
+          different lengths don't make the row look ragged. */
+       .biomod-export-grid {
+         display: grid;
+         grid-template-columns: repeat(3, minmax(0, 1fr));
+         gap: 6px;
+         margin-top: 4px;
+       }
+       .biomod-export-grid .btn {
+         width: 100%;
+         padding: 6px 4px;
+         text-align: center;
+         white-space: nowrap;
+         font-size: 13px;
+       }
+       .biomod-export-grid .btn .fa,
+       .biomod-export-grid .btn .fas {
+         margin-right: 4px;
+       }"
+    ))),
     fluidRow(
       column(
         width = 4,
@@ -70,39 +91,41 @@ TAB_EXPORT <-
           collapsible = FALSE,
           closable = FALSE,
           width = 12,
-          fluidRow(
-            column(
-              width = 12,
-              textInput(
-                inputId = "export_code_file_name",
-                label = NULL,
-                value = "",
-                placeholder = "File Name (no extension)"
-              )
-            )
+          textInput(
+            inputId = "export_code_file_name",
+            label = NULL,
+            value = "",
+            placeholder = "File Name (no extension)"
           ),
-        downloadButton(
-          outputId = "export_data_to_matlab_script",
-          label = "MatLab"
-        ),
-        downloadButton(
-          outputId = "export_data_to_R_script",
-          label = "R"
-        ),
-        downloadButton(
-          outputId = "export_data_to_julia_script",
-          label = "Julia"
-        ),
-        downloadButton(
-          outputId = "export_data_to_python_script",
-          label = "Python"
-        ),
-        downloadButton(
-          outputId = "export_data_to_mathematica_script",
-          label = "Mathematica"
+          div(
+            class = "biomod-export-grid",
+            downloadButton(
+              outputId = "export_data_to_R_script",
+              label    = "R"
+            ),
+            downloadButton(
+              outputId = "export_data_to_python_script",
+              label    = "Python"
+            ),
+            downloadButton(
+              outputId = "export_data_to_julia_script",
+              label    = "Julia"
+            ),
+            downloadButton(
+              outputId = "export_data_to_matlab_script",
+              label    = "MATLAB"
+            ),
+            downloadButton(
+              outputId = "export_data_to_mathematica_script",
+              label    = "Mathematica"
+            ),
+            downloadButton(
+              outputId = "export_data_to_cpp_script",
+              label    = "C++"
+            )
+          )
         )
-      )
-    ),
+      ),
     column(
       width = 4,
       box(
