@@ -1193,20 +1193,9 @@ convertML2R.XMLNode <-function(node){
   # print("XMLNODE")
   nm <- xmlName(node)
   # PrintVar(nm)
-  if(nm=="power"||
-     nm == "divide"||
-     nm =="times"||
-     nm=="plus"||
-     nm=="minus" ||
-     nm=="exp") {
-    op <- switch(nm,
-                 power="^",
-                 divide="/",
-                 times="*",
-                 plus="+",
-                 minus="-",
-                 exp="exp")
-    out <- as.character(op)
+  op_r <- mathml_tag_to_r(nm)
+  if (!is.null(op_r)) {
+    out <- as.character(op_r)
 
   } else if (nm == "ci" || nm == "csymbol") {
     # Character node, grab variable
@@ -1300,21 +1289,10 @@ mathml2R.default<-function(children) {
 }
 
 mathml2R.XMLNode <-function(node){
-  nm <- xmlName(node) 
-  if(nm=="power"||
-     nm == "divide"||
-     nm =="times"||
-     nm=="plus"||
-     nm=="minus" ||
-     nm=="exp") {
-    op <- switch(nm, 
-                 power="^", 
-                 divide="/",
-                 times="*",
-                 plus="+",
-                 minus="-",
-                 exp="exp")
-    val <- as.name(op)
+  nm <- xmlName(node)
+  op_r <- mathml_tag_to_r(nm)
+  if (!is.null(op_r)) {
+    val <- as.name(op_r)
   } else if(nm == "ci"||
             nm == "cn"||
             nm == "csymbol") {
@@ -1338,16 +1316,9 @@ mathml2R.XMLNode <-function(node){
 # using makeLaw with a null for parameters, since they are passed global for rules.
 # map MathML operator symbols into R symbols
 ML2R <- function(type) {
-  switch(type,
-         "times" = "*",
-         "divide" = "/",
-         "plus" = "+",
-         "minus" = "-",
-         "power" = "^",
-         "exp" = "exp",
-         "ln" = "log",
-         "not found") 
-}   
+  r <- mathml_tag_to_r(type)
+  if (is.null(r)) "not found" else r
+}
 
 getRuleLeaves <- function(math) { 
   n=length(math)
