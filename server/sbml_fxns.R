@@ -1,11 +1,37 @@
 
+sanitize_to_r_identifier <- function(names) {
+  # Convert SBML species/parameter/compartment names into valid R identifiers
+  # so they can be used as bare symbols in rate-law text, state vector
+  # names, eval(parse(...)) expressions, Shiny input IDs, and elsewhere.
+  # The original names are preserved separately as $DisplayName by the
+  # SBML loaders for UI rendering and SBML export round-trip.
+  #
+  # Substitution rules:
+  #   - Hyphens become underscores ("14-3-3_s" -> "14_3_3_s") since they're
+  #     a common SBML convention and underscores read more naturally than
+  #     the dots make.names() inserts.
+  #   - The remaining transformation is delegated to make.names() which
+  #     prefixes leading digits with "X", replaces spaces and other
+  #     non-identifier chars with ".", and renames reserved words.
+  #   - unique = TRUE disambiguates collisions ("a", "a" -> "a", "a.1").
+  if (length(names) == 0) return(names)
+  names <- gsub("-", "_", names, fixed = TRUE)
+  make.names(names, unique = TRUE)
+}
+
 Attributes2Tibble <- function(xmlAttributeStruct) {
-  # When parsing sbml things get weird. Convert these structures to df
+  # When parsing sbml things get weird. Convert these structures to df.
+  # attributes() on a parsed element returns both the XML attributes and the
+  # `names` attribute (which lists child element names like "annotation"). We
+  # only want the XML attributes — keeping `names` causes bind_rows to fill NA
+  # for elements without child nodes (e.g. a species with no <annotation>).
   out.list <- list()
   for (i in seq_along(xmlAttributeStruct)) {
-    out.list[[i]] <- unlist(attributes(xmlAttributeStruct[[i]]))
+    attrs <- attributes(xmlAttributeStruct[[i]])
+    attrs$names <- NULL
+    out.list[[i]] <- unlist(attrs)
   }
-  
+
   return(bind_rows(out.list))
 }
 
@@ -351,30 +377,32 @@ FinalizeSpeciesData <- function(speciesFromSBML) {
     return(list(out = NULL, error = message))
   }
   
+  has_col <- function(col) col %in% colnames(speciesFromSBML)
+
   # Check for name
-  if (!isTruthy(speciesFromSBML$name)) {
+  if (!has_col("name") || !isTruthy(speciesFromSBML$name)) {
     name <- out %>% pull(id)
     # Bind to output
     out <- cbind(out, name)
   }
-  
-  # Check for initialConcentration - the issue here is some files use 
+
+  # Check for initialConcentration - the issue here is some files use
   # initialConcentration and some use initialAmount
-  if (isTruthy(speciesFromSBML$initialAmount)) {
+  if (has_col("initialAmount") && isTruthy(speciesFromSBML$initialAmount)) {
     initialConcentration <- out %>% pull(initialAmount)
     # Bind to output
     out <- cbind(out, initialConcentration)
   }
-  
+
   # Check for substanceUnits
-  if (!isTruthy(speciesFromSBML$substanceUnits)) {
+  if (!has_col("substanceUnits") || !isTruthy(speciesFromSBML$substanceUnits)) {
     substanceUnits <- rep("species", n.species)
     # Bind to output
     out <- cbind(out, substanceUnits)
   }
-  
+
   # Check for constant
-  if (!isTruthy(speciesFromSBML$constant)) {
+  if (!has_col("constant") || !isTruthy(speciesFromSBML$constant)) {
     constant <- rep(FALSE, n.species)
     # Bind to output
     out <- cbind(out, constant)
@@ -382,24 +410,24 @@ FinalizeSpeciesData <- function(speciesFromSBML) {
     # Convert from string to bool
     out$constant <- as.logical(out$constant)
   }
-  
+
   # Convert boundaryCondition to bool
-  if (!isTruthy(speciesFromSBML$boundaryCondition)) {
+  if (!has_col("boundaryCondition") || !isTruthy(speciesFromSBML$boundaryCondition)) {
     boundaryCondition <- rep(FALSE, n.species)
     out <- cbind(out, boundaryCondition)
   } else {
     out$boundaryCondition <- as.logical(out$boundaryCondition)
   }
   # Sort Column Order and remove excess columns
-  column.order <- c("id", 
-                    "name", 
-                    "initialConcentration", 
-                    "substanceUnits", 
-                    "compartment", 
+  column.order <- c("id",
+                    "name",
+                    "initialConcentration",
+                    "substanceUnits",
+                    "compartment",
                     "constant",
                     "boundaryCondition")
-  
-  out <- out %>% select(column.order)
+
+  out <- out %>% select(all_of(column.order))
   
   # Return Output
   return(list(out = out, error = message))
@@ -427,28 +455,30 @@ FinalizeCompartmentData <- function(compartmentsFromSBML) {
   
   # Need to check that all outputs exist, otherwise add them with standards
   
-  if (!isTruthy(out$id)) {
+  has_col <- function(col) col %in% colnames(out)
+
+  if (!has_col("id") || !isTruthy(out$id)) {
     message <- "SBML doesn't contain compartment id information."
     return(list(out = NULL, error = message))
   }
   # Most sbmls seem to have size and id so I will ignore those
-  if (!isTruthy(compartmentsFromSBML$name)) {
+  if (!has_col("name") || !isTruthy(compartmentsFromSBML$name)) {
     name <- out %>% pull(id)
     # Bind to output
     out <- cbind(out, name)
   }
-  
-  if (!isTruthy(out$units)) {
+
+  if (!has_col("units") || !isTruthy(out$units)) {
     units <- rep("volume", n.compartments)
     out <- cbind(out, units)
   }
-  
-  if (!isTruthy(out$spatialDimensions)) {
+
+  if (!has_col("spatialDimensions") || !isTruthy(out$spatialDimensions)) {
     spatialDimensions <- rep("3", n.compartments)
     out <- cbind(out, spatialDimensions)
   }
-  
-  if (!isTruthy(out$constant)) {
+
+  if (!has_col("constant") || !isTruthy(out$constant)) {
     constant <- rep(TRUE, n.compartments)
     out <- cbind(out, constant)
   } else {
@@ -463,6 +493,19 @@ FinalizeCompartmentData <- function(compartmentsFromSBML) {
 
   # Return Output
   return(list(out = out, error = message))
+}
+
+normalize_constant_column <- function(df) {
+  # Coerce a parameter table's `constant` column to logical regardless of how
+  # SBML stored it ("true"/"false" strings, R logicals, or NA from missing
+  # attribute). Tables that don't have the column at all are returned as-is.
+  if (!"constant" %in% names(df)) return(df)
+  v <- df$constant
+  if (is.logical(v)) return(df)
+  v_chr <- as.character(v)
+  df$constant <- toupper(v_chr) %in% c("TRUE", "T", "1")
+  df$constant[is.na(v_chr)] <- NA
+  df
 }
 
 FinalizeParameterData <- function(parsFromSBMLMain,
@@ -497,14 +540,14 @@ FinalizeParameterData <- function(parsFromSBMLMain,
       
       out <- parsFromSBMLMain
       # Always seem to have id, value
-      
-      # Add name and constant if not 
-      
-      if (!isTruthy(out$name)) {
+
+      # Add name and constant if not
+      out_cols <- names(out)
+      if (!"name" %in% out_cols || !isTruthy(out$name)) {
         name <- out %>% pull(id)
         out <- cbind(out, name)
       }
-      if (!isTruthy(out$constant)) {
+      if (!"constant" %in% out_cols || !isTruthy(out$constant)) {
         constant <- rep(TRUE, nrow(out))
         out <- cbind(out, constant)
       }
@@ -513,6 +556,10 @@ FinalizeParameterData <- function(parsFromSBMLMain,
                                      "value",
                                      "constant",
                                      "units")))
+      # Normalize `constant` to logical before any bind_rows: SBML stores it
+      # as the string "true"/"false", but reaction-built params arrive as
+      # logical -- bind_rows refuses to combine columns of different types.
+      out <- normalize_constant_column(out)
     }
   }
 
@@ -522,21 +569,21 @@ FinalizeParameterData <- function(parsFromSBMLMain,
       react.par.exist <- TRUE
       df <- parsFromReactions %>%
         select(any_of(c("id", "name", "value", "constant", "units")))
+      df <- normalize_constant_column(df)
       if (main.par.exist) {
-        out <- rbind(out, df)
+        # bind_rows tolerates a column subset on either side (e.g. main has
+        # `units` but reaction-extracted parameters don't), filling NA where
+        # a column is missing -- base rbind would error.
+        out <- dplyr::bind_rows(out, df)
       } else {
         out <- df
       }
     }
   }
-  
-  # Deal with constant values, they pull from sbml as lowercase true/false which
-  # will register as a string, and we want them to be bools.  As well some 
-  # instances get pulled as NA and we want those to be TRUE. 
-  
-  out$constant[is.na(out$constant)] <- "true"
-  # Convert to logical
-  out$constant <- as.logical(out$constant)
+
+  # `constant` is already logical post-normalization; just default any
+  # remaining NAs to TRUE (SBML default for parameters with no constant attr).
+  out$constant[is.na(out$constant)] <- TRUE
   
   # Pull out all nonconstant parameters
   constant.parameters <- out %>% filter(constant)
@@ -583,13 +630,11 @@ ExtractionReactionTagFromSBML <- function(reactionXML) {
   
   # Create Tags Tibble
   tags <- Attributes2Tibble(reactionXML)
-  # Check which terms exist
-  to.pull <- c()
-  if (!is.null(tags$id)) {to.pull <- c(to.pull, "id")}
-  if (!is.null(tags$reversible)) {to.pull <- c(to.pull, "reversible")}
-  if (!is.null(tags$name)) {to.pull <- c(to.pull, "name")}
-  if (!is.null(tags$fast)) {to.pull <- c(to.pull, "fast")}
-  out <- tags %>% select(to.pull)
+  # Check which terms exist (use names() to avoid tibble warnings on $-access
+  # of missing columns).
+  cols <- names(tags)
+  to.pull <- intersect(c("id", "reversible", "name", "fast"), cols)
+  out <- tags %>% select(all_of(to.pull))
   return(out)
 }
 
@@ -616,21 +661,30 @@ ExtractReactionBaseFromSBML <- function(reactionEntry) {
     if (node.name == "listOfReactants") {
       # Convert node to Tibble
       node.reactants <- Attributes2Tibble(current.node$listOfReactants)
-      
+
       # Grab the species from tibble, collapse, add to output
       out.list$Reactants <- collapseVector(node.reactants %>% pull(species),
                                            convertBlank = TRUE)
-      out.list$Reactants.Stoich <- 
-        collapseVector(node.reactants %>% pull(stoichiometry))
+      # SBML L2: stoichiometry defaults to 1 when the attribute is absent.
+      stoich.r <- if ("stoichiometry" %in% names(node.reactants)) {
+        node.reactants$stoichiometry
+      } else {
+        rep("1", nrow(node.reactants))
+      }
+      out.list$Reactants.Stoich <- collapseVector(stoich.r)
     } else if (node.name == "listOfProducts") {
       # Convert node to Tibble
       node.products <- Attributes2Tibble(current.node$listOfProducts)
-      
+
       # Grab the species from tibble, collapse, add to output
       out.list$Products <- collapseVector(node.products %>% pull(species),
                                           convertBlank = TRUE)
-      out.list$Products.Stoich <- 
-        collapseVector(node.products %>% pull(stoichiometry))
+      stoich.p <- if ("stoichiometry" %in% names(node.products)) {
+        node.products$stoichiometry
+      } else {
+        rep("1", nrow(node.products))
+      }
+      out.list$Products.Stoich <- collapseVector(stoich.p)
     } else if (node.name == "listOfModifiers") {
       # Convert node to Tibble
       node.modifiers <- Attributes2Tibble(current.node$listOfModifiers)
@@ -649,12 +703,12 @@ ExtractReactionBaseFromSBML <- function(reactionEntry) {
                                               convertBlank = TRUE)
         out.list$Parameter.Values <- collapseVector(node.par %>% pull(value), 
                                                     convertBlank = TRUE)
-        # Assign name if name exists, else assign name as id   
-        if (!is.null(node.par$name)) {
+        # Assign name if name exists, else assign name as id
+        if ("name" %in% names(node.par)) {
           out.list$Parameters.name <- collapseVector(node.par %>% pull(name),
                                                      convertBlank = TRUE)
         } else {
-          out.list$Parameters.name <- collapseVector(node.par %>% pull(id), 
+          out.list$Parameters.name <- collapseVector(node.par %>% pull(id),
                                                      convertBlank = TRUE)
         }
       } 
@@ -725,9 +779,11 @@ ExtractReactionMathFromSBML <- function(doc,
           function.parameters <- SplitEntry(function.entry$Parameters)
           
           # Check to see if reaction parameters were already extracted and if
-          # not then extract them
-          if (!is.na(reactionList[[i]]$Parameters)) {
-            parameters <- SplitEntry(reactionList[[i]]$Parameters)
+          # not then extract them. Guard against NULL (key was never set) as
+          # well as NA (initialized but empty).
+          rp <- reactionList[[i]]$Parameters
+          if (!is.null(rp) && length(rp) > 0 && !any(is.na(rp))) {
+            parameters <- SplitEntry(rp)
           } else {
             species <- c(reactants, products, modifiers)
             species <- RemoveNA(species)
@@ -765,9 +821,11 @@ ExtractReactionMathFromSBML <- function(doc,
       # Convert mathml to string rate law for r
       string.rate.law <- rmp(gsub(" ", "", convertML2R(mathml.exp)))
       
-      # Grab Parameters
-      if (!is.na(reactionList[[i]]$Parameters.name)) {
-        parameters <- SplitEntry(reactionList[[i]]$Parameters.name)
+      # Grab Parameters. Parameters.name is only set when the kineticLaw had
+      # an inline <listOfParameters>; treat NULL/NA the same.
+      pn <- reactionList[[i]]$Parameters.name
+      if (!is.null(pn) && length(pn) > 0 && !any(is.na(pn))) {
+        parameters <- SplitEntry(pn)
       } else {
         species <- c(reactants, products, modifiers)
         species <- RemoveNA(species)
@@ -807,27 +865,29 @@ CombineReactionTagsWReactions <- function(reactionTags,
                                           reactionList) {
   
   n.reactions <- length(reactionList)
-  
-  # Check for tags we need to grab
-  if (!is.null(reactionTags$id)) {
+  tag_cols <- names(reactionTags)
+
+  # Check for tags we need to grab (use names() membership to avoid tibble
+  # warnings on $-access of missing optional columns).
+  if ("id" %in% tag_cols) {
     ids <- reactionTags %>% pull(id)
   } else {
     ids <- rep(NA, n.reactions)
   }
-  
-  if (!is.null(reactionTags$reversible)) {
+
+  if ("reversible" %in% tag_cols) {
     is.reversible <- reactionTags %>% pull(reversible)
   } else {
     is.reversible <- rep(FALSE, n.reactions)
   }
-  
-  if (!is.null(reactionTags$name)) {
+
+  if ("name" %in% tag_cols) {
     description <- reactionTags %>% pull(name)
   } else {
     description <- rep("Custom Load Reaction", n.reactions)
   }
-  
-  if (!is.null(reactionTags$fast)) {
+
+  if ("fast" %in% tag_cols) {
     fast <- reactionTags %>% pull(fast)
   } else {
     fast <- rep(FALSE, n.reactions)
@@ -854,13 +914,16 @@ FindFunctionDefInformation <- function(doc, functionDefList, sbmlList) {
   #              (from read_xml(pathToXMLFile) %>% as_list()) 
   #              
   extract_function_name <- function(input_string) {
-    matches <- gregexpr("<apply>\\s*<ci>\\s*(.*?)\\s*</ci>", input_string, perl = TRUE)
-    # Extract the matched substrings
-    substrings <- regmatches(input_string, matches)
-    
-    # Extract the content between <ci> and </ci>
-    result <- gsub("<ci>|</ci>", "", strsplit(substrings[[1]], "\n")[[1]][2])
-    return(RemoveWS(result))
+    # Pull the first <ci> immediately inside an <apply> -- that's the function
+    # name in MathML. Returns "" if the rate law has no <apply> (e.g. a bare
+    # constant or a single <ci>), so the downstream match() in the caller
+    # simply finds no hit instead of crashing.
+    m <- regmatches(
+      input_string,
+      regexec("<apply>\\s*<ci>\\s*(.*?)\\s*</ci>", input_string, perl = TRUE)
+    )[[1]]
+    if (length(m) < 2) return("")
+    RemoveWS(m[[2]])
   }
   
   modelList <- sbmlList$sbml$model

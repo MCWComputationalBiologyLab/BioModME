@@ -11,15 +11,15 @@ CustomEqnsToText <- function(customEqnRV) {
   # Reads custom eqn RV and pulls additional equations
   # Input:
   #   @ customEqnRV - Reactive variable with all custom eqn information
-  # Output: 
+  # Output:
   #   @output - String, additional eqns separated by newline
-  
-  
+
+
   # Extract info from input RV
   additional.eqns <- unname(sapply(customEqnRV,
                                    get,
                                    x = "Equation"))
-  
+
   # Initialize
   output <- ""
   for (i in seq(length(additional.eqns)))
@@ -33,25 +33,19 @@ CustomLogicToText <- function(customLogicRV) {
   # Reads custom logic rv and pulls logic
   # Input:
   #   @ customLogicRV - Reactive variable with all custom logic information
-  # Output: 
+  # Output:
   #   @output - String, additional eqns separated by newline
-  #browser()
-  
+
   # Extract info from input RV
-  # additional.eqns <- unname(sapply(customLogicRV,
-                                   # get,
-                                   # x = "Logic"))
   additional.eqns <-sapply(customLogicRV, function(x) x[[1]])
-  
+
   # Initialize
   output <- ""
   for (i in seq(length(additional.eqns)))
   {
     output <- paste0(output, additional.eqns[i], "\n ")
   }
-  
-  print("Custom Logic Test")
-  print(output)
+
   return(output)
 }
 
@@ -59,16 +53,16 @@ CustomLogicToText <- function(customLogicRV) {
 output_var_for_ode_solver <- function(list_of_vars){
   output <- paste0("d", list_of_vars, collapse = ", ")
   output <- paste0("c(", output, ")")
-  
+
   return(output)
 }
 
 output_param_for_ode_solver <- function(paramList){
   # Convert parmeter list to named vector for differential equation execution
-  # Input 
+  # Input
   #   @paramList - list of params (RV rv.PARAMETERS$parameters)
   #     needs to have sublists of Name and Base.Value
-  # Output 
+  # Output
   #   @out - named vector of parameter values
   nPar <- length(paramList)
   param.values <- vector()
@@ -77,7 +71,7 @@ output_param_for_ode_solver <- function(paramList){
     param.values[i] <- paramList[[i]]$BaseValue
     param.names[i]  <- paramList[[i]]$Name
   }
-  
+
   out <-  as.numeric(param.values)
   names(out) <- param.names
   return(out)
@@ -85,12 +79,12 @@ output_param_for_ode_solver <- function(paramList){
 
 output_ICs_for_ode_solver <- function(IC_Data_Structure){
   # Create named vector of model value with their names from RV species struct
-  
+
   # Find length and initialize vectors
   nVar <- length(IC_Data_Structure)
   var.names <- vector(mode = "character", nVar)
   var.vals  <- rep(0, nVar)
-  
+
   for (i in seq_along(IC_Data_Structure)) {
     var.names[i] <- IC_Data_Structure[[i]]$Name
     var.vals[i]  <- as.numeric(IC_Data_Structure[[i]]$BaseValue)

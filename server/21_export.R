@@ -567,13 +567,16 @@ createSBMLParameterExport <- function(parameterRV,
   idx.to.remove <- c()
   
   for (i in seq_along(parameterRV)) {
-    
-    # Grab items from RV that correspond to SBML structure
-    id      <- parameterRV[[i]]$ID
-    name    <- parameterRV[[i]]$Name
+
+    # Grab items from RV that correspond to SBML structure. Use the
+    # sanitized $Name as both id and the lookup that filters out volume
+    # parameters; preserve the original $DisplayName for the human-readable
+    # name attribute so SBML round-trip keeps user-facing labels intact.
+    id      <- parameterRV[[i]]$Name
+    name    <- parameterRV[[i]]$DisplayName %||% parameterRV[[i]]$Name
     value   <- parameterRV[[i]]$BaseValue
     cont <- if (parameterRV[[i]]$Custom) "false" else "true"
-    
+
     # Store to list entry
     entry <- list(id = id,
                   name = name,
@@ -581,8 +584,8 @@ createSBMLParameterExport <- function(parameterRV,
                   constant = cont,
                   Unit = parameterRV[[i]]$Unit)
     parameters[[i]] <- entry
-    
-    if (id %in% comp.vol.names) {
+
+    if (parameterRV[[i]]$ID %in% comp.vol.names) {
       idx.to.remove <- c(idx.to.remove, i)
     }
   }
@@ -599,15 +602,19 @@ createSBMLSpeciesExport <- function(speciesRV) {
   
   for (i in seq_along(speciesRV)) {
     
-    # Grab items from RV that correspond to SBML structure
-    id         <- speciesRV[[i]]$ID
-    name       <- speciesRV[[i]]$Name
+    # Grab items from RV that correspond to SBML structure. Prefer the
+    # original SBML name (DisplayName) for the human-readable `name`
+    # attribute so the round-trip through BioModME does not rewrite e.g.
+    # "14-3-3_s" as "X14_3_3_s". For the SBML `id`, use the sanitized
+    # form -- SBML IDs must conform to a strict identifier syntax.
+    id         <- speciesRV[[i]]$Name
+    name       <- speciesRV[[i]]$DisplayName %||% speciesRV[[i]]$Name
     init.conc  <- speciesRV[[i]]$BaseValue
     sub.units  <- "species"
     compart    <- speciesRV[[i]]$Compartment.id
     cont       <- "false"
     bc         <- ifelse(speciesRV[[i]]$BoundaryCondition, "true", "false")
-    
+
     # Store to list entry
     entry <- list(id = id,
                   name = name,
@@ -631,17 +638,20 @@ createSBMLCompartmentExport <- function(compartmentsRV) {
   # browser()
   for (i in seq_along(compartmentsRV)) {
     
-    id = compartmentsRV[[i]]$ID
-    name = compartmentsRV[[i]]$Name
+    # Use sanitized $Name as the SBML id (must be a syntactic identifier)
+    # and the original $DisplayName as the human-readable name attribute
+    # so a load -> save round-trip preserves the user's chosen labels.
+    id = compartmentsRV[[i]]$Name
+    name = compartmentsRV[[i]]$DisplayName %||% compartmentsRV[[i]]$Name
     size = compartmentsRV[[i]]$BaseValue
     constant = "true"
     spatialDimensions = 3
-    
-    entry <- list(id = compartmentsRV[[i]]$ID,
-                  name = compartmentsRV[[i]]$Name,
-                  size = compartmentsRV[[i]]$BaseValue,
-                  constant = "true",
-                  spatialDimensions = 3,
+
+    entry <- list(id = id,
+                  name = name,
+                  size = size,
+                  constant = constant,
+                  spatialDimensions = spatialDimensions,
                   Unit = compartmentsRV[[i]]$Unit)
 
     compartments[[i]] <- entry

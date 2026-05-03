@@ -13,11 +13,13 @@ ModelFxn <- function(t,
                      customLogic,
                      differentialEqns,
                      vars){
-  print("MODELLLLL")
+  # SBML rate laws and assignment rules can reference the time symbol
+  # (csymbol definitionURL=".../symbols/time"), which our MathML->R converter
+  # emits as the bare name `time`. Bind it to the integrator's `t` so the
+  # eval()s below see a numeric value rather than base::time (the function),
+  # which would trigger "non-numeric argument to binary operator".
+  time <- t
   with(as.list(c(state, parameters)), {
-    print("RUnning model fxn")
-    print(state)
-    print(parameters)
     eval(parse(text = extraEqns))
     eval(parse(text = customLogic))
     eval(parse(text = differentialEqns))
@@ -177,13 +179,11 @@ observeEvent(c(input$execute_run_model,
   d_of_var <- output_var_for_ode_solver(names(rv.SPECIES$species))
 
   custom.eqns <- CustomEqnsToText(rv.CUSTOM.EQNS$ce.equations)
-  
-  print("Before custom logic scirpt")
   custom.logic <- CustomLogicToText(rv.CUSTOM.LOGIC$logic)
-  print(custom.logic)
   if (input$execute_turnOn_time_scale_var) {
     d_of_var = paste0(input$execute_time_scale_var, "*", d_of_var)
   }
+
 
   #print(ModelFxn(times, state, parameters, custom.eqns, custom.logic, diff_eqns, d_of_var))
   

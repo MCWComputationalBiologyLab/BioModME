@@ -169,21 +169,25 @@ Var2Latex <- function(variable, mathMode = TRUE, noDollarSign = TRUE) {
     }
   }
   if (has.underscore) {
+    # Escape any underscores after the first so KaTeX/LaTeX does not see
+    # them as nested subscripts inside our `_{...}` group, which would
+    # produce a "double subscript" parse error on names like X14_3_3_s.
+    escape_inner <- function(s) gsub("_", "\\_", s, fixed = TRUE)
     if (mathMode) {
       if (noDollarSign) {
         before <- paste0(split.var[1:idx], collapse = "")
-        after <- paste0(split.var[(idx + 1):length.of.var], collapse = "")
+        after  <- escape_inner(paste0(split.var[(idx + 1):length.of.var], collapse = ""))
         new.var <- paste0(before, "{", after, "}")
       } else{
         before <- paste0(split.var[1:idx], collapse = "")
         before <- paste0("$", before)
-        after <- paste0(split.var[(idx + 1):length.of.var], collapse = "")
+        after  <- escape_inner(paste0(split.var[(idx + 1):length.of.var], collapse = ""))
         new.var <- paste0(before, "{", after, "}$")
       }
     } else {
       #if underscores are to be used in a text phrase
       before <- paste0(split.var[1:(idx - 1)], collapse = "")
-      after <- paste0(split.var[(idx + 1):length.of.var], collapse = "")
+      after  <- escape_inner(paste0(split.var[(idx + 1):length.of.var], collapse = ""))
       new.var <- paste0(before, "\\textsubscript{", after, "}")
     }
   }

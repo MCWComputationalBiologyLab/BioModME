@@ -67,14 +67,18 @@ sbml_2_biomodme_compartments <- function(sbml.model) {
   # Compartments have the following columns
   #   id, name, size, constant, spatialDimensions
   
-  comp.ids   <- compartments %>% pull(id)
-  comp.names <- compartments %>% pull(name)
-  
-  if (!identical(comp.ids, comp.names)) {
-    rv.sbml.temp$need.compartment.conversion <- TRUE
-    rv.sbml.temp$comp.df.conv <- data.frame(comp.ids, comp.names)
-    colnames(rv.sbml.temp$comp.df.conv) <- c("id", "name")
-  }
+  comp.ids        <- compartments %>% pull(id)
+  comp.display    <- compartments %>% pull(name)             # original (preserved for UI/SBML round-trip)
+  comp.names      <- sanitize_to_r_identifier(comp.display)  # used in code/rate-laws
+
+  # Always store the SBML id -> sanitized-name map. Reaction rate-law text
+  # emitted by convertML2R() references compartments by their SBML id; the
+  # rate-law-text rewriting pass below converts those references to
+  # `V_<name>` (the volume parameter BioModME creates per compartment),
+  # and that pass needs this table even when id and name happen to match.
+  rv.sbml.temp$need.compartment.conversion <- !identical(comp.ids, comp.names)
+  rv.sbml.temp$comp.df.conv <- data.frame(id = comp.ids, name = comp.names,
+                                          stringsAsFactors = FALSE)
   
   comp.values <- compartments %>% pull(size)
   
@@ -129,6 +133,7 @@ sbml_2_biomodme_compartments <- function(sbml.model) {
     # Build Compartment Entry
     comp.list[[i]]$ID              <- comp.ids[i]
     comp.list[[i]]$Name            <- comp.names[i]
+    comp.list[[i]]$DisplayName     <- comp.display[i]
     comp.list[[i]]$Value           <- comp.values[i]
     comp.list[[i]]$Volume          <- comp.vol.names[i]
     comp.list[[i]]$par.id          <- vol.ids[i]
@@ -139,6 +144,7 @@ sbml_2_biomodme_compartments <- function(sbml.model) {
     comp.list[[i]]$Description     <- ""
 
     comp.vol.list[[i]]$Name            <- comp.vol.names[i]
+    comp.vol.list[[i]]$DisplayName     <- comp.vol.names[i]  # already V_<sanitized> -- valid identifier
     comp.vol.list[[i]]$ID              <- vol.ids[i]
     comp.vol.list[[i]]$Value           <- as.numeric(comp.values[i])
     comp.vol.list[[i]]$Unit            <- vol.unit
@@ -187,14 +193,15 @@ sbml_2_biomodme_species <- function(sbml.model) {
   #   id, name, initialConcentration, substanceUnits, compartment, constant,
   #   boundaryCondition
   
-  species.id     <- species %>% pull(id)
-  species.names  <- species %>% pull(name)
-  species.values <- as.numeric(species %>% pull(initialConcentration))
-  species.comp   <- species %>% pull(compartment)
-  
+  species.id      <- species %>% pull(id)
+  species.display <- species %>% pull(name)             # original SBML name (e.g. "14-3-3_s")
+  species.names   <- sanitize_to_r_identifier(species.display)  # safe in code (e.g. "X14_3_3_s")
+  species.values  <- as.numeric(species %>% pull(initialConcentration))
+  species.comp    <- species %>% pull(compartment)
+
   if (!identical(species.id, species.names)) {
     rv.sbml.temp$need.species.conversion <- TRUE
-    rv.sbml.temp$species.df.conv <- 
+    rv.sbml.temp$species.df.conv <-
       data.frame(species.id, species.names)
     colnames(rv.sbml.temp$species.df.conv) <- c("id", "name")
   }
@@ -254,6 +261,7 @@ sbml_2_biomodme_species <- function(sbml.model) {
     # Build Compartment Entry
     species.list[[i]]$ID                <- species.ids[i]
     species.list[[i]]$Name              <- species.names[i]
+    species.list[[i]]$DisplayName       <- species.display[i]
     species.list[[i]]$Value             <- species.values[i]
     species.list[[i]]$Unit              <- species.unit
     species.list[[i]]$UnitDescription   <- species.descr
@@ -306,16 +314,17 @@ sbml_2_biomodme_parameters <- function(sbml.model) {
   
   # Parameter Load has the following df columns:
   #   id, name, value, constant
-  parameters.id    <- pars %>% dplyr::pull(id)
-  parameters.names <- pars %>% dplyr::pull(name)
-  par.vals         <- pars %>% dplyr::pull(value)
-  par.constant     <- pars %>% dplyr::pull(constant)
-  
+  parameters.id      <- pars %>% dplyr::pull(id)
+  parameters.display <- pars %>% dplyr::pull(name)             # original SBML name
+  parameters.names   <- sanitize_to_r_identifier(parameters.display)
+  par.vals           <- pars %>% dplyr::pull(value)
+  par.constant       <- pars %>% dplyr::pull(constant)
+
   if (!identical(parameters.id, parameters.names)) {
     rv.sbml.temp$need.parameter.conversion <- TRUE
-    rv.sbml.temp$parameter.df.conv <- 
+    rv.sbml.temp$parameter.df.conv <-
       data.frame(parameters.id, parameters.names)
-    colnames(rv.sbml.temp$species.df.conv) <- c("id", "name")
+    colnames(rv.sbml.temp$parameter.df.conv) <- c("id", "name")
   }
   
   # Overwrite Ids
@@ -347,6 +356,7 @@ sbml_2_biomodme_parameters <- function(sbml.model) {
     par.descr <- if (!is.null(resolved)) resolved$description else NA
 
     par.list[[i]]$Name            <- parameters.names[i]
+    par.list[[i]]$DisplayName     <- parameters.display[i]
     par.list[[i]]$ID              <- par.ids[i]
     par.list[[i]]$Value           <- as.numeric(par.vals[i])
     par.list[[i]]$Unit            <- par.unit
@@ -597,18 +607,22 @@ sbml_2_biomodme_reactions <- function(sbml.model) {
     }
   }
   
-  # For compartments
-  # if (rv.sbml.temp$need.compartment.conversion) {
-  #   for (i in seq_len(nrow(rv.sbml.temp$comp.df.conv))) {
-  #     browser()
-  #     old <- rv.sbml.temp$comp.df.conv[i, 1]
-  #     new <- rv.sbml.temp$comp.df.conv[i, 2]
-  #   
-  #     # Equation.Text
-  #     col <- reactions %>% pull(Compartments)
-  #     reactions$Compartments <- RenameVarInDFColumn(old, new, col)
-  #   }
-  # }
+  # For compartments: substitute SBML compartment IDs with the volume
+  # parameter name BioModME uses (V_<compartment_name>). In SBML a rate
+  # law that references a compartment by id is referring to that
+  # compartment's volume, but BioModME stores the volume as a separate
+  # parameter, so without this substitution the rate-law text contains an
+  # unbound symbol and eval() falls back to (e.g.) base::c, producing
+  # "non-numeric argument to binary operator" at integration time.
+  if (nrow(rv.sbml.temp$comp.df.conv) > 0) {
+    for (i in seq_len(nrow(rv.sbml.temp$comp.df.conv))) {
+      old <- rv.sbml.temp$comp.df.conv[i, "id"]                # SBML id
+      new <- paste0("V_", rv.sbml.temp$comp.df.conv[i, "name"]) # V_<name>
+      col <- reactions %>% pull(Equation.Text)
+      reactions$Equation.Text <-
+        RenameVarInDFColumn(old, new, col, isMath = TRUE)
+    }
+  }
   
   for (i in seq_len(nrow(reactions))) {
     entry <- reactions[i,]
@@ -815,13 +829,46 @@ sbml_2_biomodme_rules <- function(sbml.model) {
   } else {
     
     rules <- sbml.model$rules
+    # Build a single SBML-id -> sanitized-name lookup covering species,
+    # parameters, and compartments so we can rewrite rule expressions the
+    # same way reaction rate-laws are rewritten.
+    id_to_name <- list()
+    if (rv.sbml.temp$need.species.conversion) {
+      for (k in seq_len(nrow(rv.sbml.temp$species.df.conv))) {
+        id_to_name[[ rv.sbml.temp$species.df.conv[k, "id"] ]] <-
+          rv.sbml.temp$species.df.conv[k, "name"]
+      }
+    }
+    if (rv.sbml.temp$need.parameter.conversion) {
+      for (k in seq_len(nrow(rv.sbml.temp$parameter.df.conv))) {
+        id_to_name[[ rv.sbml.temp$parameter.df.conv[k, "id"] ]] <-
+          rv.sbml.temp$parameter.df.conv[k, "name"]
+      }
+    }
+    if (nrow(rv.sbml.temp$comp.df.conv) > 0) {
+      for (k in seq_len(nrow(rv.sbml.temp$comp.df.conv))) {
+        id_to_name[[ rv.sbml.temp$comp.df.conv[k, "id"] ]] <-
+          paste0("V_", rv.sbml.temp$comp.df.conv[k, "name"])
+      }
+    }
+    apply_id_to_name <- function(expr) {
+      if (length(id_to_name) == 0) return(expr)
+      tokens <- SplitEquationString(expr)
+      hits <- tokens %in% names(id_to_name)
+      tokens[hits] <- unlist(id_to_name[tokens[hits]])
+      paste0(tokens, collapse = " ")
+    }
+
     for (i in seq_along(rules)) {
       entry <- rules[[i]]
-      
-      # Unpack entry
-      lhs.var <- entry$LHS.var
-      rhs.eqn <- entry$str.law
-      
+
+      # Unpack entry; sanitize the LHS so the assignment lands on the same
+      # variable name the species/parameter loaders just produced, and
+      # rewrite SBML ids in the RHS to BioModME's sanitized names so
+      # eval(parse(text=...)) at runtime resolves them in state/parameters.
+      lhs.var <- sanitize_to_r_identifier(entry$LHS.var)
+      rhs.eqn <- apply_id_to_name(entry$str.law)
+
       # Generate Unique ID
       ids <- GenerateId(rv.sbml.temp$id.custeqnaddional.seed, "custEqnAdditional")
       unique.id <- ids[[2]]
@@ -829,9 +876,9 @@ sbml_2_biomodme_rules <- function(sbml.model) {
       idx.to.add <- nrow(rv.sbml.temp$id.df) + 1
       rv.sbml.temp$id.df[idx.to.add, ] <- c(unique.id, paste0(lhs.var, "=", rhs.eqn))
       eqn.id <- unique.id
-      
+
       # Build Equation from LHS.var and str.law
-      
+
       eqn.out <- paste0(lhs.var, "=", rhs.eqn)
       
       # TODO: Split the reaction to extract variables.Determine if they are in

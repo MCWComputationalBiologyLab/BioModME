@@ -231,7 +231,9 @@ createSBML <- function(model, id_df) {
       out <- c(out, "<listOfCompartments>")
       for (i in seq_along(compartments)) {
         entry <- compartments[[i]]
-        id    <- entry$name
+        # entry$id is the sanitized R-safe name (used as SBML id);
+        # entry$name is the original DisplayName preserved through import.
+        id    <- entry$id
         name  <- entry$name
         size  <- entry$size
         cont  <- entry$constant
@@ -240,7 +242,7 @@ createSBML <- function(model, id_df) {
         units_attr <- if (!is.null(unit_id)) paste0('units="', unit_id, '" ') else ""
 
         out <- c(out,
-                 paste0("<compartment id=", '"', name, '" ',
+                 paste0("<compartment id=", '"', id, '" ',
                         "size=", '"', size, '" ',
                         "name=", '"', name, '" ',
                         units_attr,
@@ -258,7 +260,7 @@ createSBML <- function(model, id_df) {
       for (i in seq_along(species)) {
         entry      <- species[[i]]
 
-        id         <- entry$name
+        id         <- entry$id
         name       <- entry$name
         init.conc  <- entry$initialConcentration
         compart    <- FindIdName(entry$compartment, id_df)
@@ -268,7 +270,7 @@ createSBML <- function(model, id_df) {
         sub_attr   <- if (!is.null(unit_id)) paste0('substanceUnits="', unit_id, '" ') else ""
 
         out <- c(out,
-                 paste0("<species id=", '"', name, '" ',
+                 paste0("<species id=", '"', id, '" ',
                         "name=", '"', name, '" ',
                         "initialConcentration=", '"', init.conc, '" ',
                         sub_attr,
@@ -287,7 +289,7 @@ createSBML <- function(model, id_df) {
       for (i in seq_along(parameters)) {
         entry      <- parameters[[i]]
 
-        id         <- entry$name
+        id         <- entry$id
         name       <- entry$name
         value      <- entry$value
         cont       <- entry$constant
@@ -295,7 +297,7 @@ createSBML <- function(model, id_df) {
         units_attr <- if (!is.null(unit_id)) paste0('units="', unit_id, '" ') else ""
 
         out <- c(out,
-                 paste0("<parameter id=", '"', name, '" ',
+                 paste0("<parameter id=", '"', id, '" ',
                         "name=", '"', name, '" ',
                         "value=", '"', value, '" ',
                         units_attr,

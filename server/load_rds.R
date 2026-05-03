@@ -183,12 +183,31 @@ observeEvent(rv.LOADBUTTONS$LB.count, {
   
   
   # Update terms from older loads ----------------------------------------------
-  
+
   # If parameters don't have custom
 
   for (i in seq_along(rv.PARAMETERS$parameters)) {
     if (is.null(rv.PARAMETERS$parameters[[i]]$Custom)) {
       rv.PARAMETERS$parameters[[i]]$Custom <- FALSE
+    }
+  }
+
+  # Older RDS sessions don't have $DisplayName (added in the SBML name
+  # sanitization refactor). Default it to $Name so downstream UI/SBML
+  # export code that prefers DisplayName falls back gracefully.
+  for (i in seq_along(rv.SPECIES$species)) {
+    if (is.null(rv.SPECIES$species[[i]]$DisplayName)) {
+      rv.SPECIES$species[[i]]$DisplayName <- rv.SPECIES$species[[i]]$Name
+    }
+  }
+  for (i in seq_along(rv.PARAMETERS$parameters)) {
+    if (is.null(rv.PARAMETERS$parameters[[i]]$DisplayName)) {
+      rv.PARAMETERS$parameters[[i]]$DisplayName <- rv.PARAMETERS$parameters[[i]]$Name
+    }
+  }
+  for (i in seq_along(rv.COMPARTMENTS$compartments)) {
+    if (is.null(rv.COMPARTMENTS$compartments[[i]]$DisplayName)) {
+      rv.COMPARTMENTS$compartments[[i]]$DisplayName <- rv.COMPARTMENTS$compartments[[i]]$Name
     }
   }
   
