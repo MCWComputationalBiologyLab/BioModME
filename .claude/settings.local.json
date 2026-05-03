@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh pr *)",
+      "PowerShell(Get-Command gh -ErrorAction SilentlyContinue)",
+      "Bash(git fetch *)",
+      "PowerShell($cmd = Get-Command gh -ErrorAction SilentlyContinue; if \\($cmd\\) { $cmd.Source } else { \"not found\" })",
+      "Bash(git remote *)",
+      "Bash(git checkout *)",
+      "Bash(git pull *)",
+      "Bash(git -C \"c:/Users/Justi/OneDrive/Documents/GitHub/BobTheBuilder\" log -S \"substrate_synthesis_competition\" --oneline)",
+      "Bash(git -C \"c:/Users/Justi/OneDrive/Documents/GitHub/BobTheBuilder\" log --all -S \"Substrate_Synthesis_Competition\" --oneline)",
+      "Bash(git -C \"c:/Users/Justi/OneDrive/Documents/GitHub/BobTheBuilder\" log --oneline -30 --all)",
+      "Bash(git -C \"c:/Users/Justi/OneDrive/Documents/GitHub/BobTheBuilder\" ls-files)",
+      "Bash(git -C \"c:/Users/Justi/OneDrive/Documents/GitHub/BobTheBuilder\" log --all --oneline --diff-filter=A -- \"*Substrate_Synthesis*\")",
+      "Bash(git -C \"c:/Users/Justi/OneDrive/Documents/GitHub/BobTheBuilder\" grep -l \"bacterial\" -- \"server/*.R\" \"ui/*.R\")",
+      "Bash(git -C \"c:/Users/Justi/OneDrive/Documents/GitHub/BobTheBuilder\" grep -n \"BackendName\" -- \"server/00_reactive_variables.R\")",
+      "Bash(git -C \"c:/Users/Justi/OneDrive/Documents/GitHub/BobTheBuilder\" status)",
+      "Bash(git -C \"c:/Users/Justi/OneDrive/Documents/GitHub/BobTheBuilder\" log --all --oneline)",
+      "Bash(git -C \"c:/Users/Justi/OneDrive/Documents/GitHub/BobTheBuilder\" branch -a)",
+      "Bash(git -C \"c:/Users/Justi/OneDrive/Documents/GitHub/BobTheBuilder\" grep -lin \"substrate\" -- \"*.R\")",
+      "Bash(git -C \"c:/Users/Justi/OneDrive/Documents/GitHub/BobTheBuilder\" grep -li \"substrate\" -- \"*.R\")",
+      "Bash(git -C \"c:/Users/Justi/OneDrive/Documents/GitHub/BobTheBuilder\" show --stat 5936116)",
+      "Bash(git -C \"c:/Users/Justi/OneDrive/Documents/GitHub/BobTheBuilder\" log main --oneline)",
+      "Bash(git -C \"c:/Users/Justi/OneDrive/Documents/GitHub/BobTheBuilder\" ls-tree -r origin/bacterial_eqns_addition --name-only)",
+      "Bash(git -C \"c:/Users/Justi/OneDrive/Documents/GitHub/BobTheBuilder\" log origin/bacterial_eqns_addition --oneline)",
+      "Bash(git -C \"c:/Users/Justi/OneDrive/Documents/GitHub/BobTheBuilder\" log origin/bacterial_eqns_addition --diff-filter=A --oneline -- \"functions/rateLaws/Substrate_Synthesis_Competition.R\")",
+      "Bash(git -C \"c:/Users/Justi/OneDrive/Documents/GitHub/BobTheBuilder\" log origin/bacterial_eqns_addition --oneline ^origin/main)",
+      "Bash(git -C \"c:/Users/Justi/OneDrive/Documents/GitHub/BobTheBuilder\" log origin/bacterial_eqns_addition -S \"substrate_synthesis_competition\" --oneline)",
+      "Bash(git -C \"c:/Users/Justi/OneDrive/Documents/GitHub/BobTheBuilder\" show 08595a4 --stat -- \"functions/rateLaws/Substrate_Synthesis_Competition.R\" \"functions/Substrate_Synthesis_Competition.R\")",
+      "Bash(git -C \"c:/Users/Justi/OneDrive/Documents/GitHub/BobTheBuilder\" branch -r --contains 08595a4)",
+      "Bash(git -C \"c:/Users/Justi/OneDrive/Documents/GitHub/BobTheBuilder\" log origin/bacterial_eqns_addition --oneline --not origin/main)",
+      "Bash(git -C \"c:/Users/Justi/OneDrive/Documents/GitHub/BobTheBuilder\" diff origin/main..origin/bacterial_eqns_addition --stat)",
+      "Bash(git -C \"c:/Users/Justi/OneDrive/Documents/GitHub/BobTheBuilder\" show --stat 08595a4)"
+    ]
+  }
+}
